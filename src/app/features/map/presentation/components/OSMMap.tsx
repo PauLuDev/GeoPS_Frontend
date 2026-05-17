@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, type FC } from "react";
-import { Coupon, UserCoord, USER_COORD } from "../../core/common/mockData.ts";
-import { LimaMap } from "./LimaMap";
+import { Coupon, UserCoord, USER_COORD } from "../../../../core/common/mockData.ts";
+import { LimaMap } from "./LimaMap.tsx";
 
 let leafletLoaderPromise: Promise<any> | null = null;
 

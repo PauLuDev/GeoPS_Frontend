@@ -1,5 +1,3 @@
-import { Coupon } from "../../core/common/mockData.ts";
-
 interface Pin {
   id: string;
   x: number;

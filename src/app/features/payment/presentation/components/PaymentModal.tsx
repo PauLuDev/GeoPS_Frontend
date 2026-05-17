@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { Icon } from "./Icon";
-import { Coupon } from "../../core/common/mockData.ts";
+import { Icon } from "../../../../ui/components/Icon.tsx";
+import { Coupon } from "../../../../core/common/mockData.ts";
 
 function fmt(val: string, type: "card" | "expiry" | "cvv") {
   const d = val.replace(/\D/g, "");
