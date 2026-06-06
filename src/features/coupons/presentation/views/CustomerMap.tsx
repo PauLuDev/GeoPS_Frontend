@@ -91,7 +91,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 onLocationClick={() => setShowLocationModal(true)}
             />
 
-            <div className="map-shell" style={{ display: tab === "map" || tab === "saved" ? "grid" : "block" }}>
+            <div className="map-shell" style={{ display: tab === "map" || tab === "saved" ? "grid" : "block", overflowY: tab === "map" || tab === "saved" ? "hidden" : "auto" }}>
                 {(tab === "map" || tab === "saved") && (
                     <>
                         <div className="map-area">

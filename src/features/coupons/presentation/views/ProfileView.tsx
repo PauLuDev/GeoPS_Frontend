@@ -49,7 +49,7 @@ export function ProfileView({ favCount, reservedCount, reservedCoupons = [], onO
     const initials = profile.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
     return (
-        <div style={{ background: "var(--bg)", minHeight: "100%", overflow: "auto" }}>
+        <div style={{ background: "var(--bg)", minHeight: "100%" }}>
             <div className="profile-head">
                 <div className="profile-avatar" style={{ background: "var(--brand)", color: "var(--brand-ink)", fontSize: 20, userSelect: "none" }}>
                     {initials}

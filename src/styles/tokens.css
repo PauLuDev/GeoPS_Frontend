@@ -97,10 +97,10 @@
 }
 
 /* Scrollbar */
-.geops-app ::-webkit-scrollbar { width: 10px; height: 10px; }
+.geops-app ::-webkit-scrollbar { width: 14px; height: 14px; }
 .geops-app ::-webkit-scrollbar-track { background: transparent; }
-.geops-app ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 2px solid var(--bg); }
-.geops-app ::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+.geops-app ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 4px solid transparent; background-clip: padding-box; }
+.geops-app ::-webkit-scrollbar-thumb:hover { background: var(--ink-3); background-clip: padding-box; border: 4px solid transparent; }
 
 /* Selection */
 .geops-app ::selection { background: var(--brand); color: var(--brand-ink); }
