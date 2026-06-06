@@ -1,0 +1,16 @@
+/* ===== Analytics / Dashboard ===== */
+.geops-app .md { padding: 28px; max-width: 1400px; margin: 0 auto; }
+.geops-app .md-head  { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.geops-app .md-kpis  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+@media (max-width: 880px) { .geops-app .md-kpis { grid-template-columns: repeat(2, 1fr); } }
+.geops-app .md-grid  { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 14px; }
+@media (max-width: 1100px) { .geops-app .md-grid { grid-template-columns: 1fr; } }
+.geops-app .md-chart   { padding: 22px; min-height: 360px; }
+.geops-app .md-funnel  { padding: 22px; }
+.geops-app .md-heatmap { padding: 0; overflow: hidden; }
+.geops-app .md-chart-legend { display: flex; align-items: center; gap: 18px; margin-top: 14px; font-size: 12px; color: var(--ink-2); }
+.geops-app .md-chart-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.geops-app .funnel-row { margin-bottom: 14px; }
+.geops-app .funnel-row:last-child { margin-bottom: 0; }
+.geops-app .funnel-bar  { height: 8px; background: var(--bg-sunken); border-radius: 4px; overflow: hidden; }
+.geops-app .funnel-fill { height: 100%; border-radius: 4px; transition: width 800ms cubic-bezier(.2,.8,.2,1); }

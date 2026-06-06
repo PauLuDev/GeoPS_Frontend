@@ -1,0 +1,73 @@
+@keyframes loc-spin  { to { transform: rotate(360deg); } }
+@keyframes loc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.geops-app .map-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--ink) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--ink) 6%, transparent) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+/* Leaflet / OSM overrides */
+.geops-app .leaflet-container { background: var(--map-bg) !important; font-family: var(--font-sans) !important; outline: none; }
+.geops-app .leaflet-control-attribution {
+  background: color-mix(in oklab, var(--bg-elev) 80%, transparent) !important;
+  color: var(--ink-3) !important; font-size: 10px !important;
+  font-family: var(--font-mono) !important; border-radius: 6px 0 0 0 !important; padding: 2px 8px !important;
+}
+.geops-app .leaflet-control-attribution a { color: var(--ink-2) !important; }
+
+/* Coupon pins */
+.geops-app .geops-pin-wrap { background: transparent; border: 0; }
+.geops-app .geops-pin {
+  position: relative; width: 26px; height: 38px;
+  filter: drop-shadow(0 3px 6px oklch(0.2 0.02 260 / 0.22));
+  transition: transform 220ms cubic-bezier(.4,1.4,.5,1); cursor: pointer;
+}
+.geops-app .geops-pin.active { transform: scale(1.18); }
+.geops-app .geops-pin.featured::after {
+  content: ""; position: absolute; top: 0; right: 1px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--warn); border: 1.5px solid var(--bg-elev);
+}
+.geops-app .geops-pin-halo {
+  position: absolute; left: 50%; top: 10px;
+  width: 28px; height: 28px; margin-left: -14px; margin-top: -14px;
+  border-radius: 50%; background: var(--brand); opacity: 0.25;
+  animation: geops-pin-halo 1.6s ease-out infinite; pointer-events: none;
+}
+@keyframes geops-pin-halo {
+  0%   { transform: scale(0.6); opacity: 0.4; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* User marker */
+.geops-app .geops-user-icon { background: transparent; border: 0; }
+.geops-app .user-dot-wrap   { position: relative; width: 22px; height: 22px; }
+.geops-app .user-dot {
+  position: absolute; left: 4px; top: 4px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--brand); border: 3px solid var(--bg-elev);
+  box-shadow: 0 0 0 1px var(--ink), 0 4px 10px oklch(0.2 0.02 260 / 0.3);
+}
+.geops-app .user-radar {
+  position: absolute; left: 50%; top: 50%; width: 20px; height: 20px;
+  margin-left: -10px; margin-top: -10px; border-radius: 50%;
+  border: 2px solid var(--brand); animation: geops-user-radar 2.4s ease-out infinite;
+}
+@keyframes geops-user-radar {
+  0%   { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+/* ===== LocationModal ===== */
+.geops-app .loc-icon {
+  width: 44px; height: 44px; border-radius: 13px;
+  background: color-mix(in oklab, var(--brand) 16%, var(--bg-sunken));
+  display: grid; place-items: center;
+  color: var(--brand-strong); flex-shrink: 0;
+}
+.geops-app .loc-clear-btn {
+  appearance: none; border: 0; background: transparent;
+  cursor: pointer; color: var(--ink-3); padding: 2px;
+  display: flex; flex-shrink: 0;
+}
