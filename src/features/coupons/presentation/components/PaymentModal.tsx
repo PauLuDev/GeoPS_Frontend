@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
+import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Coupon } from "@/shared/types.ts";
 
 function fmt(val: string, type: "card" | "expiry" | "cvv") {
@@ -13,13 +13,13 @@ function fmt(val: string, type: "card" | "expiry" | "cvv") {
 
 function CardIcon({ brand }: { brand: string }) {
   if (brand === "visa") return (
-    <svg viewBox="0 0 38 24" width="38" height="24" style={{ display: "block" }}>
+    <svg viewBox="0 0 38 24" width="38" height="24" className="pay-card-svg">
       <rect width="38" height="24" rx="4" fill="#1A1F71"/>
       <text x="7" y="17" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="13" fill="#FFFFFF" letterSpacing="-0.5">VISA</text>
     </svg>
   );
   if (brand === "mastercard") return (
-    <svg viewBox="0 0 38 24" width="38" height="24" style={{ display: "block" }}>
+    <svg viewBox="0 0 38 24" width="38" height="24" className="pay-card-svg">
       <rect width="38" height="24" rx="4" fill="#252525"/>
       <circle cx="14" cy="12" r="8" fill="#EB001B"/>
       <circle cx="24" cy="12" r="8" fill="#F79E1B"/>
@@ -27,12 +27,12 @@ function CardIcon({ brand }: { brand: string }) {
     </svg>
   );
   if (brand === "amex") return (
-    <svg viewBox="0 0 38 24" width="38" height="24" style={{ display: "block" }}>
+    <svg viewBox="0 0 38 24" width="38" height="24" className="pay-card-svg">
       <rect width="38" height="24" rx="4" fill="#007BC1"/>
       <text x="5" y="17" fontFamily="Arial, sans-serif" fontWeight="800" fontSize="10" fill="#FFFFFF" letterSpacing="0.2">AMEX</text>
     </svg>
   );
-  return <div style={{ width: 38, height: 24, borderRadius: 4, background: "var(--line)", display: "grid", placeItems: "center" }}><Icon name="card" size={14}/></div>;
+  return <div className="pay-card-fallback"><Icon name="card" size={14}/></div>;
 }
 
 function detectBrand(num: string): string {
@@ -53,7 +53,7 @@ type Step = "method" | "card" | "processing" | "success";
 
 export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) {
   const [step, setStep]       = useState<Step>("method");
-  const [method, setMethod]   = useState<"izipay" | "yape" | "plin" | "">("");
+  const [, setMethod]         = useState<"izipay" | "yape" | "plin" | "">("");
   const [card, setCard]       = useState({ number: "", expiry: "", cvv: "", name: "" });
   const [errors, setErrors]   = useState<Record<string, string>>({});
 
@@ -84,25 +84,22 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
 
   const brand = detectBrand(card.number);
 
-  const content = (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label="Reservar cupón" onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-         style={{ alignItems: "center" }}>
-      <div className="modal" onClick={e => e.stopPropagation()}
-           style={{ width: "min(480px, calc(100vw - 24px))", maxHeight: "90vh", overflow: "auto", borderRadius: 20 }}>
+  return (
+    <Modal onClose={onClose} ariaLabel="Reservar cupón" className="pay-modal">
 
         {step !== "success" && step !== "processing" && (
-          <div style={{ padding: "20px 24px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="pay-head">
+            <div className="pay-head-left">
               {step === "card" && (
                 <button type="button" className="btn btn-icon btn-sm" onClick={() => setStep("method")}>
                   <Icon name="arrowLeft" size={14}/>
                 </button>
               )}
               <div>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <div className="pay-eyebrow">
                   {step === "method" ? "Checkout seguro" : "Datos de tarjeta"}
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 600, marginTop: 2 }}>
+                <div className="pay-title">
                   Reservar cupón
                 </div>
               </div>
@@ -112,24 +109,24 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
         )}
 
         {(step === "method" || step === "card") && (
-          <div style={{ margin: "16px 24px", background: "var(--bg-sunken)", borderRadius: 14, padding: "14px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+          <div className="pay-summary">
             {coupon.imageUrl ? (
-              <div style={{ width: 56, height: 56, borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
-                <img src={coupon.imageUrl} alt={coupon.brand} style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+              <div className="pay-sum-thumb">
+                <img src={coupon.imageUrl} alt={coupon.brand} className="pay-sum-thumb-img"/>
               </div>
             ) : (
-              <div style={{ width: 56, height: 56, borderRadius: 10, background: "var(--brand-soft)", flexShrink: 0, display: "grid", placeItems: "center" }}>
+              <div className="pay-sum-thumb pay-sum-thumb-ph">
                 <Icon name="food" size={22}/>
               </div>
             )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{coupon.brand}</div>
-              <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{coupon.title}</div>
-              <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 3 }}>Descuento: −{coupon.discount}</div>
+            <div className="pay-sum-main">
+              <div className="pay-sum-brand">{coupon.brand}</div>
+              <div className="pay-sum-title">{coupon.title}</div>
+              <div className="pay-sum-disc">Descuento: −{coupon.discount}</div>
             </div>
-            <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--ink-3)", textDecoration: "line-through" }}>S/{coupon.originalPrice}</div>
-              <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--font-mono)", color: isFree ? "var(--brand-strong)" : "var(--ink)" }}>
+            <div className="pay-sum-price">
+              <div className="pay-sum-orig">S/{coupon.originalPrice}</div>
+              <div className={"pay-sum-final" + (isFree ? " free" : "")}>
                 {isFree ? "GRATIS" : `S/${coupon.finalPrice}`}
               </div>
             </div>
@@ -137,55 +134,54 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
         )}
 
         {step === "method" && (
-          <div style={{ padding: "0 24px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <div className="pay-method-list">
+            <div className="pay-method-head">
+              <div className="pay-method-head-label">
                 Pago seguro con
               </div>
               <div className="pay-brand-badge">IziPay</div>
             </div>
 
             {isFree ? (
-              <button type="button" className="btn btn-brand" style={{ width: "100%", justifyContent: "center", padding: "14px" }}
-                      onClick={pay}>
+              <button type="button" className="btn btn-brand pay-btn-block" onClick={pay}>
                 Confirmar reserva gratis <Icon name="arrowRight" size={16}/>
               </button>
             ) : (
               <>
                 <button type="button" className="pay-method-btn" onClick={() => { setMethod("yape"); pay(); }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "#6A0DAD", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <div className="pay-mb-icon yape">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
                       <circle cx="12" cy="12" r="11" fill="#6A0DAD"/>
                       <path d="M7 9l5 6 5-6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>Yape</div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>Paga con tu celular BCP</div>
+                  <div className="pay-mb-main">
+                    <div className="pay-mb-title">Yape</div>
+                    <div className="pay-mb-sub">Paga con tu celular BCP</div>
                   </div>
                   <Icon name="arrowRight" size={14} />
                 </button>
 
                 <button type="button" className="pay-method-btn" onClick={() => { setMethod("plin"); pay(); }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "#00A859", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <div className="pay-mb-icon plin">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
                       <path d="M5 12l5 5L19 7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>Plin</div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>Interbank, BBVA, Scotiabank</div>
+                  <div className="pay-mb-main">
+                    <div className="pay-mb-title">Plin</div>
+                    <div className="pay-mb-sub">Interbank, BBVA, Scotiabank</div>
                   </div>
                   <Icon name="arrowRight" size={14}/>
                 </button>
 
                 <button type="button" className="pay-method-btn" onClick={() => { setMethod("izipay"); setStep("card"); }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #F7941D, #E42128)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <div className="pay-mb-icon izipay">
                     <Icon name="card" size={20}/>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>Tarjeta de crédito / débito</div>
-                    <div style={{ display: "flex", gap: 4, marginTop: 3, alignItems: "center" }}>
+                  <div className="pay-mb-main">
+                    <div className="pay-mb-title">Tarjeta de crédito / débito</div>
+                    <div className="pay-mb-cards">
                       <CardIcon brand="visa"/><CardIcon brand="mastercard"/><CardIcon brand="amex"/>
                     </div>
                   </div>
@@ -194,37 +190,34 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
               </>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 4, color: "var(--ink-3)", fontSize: 11 }}>
+            <div className="pay-ssl">
               <Icon name="check" size={12}/> Pago cifrado SSL · Sin guardar datos
             </div>
           </div>
         )}
 
         {step === "card" && (
-          <div style={{ padding: "0 24px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{
-              background: "linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%)",
-              borderRadius: 16, padding: "18px 22px", color: "#fff", position: "relative", overflow: "hidden"
-            }}>
-              <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }}/>
-              <div style={{ position: "absolute", bottom: -30, left: -10, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }}/>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, opacity: 0.7, letterSpacing: "0.12em" }}>TARJETA</div>
+          <div className="pay-card-form">
+            <div className="pay-card-preview">
+              <div className="pay-card-deco1"/>
+              <div className="pay-card-deco2"/>
+              <div className="pay-card-top">
+                <div className="pay-card-label">TARJETA</div>
                 <CardIcon brand={brand}/>
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, letterSpacing: "0.18em", fontWeight: 600, marginBottom: 12 }}>
+              <div className="pay-card-number">
                 {card.number || "•••• •••• •••• ••••"}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+              <div className="pay-card-bottom">
                 <div>
-                  <div style={{ fontSize: 9, opacity: 0.6, letterSpacing: "0.1em", fontFamily: "var(--font-mono)" }}>TITULAR</div>
-                  <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 600, marginTop: 2, textTransform: "uppercase" }}>
+                  <div className="pay-card-sublabel">TITULAR</div>
+                  <div className="pay-card-holder">
                     {card.name || "NOMBRE APELLIDO"}
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 9, opacity: 0.6, letterSpacing: "0.1em", fontFamily: "var(--font-mono)" }}>VENCE</div>
-                  <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 600, marginTop: 2 }}>{card.expiry || "MM/AA"}</div>
+                <div className="pay-card-right">
+                  <div className="pay-card-sublabel">VENCE</div>
+                  <div className="pay-card-value">{card.expiry || "MM/AA"}</div>
                 </div>
               </div>
             </div>
@@ -240,21 +233,20 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
 
             <div className="field">
               <label htmlFor="pay-number">Número de tarjeta</label>
-              <div style={{ position: "relative" }}>
-                <input id="pay-number" className={"input" + (errors.number ? " input-error" : "")}
+              <div className="pay-input-wrap">
+                <input id="pay-number" className={"input pay-input-card" + (errors.number ? " input-error" : "")}
                        placeholder="0000 0000 0000 0000"
                        value={card.number}
                        maxLength={19}
-                       style={{ paddingRight: 52 }}
                        onChange={e => { setCard(c => ({ ...c, number: fmt(e.target.value, "card") })); setErrors(er => ({ ...er, number: "" })); }}/>
-                <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                <div className="pay-card-badge">
                   <CardIcon brand={brand}/>
                 </div>
               </div>
               {errors.number && <span className="field-error">{errors.number}</span>}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="pay-grid2">
               <div className="field">
                 <label htmlFor="pay-expiry">Vencimiento</label>
                 <input id="pay-expiry" className={"input" + (errors.expiry ? " input-error" : "")}
@@ -276,72 +268,59 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
               </div>
             </div>
 
-            <button type="button" className="btn btn-brand" style={{ width: "100%", justifyContent: "center", padding: "14px", marginTop: 2 }}
-                    onClick={handleCardPay}>
+            <button type="button" className="btn btn-brand pay-btn-block pay-btn-pay" onClick={handleCardPay}>
               Pagar S/{coupon.finalPrice} <Icon name="arrowRight" size={16}/>
             </button>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ink-3)", fontSize: 11 }}>
+            <div className="pay-ssl pay-ssl-card">
               <Icon name="check" size={12}/> Cifrado de 256-bit · IziPay certificado
             </div>
           </div>
         )}
 
         {step === "processing" && (
-          <div style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-            <div style={{ position: "relative", width: 72, height: 72 }}>
-              <svg width="72" height="72" viewBox="0 0 72 72" style={{ position: "absolute", inset: 0 }}>
+          <div className="pay-processing">
+            <div className="pay-spinner">
+              <svg width="72" height="72" viewBox="0 0 72 72" className="pay-spinner-svg">
                 <circle cx="36" cy="36" r="30" fill="none" stroke="var(--line)" strokeWidth="5"/>
                 <circle cx="36" cy="36" r="30" fill="none" stroke="var(--brand)" strokeWidth="5"
                         strokeLinecap="round" strokeDasharray="94.2" strokeDashoffset="25"
-                        style={{ transformOrigin: "center", animation: "spin 1s linear infinite" }}/>
+                        className="pay-spinner-arc"/>
               </svg>
-              <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-                <div style={{
-                  background: "linear-gradient(135deg, #F7941D, #E42128)", color: "#fff",
-                  borderRadius: 8, padding: "3px 8px", fontSize: 9, fontWeight: 800,
-                  fontFamily: "var(--font-mono)", letterSpacing: "0.04em"
-                }}>IziPay</div>
+              <div className="pay-spinner-center">
+                <div className="pay-izipay-badge">IziPay</div>
               </div>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 17, fontWeight: 600 }}>Procesando pago…</div>
-              <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 6 }}>No cierres esta pantalla</div>
+            <div className="pay-proc-text">
+              <div className="pay-proc-title">Procesando pago…</div>
+              <div className="pay-proc-sub">No cierres esta pantalla</div>
             </div>
           </div>
         )}
 
         {step === "success" && (
-          <div style={{ padding: "48px 24px 36px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
-            <div style={{
-              width: 72, height: 72, borderRadius: "50%",
-              background: "var(--brand-soft)", display: "grid", placeItems: "center",
-              animation: "geops-scale-in 400ms cubic-bezier(.2,.8,.2,1) both"
-            }}>
+          <div className="pay-success">
+            <div className="pay-success-icon">
               <svg viewBox="0 0 24 24" width="32" height="32" fill="none">
                 <path d="M5 13l4 4L19 7" stroke="var(--brand-strong)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" }}>¡Cupón reservado!</div>
-              <div style={{ fontSize: 14, color: "var(--ink-2)", marginTop: 8, maxWidth: 280, lineHeight: 1.5 }}>
+              <div className="pay-success-title">¡Cupón reservado!</div>
+              <div className="pay-success-text">
                 Muestra esta pantalla al llegar a <strong>{coupon.brand}</strong>. Tu reserva expira en 30 minutos.
               </div>
             </div>
-            <div style={{ background: "var(--bg-sunken)", borderRadius: 14, padding: "14px 20px", width: "100%", textAlign: "left" }}>
-              <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>CÓDIGO DE RESERVA</div>
-              <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--font-mono)", marginTop: 4, letterSpacing: "0.1em", color: "var(--brand-strong)" }}>
+            <div className="pay-code-box">
+              <div className="pay-code-label">CÓDIGO DE RESERVA</div>
+              <div className="pay-code-value">
                 GEOPS-{coupon.id.toUpperCase()}-7K3X
               </div>
             </div>
-            <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Cerrando automáticamente…</div>
+            <div className="pay-closing">Cerrando automáticamente…</div>
           </div>
         )}
 
-      </div>
-    </div>
+    </Modal>
   );
-
-  const portalTarget = document.getElementById("geops-portal-root") ?? document.body;
-  return createPortal(content, portalTarget);
 }

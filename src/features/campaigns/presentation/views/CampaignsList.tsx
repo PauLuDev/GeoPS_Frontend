@@ -1,86 +1,129 @@
-import {Icon} from "@/shared/ui/components/Icon.tsx";
+import { useState } from "react";
+import { Icon } from "@/shared/ui/components/Icon.tsx";
+import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
+import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/features/campaigns/domain/value-objects/CampaignStatus.ts";
+import { filterCampaigns, countByStatus, StatusFilter } from "@/features/campaigns/application/use-cases/ListCampaigns.ts";
 
-const CAMPAIGNS = [
-    { id: 1, name: "2x1 en lomo saltado",             status: "live",      views: 1240, reserved: 412, redeemed: 289, stock: 23,  total: 60,   end: "2h 14m" },
-    { id: 2, name: "Almuerzo ejecutivo",               status: "live",      views: 892,  reserved: 241, redeemed: 188, stock: 41,  total: 80,   end: "5h 02m" },
-    { id: 3, name: "Postre gratis con plato fuerte",   status: "live",      views: 512,  reserved: 98,  redeemed: 62,  stock: 18,  total: 30,   end: "1d 4h" },
-    { id: 4, name: "Happy Hour piscos",                status: "draft",     views: 0,    reserved: 0,   redeemed: 0,   stock: 0,   total: 50,   end: "—" },
-    { id: 5, name: "Día de la Madre · menú especial", status: "scheduled", views: 0,    reserved: 0,   redeemed: 0,   stock: 0,   total: 120,  end: "en 8d" },
-    { id: 6, name: "Lomo Fest 2026",                   status: "ended",     views: 3408, reserved: 910, redeemed: 702, stock: 0,   total: 1000, end: "hace 12d" },
+const FILTER_OPTIONS: { label: string; value: StatusFilter }[] = [
+    { label: "Todas",       value: "all"       },
+    { label: "En vivo",     value: "live"      },
+    { label: "Programadas", value: "scheduled" },
+    { label: "Borradores",  value: "draft"     },
+    { label: "Finalizadas", value: "ended"     },
 ];
-const STATUS_COLOR: Record<string, string> = { live: "var(--brand-strong)", draft: "var(--ink-3)", scheduled: "var(--accent-2)", ended: "var(--ink-3)" };
-const STATUS_BG:    Record<string, string> = { live: "var(--brand-soft)",   draft: "var(--bg-sunken)", scheduled: "var(--accent-2-soft)", ended: "var(--bg-sunken)" };
-const STATUS_LABEL: Record<string, string> = { live: "En vivo", draft: "Borrador", scheduled: "Programada", ended: "Finalizada" };
 
-export function CampaignsList({ onNew }: { onNew: () => void }) {
+interface CampaignsListProps {
+    campaigns: Campaign[];
+    onNew: () => void;
+}
+
+export function CampaignsList({ campaigns, onNew }: CampaignsListProps) {
+    const [filter, setFilter] = useState<StatusFilter>("all");
+    const [search, setSearch] = useState("");
+
+    const visible = filterCampaigns(campaigns, filter, search);
+
+    const live      = countByStatus(campaigns, "live");
+    const draft     = countByStatus(campaigns, "draft");
+    const scheduled = countByStatus(campaigns, "scheduled");
 
     return (
-        <div className="md">
+        <div className="md cl-page">
             <header className="md-head">
                 <div>
                     <div className="eyebrow">Operación</div>
                     <h1 className="page-title">Campañas</h1>
-                    <p className="page-subtitle">3 activas · 1 borrador · 1 programada</p>
+                    <p className="page-subtitle">
+                        {live} activa{live !== 1 ? "s" : ""} · {draft} borrador{draft !== 1 ? "es" : ""} · {scheduled} programada{scheduled !== 1 ? "s" : ""}
+                    </p>
                 </div>
-                <button type="button" className="btn btn-brand" onClick={onNew}><Icon name="plus" size={14}/> Nueva campaña</button>
+                <button type="button" className="btn btn-brand" onClick={onNew}>
+                    <Icon name="plus" size={14}/> Nueva campaña
+                </button>
             </header>
 
-            <div className="card" style={{ overflow: "hidden" }}>
-                <div style={{ display: "flex", padding: "14px 18px", borderBottom: "1px solid var(--line)", gap: 10, alignItems: "center" }}>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {["Todas", "En vivo", "Programadas", "Borradores", "Finalizadas"].map((t, i) => (
-                            <button type="button" key={t} className={"sort-pill " + (i === 0 ? "active" : "")}>{t}</button>
+            <div className="card cl-card">
+                <div className="cl-toolbar">
+                    <div className="cl-filters">
+                        {FILTER_OPTIONS.map(opt => (
+                            <button type="button" key={opt.value}
+                                    className={"sort-pill " + (filter === opt.value ? "active" : "")}
+                                    onClick={() => setFilter(opt.value)}>
+                                {opt.label}
+                                {opt.value !== "all" && (
+                                    <span className="pill-count">
+                                        {countByStatus(campaigns, opt.value)}
+                                    </span>
+                                )}
+                            </button>
                         ))}
                     </div>
-                    <div style={{ flex: 1 }}/>
-                    <div className="search-wrap" style={{ padding: "6px 10px", boxShadow: "none", maxWidth: 220 }}>
+                    <div className="cl-spacer"/>
+                    <div className="search-wrap cl-search">
                         <Icon name="search" size={14}/>
-                        <input className="search-input" aria-label="Buscar campaña" placeholder="Buscar campaña" style={{ fontSize: 13 }}/>
+                        <input className="search-input cl-search-input" aria-label="Buscar campaña" placeholder="Buscar campaña"
+                               value={search} onChange={e => setSearch(e.target.value)}/>
                     </div>
                 </div>
 
-                <div className="campaigns-table stagger">
-                    <div className="ct-head">
-                        <div>Campaña</div><div>Estado</div><div>Vistos</div>
-                        <div>Reservados</div><div>Redimidos</div><div>Stock</div><div>Tiempo</div><div></div>
+                {visible.length === 0 ? (
+                    <div className="cl-empty">
+                        <div className="cl-empty-icon"><Icon name="ticket" size={32}/></div>
+                        <div className="cl-empty-title">
+                            {search ? "Ninguna campaña coincide con la búsqueda" : "No hay campañas en esta categoría"}
+                        </div>
+                        {!search && (
+                            <button type="button" className="btn btn-sm btn-brand cl-empty-cta" onClick={onNew}>
+                                <Icon name="plus" size={12}/> Crear campaña
+                            </button>
+                        )}
                     </div>
-                    {CAMPAIGNS.map(c => (
-                        <div key={c.id} className="ct-row">
-                            <div style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 0 }}>
-                                <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: c.status === "live" ? `linear-gradient(135deg, var(--brand) 0%, var(--accent-2) 100%)` : "var(--bg-sunken)", border: "1px solid var(--line)" }}/>
-                                <div style={{ minWidth: 0 }}>
-                                    <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{c.name}</div>
-                                    <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>#GEO-{(1000 + c.id).toString()}</div>
+                ) : (
+                    <div className="campaigns-table stagger">
+                        <div className="ct-head">
+                            <div>Campaña</div><div>Estado</div><div>Vistos</div>
+                            <div>Reservados</div><div>Redimidos</div><div>Stock</div><div>Tiempo</div><div></div>
+                        </div>
+                        {visible.map(c => (
+                            <div key={c.id} className="ct-row">
+                                <div className="ct-name-cell">
+                                    <div className={"ct-avatar" + (c.status === "live" ? " live" : "")}/>
+                                    <div className="ct-name-wrap">
+                                        <div className="ct-name">{c.name}</div>
+                                        <div className="ct-id">#GEO-{(1000 + c.id).toString()}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span className="badge" style={{ background: STATUS_BG[c.status], color: STATUS_COLOR[c.status] }}>
+                                        {c.status === "live" && <span className="status-dot"/>}
+                                        {STATUS_LABEL[c.status]}
+                                    </span>
+                                </div>
+                                <div className="mono tnum">{c.views.toLocaleString()}</div>
+                                <div className="mono tnum">{c.reserved.toLocaleString()}</div>
+                                <div className="mono tnum">{c.redeemed.toLocaleString()}</div>
+                                <div>
+                                    {c.total > 0 ? (
+                                        <div className="ct-stock-cell">
+                                            <span className="mono ct-stock-num">{c.stock}/{c.total}</span>
+                                            <div className="stock-bar ct-stock-bar">
+                                                <div className={"stock-fill" + (c.stock === 0 ? " empty" : "")}
+                                                     style={{ width: `${(c.stock / c.total) * 100}%` }}/>
+                                            </div>
+                                        </div>
+                                    ) : "—"}
+                                </div>
+                                <div className="mono ct-time">{c.end}</div>
+                                <div className="ct-actions">
+                                    <button type="button" className="btn btn-icon btn-sm">
+                                        <Icon name="chevron" size={14}/>
+                                    </button>
                                 </div>
                             </div>
-                            <div>
-                <span className="badge" style={{ background: STATUS_BG[c.status], color: STATUS_COLOR[c.status] }}>
-                  {c.status === "live" && <span className="status-dot"/>}
-                    {STATUS_LABEL[c.status]}
-                </span>
-                            </div>
-                            <div className="mono tnum">{c.views.toLocaleString()}</div>
-                            <div className="mono tnum">{c.reserved.toLocaleString()}</div>
-                            <div className="mono tnum">{c.redeemed.toLocaleString()}</div>
-                            <div>
-                                {c.total > 0 ? (
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                        <span className="mono" style={{ fontSize: 12 }}>{c.stock}/{c.total}</span>
-                                        <div className="stock-bar" style={{ height: 3 }}>
-                                            <div className="stock-fill" style={{ width: `${(c.stock / c.total) * 100}%`, background: c.stock === 0 ? "var(--line-strong)" : "var(--brand)" }}/>
-                                        </div>
-                                    </div>
-                                ) : "—"}
-                            </div>
-                            <div className="mono" style={{ fontSize: 12, color: "var(--ink-2)" }}>{c.end}</div>
-                            <div style={{ textAlign: "right" }}>
-                                <button type="button" className="btn btn-icon btn-sm"><Icon name="chevron" size={14}/></button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
-
         </div>
     );
 }

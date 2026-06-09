@@ -1,5 +1,4 @@
 import { Icon } from "@/shared/ui/components/Icon";
-import {useState} from "react";
 import {KPI} from "@/features/analytics/presentation/components/KPI.tsx";
 import {HourChart} from "@/features/analytics/presentation/components/HourChart.tsx";
 import {GeoMap} from "@/features/geolocation/presentation/components/OSMMap.tsx";
@@ -19,7 +18,7 @@ export function MerchantDashboard({ onNew, mapEngine = "osm", theme = "light" }:
                     <div className="eyebrow">Resumen · últimos 30 días</div>
                     <h1 className="page-title">Hola, Fernando 👋</h1>
                     <p className="page-subtitle">
-                        Tus campañas están <strong style={{ color: "var(--ink)" }}>26% por encima</strong> del promedio del barrio.
+                        Tus campañas están <strong className="md-hl">26% por encima</strong> del promedio del barrio.
                     </p>
                 </div>
                 <div className="btn-row">
@@ -42,23 +41,23 @@ export function MerchantDashboard({ onNew, mapEngine = "osm", theme = "light" }:
                             <div className="eyebrow">Rendimiento por hora</div>
                             <div className="section-title">Cuándo se redimen tus cupones</div>
                         </div>
-                        <div className="role-switch" style={{ padding: 2, fontSize: 11 }}>
-                            <button type="button" className="active" style={{ padding: "4px 10px", fontSize: 11 }}>Hoy</button>
-                            <button type="button" style={{ padding: "4px 10px", fontSize: 11 }}>7d</button>
-                            <button type="button" style={{ padding: "4px 10px", fontSize: 11 }}>30d</button>
+                        <div className="role-switch md-range-switch">
+                            <button type="button" className="active md-range-btn">Hoy</button>
+                            <button type="button" className="md-range-btn">7d</button>
+                            <button type="button" className="md-range-btn">30d</button>
                         </div>
                     </div>
                     <HourChart/>
                     <div className="md-chart-legend">
-                        <div><span className="dot" style={{ background: "var(--ink)" }}/> Reservados</div>
-                        <div><span className="dot" style={{ background: "var(--brand)" }}/> Redimidos</div>
-                        <div className="mono" style={{ marginLeft: "auto", color: "var(--ink-3)", fontSize: 11 }}>Pico: 13:00 — 14:00</div>
+                        <div><span className="dot ink"/> Reservados</div>
+                        <div><span className="dot brand"/> Redimidos</div>
+                        <div className="mono md-legend-spacer">Pico: 13:00 — 14:00</div>
                     </div>
                 </div>
 
                 <div className="card md-funnel">
                     <div className="eyebrow">Funnel</div>
-                    <div className="section-title" style={{ marginBottom: 18 }}>Del mapa al local</div>
+                    <div className="section-title md-funnel-title">Del mapa al local</div>
                     {[
                         { label: "Vistos en mapa",      value: 2847, pct: 100 },
                         { label: "Detalle abierto",     value: 891,  pct: 31.3 },
@@ -66,11 +65,11 @@ export function MerchantDashboard({ onNew, mapEngine = "osm", theme = "light" }:
                         { label: "Redimidos en local",  value: 289,  pct: 10.2 },
                     ].map((row, i) => (
                         <div key={row.label} className="funnel-row">
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                                <span style={{ fontSize: 13 }}>{row.label}</span>
-                                <span className="mono tnum" style={{ fontSize: 13, fontWeight: 500 }}>
-                  {row.value.toLocaleString()} <span style={{ color: "var(--ink-3)", fontWeight: 400 }}>· {row.pct}%</span>
-                </span>
+                            <div className="funnel-row-head">
+                                <span className="funnel-label">{row.label}</span>
+                                <span className="mono tnum funnel-value">
+                                    {row.value.toLocaleString()} <span className="funnel-pct">· {row.pct}%</span>
+                                </span>
                             </div>
                             <div className="funnel-bar">
                                 <div className="funnel-fill" style={{
@@ -85,21 +84,21 @@ export function MerchantDashboard({ onNew, mapEngine = "osm", theme = "light" }:
 
             <section className="md-grid">
                 <div className="card md-heatmap">
-                    <div className="card-header" style={{ padding: "18px 18px 0" }}>
+                    <div className="card-header md-heatmap-header">
                         <div>
                             <div className="eyebrow">Mapa de calor</div>
                             <div className="section-title">De dónde vienen tus clientes</div>
                         </div>
                         <span className="badge badge-line">Radio de impacto · 800m</span>
                     </div>
-                    <div style={{ height: 260, position: "relative" }}>
+                    <div className="md-heatmap-map">
                         <GeoMap engine={mapEngine} theme={theme} interactive={false} zoom={14}
                                 pins={COUPONS.slice(0, 4).map(c => ({ ...c }))}
                                 userPos={{ x: 460, y: 380 }} userCoord={USER_COORD} showRadar={false}/>
                     </div>
                 </div>
 
-                <div className="card" style={{ padding: 18 }}>
+                <div className="card md-top-card">
                     <div className="card-header">
                         <div>
                             <div className="eyebrow">Top campañas</div>
@@ -107,17 +106,17 @@ export function MerchantDashboard({ onNew, mapEngine = "osm", theme = "light" }:
                         </div>
                         <button type="button" className="btn btn-ghost btn-sm">Ver todas</button>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div className="md-top-list">
                         {[
                             { name: "2x1 lomo saltado",    views: 1240, rate: "38%", stock: "23/60", color: "var(--brand)" },
                             { name: "Almuerzo ejecutivo",   views: 892,  rate: "24%", stock: "41/80", color: "var(--accent-2)" },
                             { name: "Postre gratis",        views: 512,  rate: "12%", stock: "18/30", color: "oklch(0.72 0.16 35)" },
                         ].map((c) => (
-                            <div key={c.name} style={{ display: "grid", gridTemplateColumns: "4px 1fr auto", gap: 12, alignItems: "center", padding: "10px 12px", background: "var(--bg-sunken)", borderRadius: 10 }}>
-                                <div style={{ height: 36, width: 4, background: c.color, borderRadius: 2 }}/>
-                                <div style={{ minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</div>
-                                    <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>
+                            <div key={c.name} className="md-top-row">
+                                <div className="md-top-color" style={{ background: c.color }}/>
+                                <div className="md-top-main">
+                                    <div className="md-top-name">{c.name}</div>
+                                    <div className="mono md-top-meta">
                                         {c.views} vistas · {c.rate} conv. · stock {c.stock}
                                     </div>
                                 </div>

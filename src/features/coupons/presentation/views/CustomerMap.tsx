@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from "react";
+import {useMemo, useState} from "react";
 import { BottomNav } from "../components/BottomNav.tsx"
 import { Coupon, UserLocation } from "@/shared/types.ts";
 import { DEFAULT_LOCATION } from "@/features/geolocation/domain/value-objects/defaultLocation.ts";
@@ -12,7 +12,10 @@ import {CategoriesView} from "@/features/coupons/presentation/views/CategoriesVi
 import {ProfileView} from "@/features/coupons/presentation/views/ProfileView.tsx";
 import {LocationModal} from "@/features/geolocation/presentation/components/LocationModal.tsx";
 import {CouponDetailView} from "@/features/coupons/presentation/components/CouponDetailView.tsx";
+import {BusinessDetailView} from "@/features/coupons/presentation/components/BusinessDetailView.tsx";
 import {GeoMap} from "@/features/geolocation/presentation/components/OSMMap.tsx";
+import { Business } from "@/shared/types.ts";
+import { getBusinessForCoupon } from "@/shared/constants.ts";
 
 interface CustomerMapProps {
     onSwitchRole: () => void;
@@ -22,11 +25,12 @@ interface CustomerMapProps {
     onThemeChange?: (t: string) => void;
 }
 
-
 export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme = "light", onThemeChange }: CustomerMapProps) {
     const [tab, setTab] = useState("map");
     const [activeCategory, setActiveCategory] = useState("all");
     const [detailCoupon, setDetailCoupon] = useState<Coupon | null>(null);
+    const [detailBusiness, setDetailBusiness] = useState<Business | null>(null);
+    const [activePinId, setActivePinId] = useState<string | undefined>(undefined);
     const [favorites, setFavorites] = useState(new Set<string>());
     const [reserved, setReserved] = useState(new Set<string>());
     const [search, setSearch] = useState("");
@@ -36,7 +40,11 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     const [showLocationModal, setShowLocationModal] = useState(true);
     const showFavorites = tab === "saved";
 
-    useEffect(() => { if (tab === "saved") setActiveCategory("all"); }, [tab]);
+    /* cambia de tab; al entrar a "guardados" resetea la categoria (en el handler, no en un effect) */
+    const selectTab = (t: string) => {
+        if (t === "saved") setActiveCategory("all");
+        setTab(t);
+    };
 
     const realDist = (c: Coupon) => Math.round(haversine(userLocation.lat, userLocation.lng, c.lat, c.lng));
     const realWalk = (c: Coupon) => Math.round(realDist(c) / 80);
@@ -91,13 +99,19 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 onLocationClick={() => setShowLocationModal(true)}
             />
 
-            <div className="map-shell" style={{ display: tab === "map" || tab === "saved" ? "grid" : "block", overflowY: tab === "map" || tab === "saved" ? "hidden" : "auto" }}>
+            <div className={"map-shell" + (tab === "map" || tab === "saved" ? "" : " stacked")}>
                 {(tab === "map" || tab === "saved") && (
                     <>
                         <div className="map-area">
                             <GeoMap engine={mapEngine} theme={theme}
-                                    pins={showLocationModal ? [] : filtered} activePin={detailCoupon?.id}
-                                    onPinClick={(p) => setDetailCoupon(p as Coupon)}
+                                    pins={showLocationModal ? [] : filtered}
+                                    activePin={activePinId}
+                                    onPinClick={(p) => {
+                                        const coupon = p as Coupon;
+                                        setActivePinId(coupon.id);
+                                        setDetailBusiness(getBusinessForCoupon(coupon));
+                                        setDetailCoupon(null);
+                                    }}
                                     userPos={{ x: 520, y: 400 }} userCoord={userLocation}
                                     zoom={radiusToZoom(radius)}/>
 
@@ -107,7 +121,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     <input className="search-input" aria-label="Buscar cupones o locales" placeholder="Buscar cupones, locales..."
                                            value={search} onChange={e => setSearch(e.target.value)}/>
                                     {search && (
-                                        <button type="button" style={{ appearance: "none", border: 0, background: "transparent", padding: 4, cursor: "pointer" }} onClick={() => setSearch("")}>
+                                        <button type="button" className="map-search-clear" onClick={() => setSearch("")}>
                                             <Icon name="close" size={14}/>
                                         </button>
                                     )}
@@ -123,7 +137,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                                     onClick={() => setActiveCategory(cat.id)}>
                                                 <Icon name={cat.icon} size={14}/>
                                                 {cat.label}
-                                                <span className="mono" style={{ fontSize: 10, opacity: 0.6 }}>{count}</span>
+                                                <span className="mono chip-count">{count}</span>
                                             </button>
                                         );
                                     })}
@@ -131,11 +145,11 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                             </div>
 
                             <div className="map-hud">
-                                <div style={{ width: 7, height: 7, borderRadius: "50%", background: userLocation.source === "gps" ? "#22c55e" : "var(--brand)", flexShrink: 0 }}/>
-                                <span className="mono" style={{ fontSize: 11 }}>{hudCoords}</span>
-                                <span style={{ color: "var(--ink-3)" }}>·</span>
-                                <span style={{ fontSize: 11 }}>{userLocation.name}</span>
-                                {userLocation.source === "gps" && <span style={{ fontSize: 9, background: "#22c55e20", color: "#16a34a", borderRadius: 4, padding: "1px 5px", fontFamily: "var(--font-mono)" }}>GPS</span>}
+                                <div className={"hud-dot" + (userLocation.source === "gps" ? " gps" : "")}/>
+                                <span className="mono hud-coords">{hudCoords}</span>
+                                <span className="hud-sep">·</span>
+                                <span className="hud-name">{userLocation.name}</span>
+                                {userLocation.source === "gps" && <span className="hud-gps-badge">GPS</span>}
                             </div>
 
                             <div className="map-tools">
@@ -147,14 +161,26 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     <Icon name="layers" size={16}/>
                                 </button>
                                 <div className="zoom-stack">
-                                    <button type="button" className="btn btn-icon" style={{ borderRadius: "10px 10px 0 0", borderBottom: 0 }}><Icon name="plus" size={16}/></button>
-                                    <button type="button" className="btn btn-icon" style={{ borderRadius: "0 0 10px 10px" }}><Icon name="close" size={14}/></button>
+                                    <button type="button" className="btn btn-icon zoom-btn-top"><Icon name="plus" size={16}/></button>
+                                    <button type="button" className="btn btn-icon zoom-btn-bot"><Icon name="close" size={14}/></button>
                                 </div>
                             </div>
                         </div>
 
                         <aside className="results-pane">
-                            {detailCoupon ? (
+                            {detailBusiness ? (
+                                <BusinessDetailView
+                                    business={detailBusiness}
+                                    coupons={COUPONS.filter(c => c.brand === detailBusiness.name)}
+                                    favorites={favorites}
+                                    reserved={reserved}
+                                    onToggleFav={toggleFav}
+                                    onBack={() => setDetailBusiness(null)}
+                                    onViewCoupon={(c) => { setDetailCoupon(c); setDetailBusiness(null); }}
+                                    realDist={realDist}
+                                    realWalk={realWalk}
+                                />
+                            ) : detailCoupon ? (
                                 <CouponDetailView
                                     c={detailCoupon}
                                     isFav={favorites.has(detailCoupon.id)}
@@ -162,6 +188,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     onToggleFav={() => toggleFav(detailCoupon.id)}
                                     onReserve={() => reserve(detailCoupon.id)}
                                     onBack={() => setDetailCoupon(null)}
+                                    onViewBusiness={() => setDetailBusiness(getBusinessForCoupon(detailCoupon))}
                                     realDist={realDist(detailCoupon)}
                                     realWalk={realWalk(detailCoupon)}
                                 />
@@ -169,31 +196,29 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                 <div className="results-head">
                                     <div>
                                         <div className="eyebrow">{showFavorites ? "Tus guardados" : `Radio: ${radius === Infinity ? "Lima completa" : radius >= 1000 ? `${radius/1000}km` : `${radius}m`}`}</div>
-                                        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em", marginTop: 4 }}>
+                                        <div className="rp-count">
                                             {filtered.length} cupone{filtered.length !== 1 ? "s" : ""}{showFavorites ? " guardados" : " cercanos"}
                                         </div>
                                     </div>
                                 </div>
 
                                 {!showFavorites && (
-                                    <div style={{ borderBottom: "1px solid var(--line)" }}>
-                                        <div className="results-sort" style={{ flexWrap: "nowrap", overflowX: "auto", borderBottom: "1px solid var(--line)" }}>
-                                            <span style={{ fontSize: 10, color: "var(--ink-3)", flexShrink: 0, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.1em", paddingRight: 2 }}>Radio</span>
+                                    <div className="rp-filters">
+                                        <div className="results-sort rp-sort-row rp-sort-divided">
+                                            <span className="rp-sort-label">Radio</span>
                                             {RADIUS_OPTIONS.map(o => (
                                                 <button type="button" key={o.label}
-                                                        className={"chip" + (radius === o.value ? " active" : "")}
-                                                        style={{ fontSize: 11, padding: "3px 9px", flexShrink: 0 }}
+                                                        className={"chip chip-sm" + (radius === o.value ? " active" : "")}
                                                         onClick={() => setRadius(o.value)}>
                                                     {o.label}
                                                 </button>
                                             ))}
                                         </div>
-                                        <div className="results-sort" style={{ flexWrap: "nowrap", overflowX: "auto" }}>
-                                            <span style={{ fontSize: 10, color: "var(--ink-3)", flexShrink: 0, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.1em", paddingRight: 2 }}>Orden</span>
+                                        <div className="results-sort rp-sort-row">
+                                            <span className="rp-sort-label">Orden</span>
                                             {SORT_OPTIONS.map(o => (
                                                 <button type="button" key={o.id}
-                                                        className={"chip" + (sortBy === o.id ? " active" : "")}
-                                                        style={{ fontSize: 11, padding: "3px 9px", flexShrink: 0 }}
+                                                        className={"chip chip-sm" + (sortBy === o.id ? " active" : "")}
                                                         onClick={() => setSortBy(o.id)}>
                                                     {o.label}
                                                 </button>
@@ -204,27 +229,27 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
 
                                 <div className="results-list">
                                     {filtered.length === 0 ? (
-                                        <div style={{ padding: "36px 24px", textAlign: "center" }}>
-                                            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--bg-sunken)", display: "grid", placeItems: "center", margin: "0 auto 14px", color: "var(--ink-3)" }}>
+                                        <div className="rp-empty">
+                                            <div className="rp-empty-icon">
                                                 <Icon name="location" size={24}/>
                                             </div>
                                             {showFavorites ? (
                                                 <>
-                                                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Aún no tienes guardados</div>
-                                                    <div style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+                                                    <div className="rp-empty-title">Aún no tienes guardados</div>
+                                                    <div className="rp-empty-text">
                                                         Explora el mapa y guarda los cupones que más te interesen.
                                                     </div>
-                                                    <button type="button" className="btn btn-brand btn-sm" style={{ marginTop: 14 }} onClick={() => setTab("map")}>
+                                                    <button type="button" className="btn btn-brand btn-sm rp-empty-cta" onClick={() => setTab("map")}>
                                                         Explorar cupones <Icon name="arrowRight" size={13}/>
                                                     </button>
                                                 </>
                                             ) : emptyByRadius ? (
                                                 <>
-                                                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Sin ofertas en este radio</div>
-                                                    <div style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+                                                    <div className="rp-empty-title">Sin ofertas en este radio</div>
+                                                    <div className="rp-empty-text">
                                                         No hay cupones{activeCategory !== "all" ? ` de "${CATEGORIES.find(c => c.id === activeCategory)?.label}"` : ""} en un radio de {radius >= 1000 ? `${radius/1000}km` : `${radius}m`} cerca de <strong>{userLocation.name}</strong>.
                                                     </div>
-                                                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 14 }}>
+                                                    <div className="rp-empty-actions">
                                                         <button type="button" className="btn btn-brand btn-sm" onClick={() => setRadius(Infinity)}>
                                                             Ver toda Lima <Icon name="arrowRight" size={13}/>
                                                         </button>
@@ -240,11 +265,11 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>No hay resultados</div>
-                                                    <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
+                                                    <div className="rp-empty-title">No hay resultados</div>
+                                                    <div className="rp-empty-text">
                                                         Prueba con otra categoría o ajusta el radio de búsqueda.
                                                     </div>
-                                                    <button type="button" className="btn btn-sm" style={{ marginTop: 14 }} onClick={() => { setActiveCategory("all"); setRadius(Infinity); }}>
+                                                    <button type="button" className="btn btn-sm rp-empty-cta" onClick={() => { setActiveCategory("all"); setRadius(Infinity); }}>
                                                         Ver todos los cupones
                                                     </button>
                                                 </>
@@ -256,8 +281,8 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                                         isFav={favorites.has(c.id)}
                                                         isReserved={reserved.has(c.id)}
                                                         onToggleFav={() => toggleFav(c.id)}
-                                                        onClick={() => setDetailCoupon(c)}
-                                                        isSelected={detailCoupon !== null && detailCoupon.id === c.id}
+                                                        onClick={() => { setDetailCoupon(c); setActivePinId(c.id); setDetailBusiness(null); }}
+                                                        isSelected={activePinId === c.id}
                                                         realDist={realDist(c)}
                                                         realWalk={realWalk(c)}/>
                                         ))
@@ -289,7 +314,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 )}
             </div>
 
-            <BottomNav tab={tab} setTab={setTab} favCount={favorites.size}/>
+            <BottomNav tab={tab} setTab={selectTab} favCount={favorites.size}/>
 
             {showLocationModal && (
                 <LocationModal

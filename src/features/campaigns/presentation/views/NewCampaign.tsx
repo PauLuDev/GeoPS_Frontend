@@ -1,160 +1,564 @@
+import { useState, useId, useRef } from "react";
 import { Icon } from "@/shared/ui/components/Icon";
-import { useState } from "react";
-import {CATEGORIES} from "@/shared/constants.ts";
+import { Coupon } from "@/shared/types.ts";
+import { CouponCard } from "@/features/coupons/presentation/components/CouponCard.tsx";
+import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
+import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
+import { CAMPAIGN_TYPES } from "@/features/campaigns/domain/value-objects/CampaignType.ts";
+import { PRESET_RESTRICTIONS } from "@/features/campaigns/domain/value-objects/CouponRestrictions.ts";
+import { calcDiscountPct, savings } from "@/features/campaigns/domain/value-objects/Discount.ts";
+import { durationLabel, isRangeValid } from "@/features/campaigns/domain/value-objects/Duration.ts";
+import { validateCampaign, isCampaignValid, buildCampaign } from "@/features/campaigns/application/use-cases/CreateCampaign.ts";
+import { validateCoupon, isCouponValid, buildCoupon } from "@/features/campaigns/application/use-cases/AddCoupon.ts";
+import { CouponDraftInput } from "@/features/campaigns/application/dtos/CampaignDraft.ts";
 
-export function NewCampaign({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
-    const [name, setName] = useState("Día de la Madre — 2x1");
-    const [discount, setDiscount] = useState(40);
-    const [stock, setStock] = useState(60);
-    const [category, setCategory] = useState("food");
-    const [radius, setRadius] = useState(800);
+/* coupon draft (estado local del formulario) */
+interface CouponDraft {
+    title: string;
+    originalPrice: string;
+    finalPrice: string;
+    stock: string;
+    description: string;
+    imageUrl: string;
+    presetRestrictions: Set<string>;
+    customRestriction: string;
+    customList: string[];
+    terms: string;
+}
+
+const EMPTY_DRAFT: CouponDraft = {
+    title: "", originalPrice: "", finalPrice: "", stock: "", description: "",
+    imageUrl: "", presetRestrictions: new Set(), customRestriction: "",
+    customList: [], terms: "",
+};
+
+/* mapea el estado del formulario al DTO de aplicacion (puro, fuera del componente) */
+const toCouponInput = (d: CouponDraft): CouponDraftInput => ({
+    title: d.title, originalPrice: d.originalPrice, finalPrice: d.finalPrice,
+    stock: d.stock, description: d.description, imageUrl: d.imageUrl,
+    restrictions: [...PRESET_RESTRICTIONS.filter(p => d.presetRestrictions.has(p)), ...d.customList],
+    terms: d.terms,
+});
+
+const fieldCls = (bad: boolean) => "input" + (bad ? " input-error" : "");
+
+interface NewCampaignProps {
+    onDone: (campaign: Campaign) => void;
+    onCancel: () => void;
+}
+
+export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
+    const uid = useId();
+    const fileRef = useRef<HTMLInputElement>(null);
+
+    /* campaign fields */
+    const [name,        setName]        = useState("");
+    const [description, setDescription] = useState("");
+    const [category,    setCategory]    = useState("");     // tipo de campana (preset o manual)
+    const [customType,  setCustomType]  = useState("");     // texto manual
+    const [usingCustom, setUsingCustom] = useState(false);  // modo manual activo
+    const [startDate,   setStartDate]   = useState("");
+    const [endDate,     setEndDate]     = useState("");
+
+    /* coupon list */
+    const [coupons, setCoupons] = useState<CampaignCoupon[]>([]);
+
+    /* inline coupon form */
+    const [addingCoupon, setAddingCoupon] = useState(false);
+    const [couponDraft,  setCouponDraft]  = useState<CouponDraft>(EMPTY_DRAFT);
+    const [couponSubmit, setCouponSubmit] = useState(false);
+
+    /* campaign submit */
+    const [submitted, setSubmitted] = useState(false);
+
+    /* el tipo final (preset o manual) - decision de UI */
+    const finalType = usingCustom ? customType.trim() : category;
+
+    /* validacion (delegada a los use-cases) */
+    const campaignDraft = { name, description, category: finalType, startDate, endDate, coupons };
+    const errors = validateCampaign(campaignDraft);
+    const isValid = isCampaignValid(errors);
+    const endInvalid = !!endDate && !!startDate && !isRangeValid(startDate, endDate);
+
+    const couponErrors = validateCoupon(toCouponInput(couponDraft));
+    const couponValid  = isCouponValid(couponErrors);
+
+    /* descuento (value-object) */
+    const origNum  = parseFloat(couponDraft.originalPrice);
+    const finalNum = parseFloat(couponDraft.finalPrice);
+    const discountPct = calcDiscountPct(origNum, finalNum);
+
+    /* vigencia derivada de las fechas de campana (value-object) */
+    const expiresLabel = durationLabel(startDate, endDate);
+
+    /* subida de imagen */
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => setCouponDraft(d => ({ ...d, imageUrl: String(reader.result) }));
+        reader.readAsDataURL(file);
+    };
+
+    /* restricciones */
+    const togglePreset = (label: string) => {
+        setCouponDraft(d => {
+            const s = new Set(d.presetRestrictions);
+            s.has(label) ? s.delete(label) : s.add(label);
+            return { ...d, presetRestrictions: s };
+        });
+    };
+    const addCustomRestriction = () => {
+        const val = couponDraft.customRestriction.trim();
+        if (!val) return;
+        setCouponDraft(d => ({ ...d, customList: [...d.customList, val], customRestriction: "" }));
+    };
+    const removeCustom = (i: number) =>
+        setCouponDraft(d => ({ ...d, customList: d.customList.filter((_, j) => j !== i) }));
+
+    /* agregar cupon (construccion delegada al use-case) */
+    const addCoupon = () => {
+        setCouponSubmit(true);
+        if (!couponValid) return;
+        const c = buildCoupon(toCouponInput(couponDraft), expiresLabel);
+        setCoupons(prev => [...prev, c]);
+        setCouponDraft(EMPTY_DRAFT);
+        setCouponSubmit(false);
+        setAddingCoupon(false);
+    };
+
+    const removeCoupon = (id: string) => setCoupons(prev => prev.filter(c => c.id !== id));
+
+    /* publicar (construccion delegada al use-case) */
+    const handlePublish = () => {
+        setSubmitted(true);
+        if (!isValid) return;
+        onDone(buildCampaign(campaignDraft));
+    };
+
+    const cerr = (f: keyof typeof errors)       => submitted    && errors[f];
+    const derr = (f: keyof typeof couponErrors) => couponSubmit && couponErrors[f];
+
+    const totalRestrictions = couponDraft.presetRestrictions.size + couponDraft.customList.length;
 
     return (
-        <div className="md" style={{ maxWidth: 1240 }}>
+        <div className="md nc-page">
             <header className="md-head">
                 <div>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel} style={{ marginBottom: 8 }}>
-                        <Icon name="arrowLeft" size={13}/> Volver
-                    </button>
-                    <h1 className="page-title" style={{ margin: 0 }}>Nueva campaña</h1>
-                    <p className="page-subtitle">Define tu oferta y publícala en menos de 5 minutos.</p>
+                    <h1 className="page-title nc-page-title">Nueva campaña</h1>
+                    <p className="page-subtitle">Completa los datos y agrega al menos un cupón para publicar.</p>
                 </div>
                 <div className="btn-row">
-                    <button type="button" className="btn" onClick={onCancel}>Guardar borrador</button>
-                    <button type="button" className="btn btn-brand" onClick={onDone}>
+                    <button type="button" className="btn" onClick={onCancel}>Cancelar</button>
+                    <button type="button" className="btn btn-brand" onClick={handlePublish}>
                         Publicar campaña <Icon name="arrowRight" size={14}/>
                     </button>
                 </div>
             </header>
 
+            {submitted && !isValid && (
+                <div className="nc-error-box">
+                    <Icon name="close" size={15}/>
+                    <div className="nc-error-text">
+                        <strong>Campos obligatorios sin completar:</strong>
+                        <ul className="nc-error-list">
+                            {errors.name     && <li>Nombre de la campaña</li>}
+                            {errors.category && <li>Tipo de campaña</li>}
+                            {errors.start    && <li>Fecha de inicio</li>}
+                            {errors.end      && <li>{endInvalid ? "La fecha de fin debe ser posterior al inicio" : "Fecha de fin"}</li>}
+                            {errors.coupons  && <li>Agrega al menos un cupón</li>}
+                        </ul>
+                    </div>
+                </div>
+            )}
+
             <div className="nc-grid">
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    <div className="card" style={{ padding: 22 }}>
-                        <div className="eyebrow" style={{ marginBottom: 14 }}>1. Información básica</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* izquierda */}
+                <div className="nc-col">
+
+                    {/* 1. info basica */}
+                    <div className="card nc-card">
+                        <div className="eyebrow nc-eyebrow">1. Información básica</div>
+                        <div className="nc-fields">
                             <div className="field">
-                                <label htmlFor="nc-name">Nombre de la campaña</label>
-                                <input id="nc-name" className="input" value={name} onChange={e => setName(e.target.value)}/>
+                                <label htmlFor={`${uid}-name`}>Nombre de la campaña <Req/></label>
+                                <input id={`${uid}-name`} className={fieldCls(cerr("name"))}
+                                       placeholder='Ej. "Día de la Madre", "Navidad 2026"'
+                                       value={name} onChange={e => setName(e.target.value)}/>
+                                {cerr("name") && <ErrMsg>Campo obligatorio</ErrMsg>}
                             </div>
                             <div className="field">
-                                <label htmlFor="nc-desc">Descripción</label>
-                                <textarea id="nc-desc" className="input" rows={3} defaultValue="Aplica de lunes a jueves de 12:00 a 16:00. Válido para consumo en local."/>
+                                <label htmlFor={`${uid}-desc`}>Descripción de la campaña</label>
+                                <textarea id={`${uid}-desc`} className="input" rows={2}
+                                          placeholder="Describe brevemente de qué trata esta campaña..."
+                                          value={description} onChange={e => setDescription(e.target.value)}/>
                             </div>
                             <div className="field">
-                                <label htmlFor="nc-category">Categoría</label>
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                    {CATEGORIES.slice(1).map(c => (
+                                <span className="nc-group-label">Tipo de campaña <Req/></span>
+                                <div className="nc-chips">
+                                    {CAMPAIGN_TYPES.map(c => (
                                         <button type="button" key={c.id}
-                                                className={"chip " + (category === c.id ? "active" : "")}
-                                                onClick={() => setCategory(c.id)}>
-                                            <Icon name={c.icon} size={13}/> {c.label}
+                                                className={"chip " + (!usingCustom && category === c.id ? "active" : "")}
+                                                onClick={() => { setCategory(c.id); setUsingCustom(false); }}>
+                                            <Icon name={c.icon} size={13}/> {c.id}
                                         </button>
                                     ))}
+                                    <button type="button"
+                                            className={"chip " + (usingCustom ? "active" : "")}
+                                            onClick={() => { setUsingCustom(true); setCategory(""); }}>
+                                        <Icon name="plus" size={13}/> Otra ocasión
+                                    </button>
                                 </div>
+                                {usingCustom && (
+                                    <input className="input nc-custom-type"
+                                           placeholder="Escribe el tipo de campaña..."
+                                           aria-label="Tipo de campaña personalizado"
+                                           value={customType}
+                                           onChange={e => setCustomType(e.target.value)}/>
+                                )}
+                                {cerr("category") && <ErrMsg>Selecciona o escribe un tipo de campaña</ErrMsg>}
                             </div>
                         </div>
                     </div>
 
-                    <div className="card" style={{ padding: 22 }}>
-                        <div className="eyebrow" style={{ marginBottom: 14 }}>2. Descuento y stock</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    {/* 2. vigencia */}
+                    <div className="card nc-card">
+                        <div className="eyebrow nc-eyebrow">2. Vigencia</div>
+                        <div className="nc-row2">
                             <div className="field">
-                                <label htmlFor="nc-discount">Descuento (%)</label>
-                                <div style={{ position: "relative" }}>
-                                    <input id="nc-discount" className="input" type="number" value={discount} onChange={e => setDiscount(+e.target.value)} style={{ paddingRight: 60 }}/>
-                                    <span className="mono" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--ink-3)", fontSize: 13 }}>%</span>
-                                </div>
+                                <label htmlFor={`${uid}-start`}>Fecha de inicio <Req/></label>
+                                <input id={`${uid}-start`} className={fieldCls(cerr("start"))} type="datetime-local"
+                                       value={startDate} onChange={e => setStartDate(e.target.value)}/>
+                                {cerr("start") && <ErrMsg>Obligatorio</ErrMsg>}
                             </div>
                             <div className="field">
-                                <label htmlFor="nc-stock">Stock total</label>
-                                <input id="nc-stock" className="input" type="number" value={stock} onChange={e => setStock(+e.target.value)}/>
-                            </div>
-                            <div className="field">
-                                <label htmlFor="nc-price-orig">Precio original (S/)</label>
-                                <input id="nc-price-orig" className="input" type="number" defaultValue="48"/>
-                            </div>
-                            <div className="field">
-                                <label htmlFor="nc-price-disc">Precio con descuento</label>
-                                <input id="nc-price-disc" className="input" type="number" defaultValue={(48 * (1 - discount / 100)).toFixed(0)}/>
+                                <label htmlFor={`${uid}-end`}>Fecha de fin <Req/></label>
+                                <input id={`${uid}-end`} className={fieldCls(cerr("end"))} type="datetime-local"
+                                       value={endDate} onChange={e => setEndDate(e.target.value)}/>
+                                {cerr("end") && <ErrMsg>{endInvalid ? "Debe ser posterior al inicio" : "Obligatorio"}</ErrMsg>}
                             </div>
                         </div>
+                        {startDate && endDate && !endInvalid && (
+                            <div className="nc-duration">
+                                <Icon name="clock" size={12}/>
+                                Duración: <strong className="nc-duration-val">{expiresLabel}</strong>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="card" style={{ padding: 22 }}>
-                        <div className="eyebrow" style={{ marginBottom: 14 }}>3. Vigencia y alcance</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                            <div className="field">
-                                <label htmlFor="nc-start">Inicio</label>
-                                <input id="nc-start" className="input" type="datetime-local" defaultValue="2026-05-04T12:00"/>
-                            </div>
-                            <div className="field">
-                                <label htmlFor="nc-end">Fin</label>
-                                <input id="nc-end" className="input" type="datetime-local" defaultValue="2026-05-12T22:00"/>
-                            </div>
+                    {/* 3. cupones */}
+                    <div className="card nc-card">
+                        <div className="nc-cupones-head">
+                            <div className="eyebrow">3. Cupones</div>
+                            {coupons.length > 0 && (
+                                <span className="nc-count">
+                                    {coupons.length} {coupons.length > 1 ? "cupones" : "cupón"}
+                                </span>
+                            )}
                         </div>
-                        <div className="field" style={{ marginTop: 14 }}>
-                            <label htmlFor="nc-radius">Radio visible (metros)</label>
-                            <input id="nc-radius" type="range" min="200" max="2000" step="100" value={radius}
-                                   onChange={e => setRadius(+e.target.value)} style={{ width: "100%", accentColor: "var(--brand)" }}/>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
-                                <span>200m</span>
-                                <span style={{ color: "var(--ink)", fontWeight: 600 }}>{radius}m</span>
-                                <span>2km</span>
+                        <p className="nc-cupones-hint">
+                            Crea los cupones que verán los clientes en el mapa. Puedes agregar varios.
+                        </p>
+
+                        {/* lista de cupones ya creados */}
+                        {coupons.length > 0 && (
+                            <div className="nc-coupon-list">
+                                {coupons.map(c => (
+                                    <div key={c.id} className="nc-coupon-item">
+                                        <div className="nc-coupon-thumb"
+                                             style={c.imageUrl ? { backgroundImage: `url(${c.imageUrl})` } : undefined}>
+                                            {!c.imageUrl && <span className="nc-coupon-thumb-disc">−{c.discount}</span>}
+                                        </div>
+                                        <div className="nc-coupon-info">
+                                            <div className="nc-coupon-title">{c.title}</div>
+                                            <div className="nc-coupon-meta">
+                                                −{c.discount}
+                                                <span className="nc-sep">·</span>
+                                                S/{c.finalPrice}
+                                                <span className="nc-strike">S/{c.originalPrice}</span>
+                                                <span className="nc-sep">·</span>
+                                                {c.stock} uds.
+                                            </div>
+                                        </div>
+                                        <button type="button" className="btn btn-icon btn-sm nc-coupon-remove" title="Eliminar cupón"
+                                                aria-label="Eliminar cupón" onClick={() => removeCoupon(c.id)}>
+                                            <Icon name="close" size={14}/>
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
+                        )}
+
+                        {/* formulario inline de nuevo cupon */}
+                        {addingCoupon ? (
+                            <div className="nc-coupon-form">
+                                <div className="nc-form-title">Datos del cupón</div>
+
+                                {/* a) imagen */}
+                                <div className="field nc-mb12">
+                                    <span className="nc-group-label">Imagen del cupón</span>
+                                    <input ref={fileRef} type="file" accept="image/*" aria-label="Imagen del cupón" className="nc-hidden-input" onChange={handleImageUpload}/>
+                                    {couponDraft.imageUrl ? (
+                                        <div className="nc-img-preview">
+                                            <img src={couponDraft.imageUrl} alt="Cupón"/>
+                                            <button type="button" className="nc-img-remove"
+                                                    onClick={() => { setCouponDraft(d => ({ ...d, imageUrl: "" })); if (fileRef.current) fileRef.current.value = ""; }}>
+                                                <Icon name="close" size={12}/> Quitar
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button type="button" className="nc-img-upload" onClick={() => fileRef.current?.click()}>
+                                            <Icon name="image" size={22}/>
+                                            Subir imagen desde tu dispositivo
+                                            <span className="nc-img-hint">JPG, PNG · máx. recomendado 1 MB</span>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* b) nombre */}
+                                <div className="field nc-mb12">
+                                    <label htmlFor={`${uid}-c-title`}>Nombre del cupón <Req/></label>
+                                    <input id={`${uid}-c-title`} className={fieldCls(derr("title"))} placeholder='Ej. "Sushi rolls al mediodía"'
+                                           value={couponDraft.title}
+                                           onChange={e => setCouponDraft(d => ({ ...d, title: e.target.value }))}/>
+                                    {derr("title") && <ErrMsg>Obligatorio</ErrMsg>}
+                                </div>
+
+                                {/* c) precios -> descuento auto */}
+                                <div className="nc-prices">
+                                    <div className="field">
+                                        <label htmlFor={`${uid}-c-orig`}>Precio original (S/) <Req/></label>
+                                        <input id={`${uid}-c-orig`} className={fieldCls(derr("original"))} type="number" min="0" step="0.5" placeholder="48"
+                                               value={couponDraft.originalPrice}
+                                               onChange={e => setCouponDraft(d => ({ ...d, originalPrice: e.target.value }))}/>
+                                        {derr("original") && <ErrMsg>Mayor a 0</ErrMsg>}
+                                    </div>
+                                    <div className="field">
+                                        <label htmlFor={`${uid}-c-final`}>Precio final (S/) <Req/></label>
+                                        <input id={`${uid}-c-final`} className={fieldCls(derr("final"))} type="number" min="0" step="0.5" placeholder="24"
+                                               value={couponDraft.finalPrice}
+                                               onChange={e => setCouponDraft(d => ({ ...d, finalPrice: e.target.value }))}/>
+                                        {derr("final") && <ErrMsg>Menor al original</ErrMsg>}
+                                    </div>
+                                    <div className="field">
+                                        <span className="nc-group-label">Descuento</span>
+                                        <div className={"nc-discount-box" + (discountPct ? " active" : "")}>
+                                            {discountPct !== null ? `−${discountPct}%` : "—"}
+                                        </div>
+                                        {discountPct !== null && (
+                                            <span className="nc-discount-save">Ahorro S/{savings(origNum, finalNum)}</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* d) stock + vigencia */}
+                                <div className="nc-row2-sm">
+                                    <div className="field">
+                                        <label htmlFor={`${uid}-c-stock`}>Stock (unidades) <Req/></label>
+                                        <input id={`${uid}-c-stock`} className={fieldCls(derr("stock"))} type="number" min="1" step="1" placeholder="30"
+                                               value={couponDraft.stock}
+                                               onChange={e => setCouponDraft(d => ({ ...d, stock: e.target.value }))}/>
+                                        {derr("stock") && <ErrMsg>Mínimo 1 unidad</ErrMsg>}
+                                    </div>
+                                    <div className="field">
+                                        <span className="nc-group-label">Vigencia</span>
+                                        <div className="nc-vigencia-box">
+                                            <Icon name="clock" size={13}/>
+                                            <span className="nc-vigencia-val">{expiresLabel}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* e) descripcion */}
+                                <div className="field nc-mb16">
+                                    <label htmlFor={`${uid}-c-desc`}>Descripción</label>
+                                    <textarea id={`${uid}-c-desc`} className="input" rows={2}
+                                              placeholder="Contexto adicional del cupón..."
+                                              value={couponDraft.description}
+                                              onChange={e => setCouponDraft(d => ({ ...d, description: e.target.value }))}/>
+                                </div>
+
+                                {/* f) restricciones */}
+                                <div className="nc-restr">
+                                    <div className="nc-restr-head">
+                                        <div className="nc-restr-title">Restricciones de uso</div>
+                                        {totalRestrictions > 0 && (
+                                            <span className="nc-count">
+                                                {totalRestrictions} seleccionada{totalRestrictions > 1 ? "s" : ""}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="nc-restr-chips">
+                                        {PRESET_RESTRICTIONS.map(p => {
+                                            const on = couponDraft.presetRestrictions.has(p);
+                                            return (
+                                                <button type="button" key={p} className="nc-restr-chip" aria-pressed={on}
+                                                        onClick={() => togglePreset(p)}>
+                                                    {on && <Icon name="check" size={10}/>}
+                                                    {p}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="nc-restr-add-row">
+                                        <input className="input nc-restr-input"
+                                               placeholder="Agrega una restricción personalizada..."
+                                               aria-label="Restricción personalizada"
+                                               value={couponDraft.customRestriction}
+                                               onChange={e => setCouponDraft(d => ({ ...d, customRestriction: e.target.value }))}
+                                               onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomRestriction())}/>
+                                        <button type="button" className="btn btn-sm nc-noshrink"
+                                                disabled={!couponDraft.customRestriction.trim()}
+                                                onClick={addCustomRestriction}>
+                                            <Icon name="plus" size={13}/> Añadir
+                                        </button>
+                                    </div>
+                                    {couponDraft.customList.length > 0 && (
+                                        <div className="nc-restr-list">
+                                            {couponDraft.customList.map((r, i) => (
+                                                <div key={r} className="nc-restr-item">
+                                                    <Icon name="check" size={12}/>
+                                                    <span className="nc-restr-item-text">{r}</span>
+                                                    <button type="button" className="nc-restr-remove" aria-label="Quitar restricción" onClick={() => removeCustom(i)}>
+                                                        <Icon name="close" size={11}/>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* g) terminos */}
+                                <div className="nc-terms">
+                                    <div className="nc-terms-title">Términos y condiciones</div>
+                                    <textarea className="input" rows={3}
+                                              aria-label="Términos y condiciones"
+                                              placeholder="El cupón es válido únicamente durante el período indicado. Solo puede ser canjeado una vez por cliente. El establecimiento se reserva el derecho de modificar o cancelar la oferta sin previo aviso..."
+                                              value={couponDraft.terms}
+                                              onChange={e => setCouponDraft(d => ({ ...d, terms: e.target.value }))}/>
+                                </div>
+
+                                <div className="nc-form-actions">
+                                    <button type="button" className="btn"
+                                            onClick={() => { setAddingCoupon(false); setCouponDraft(EMPTY_DRAFT); setCouponSubmit(false); }}>
+                                        Cancelar
+                                    </button>
+                                    <button type="button" className="btn btn-brand nc-grow" onClick={addCoupon}>
+                                        Agregar cupón
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <button type="button" className={"nc-add-coupon" + (cerr("coupons") ? " error" : "")}
+                                    onClick={() => { setAddingCoupon(true); setCouponSubmit(false); }}>
+                                <Icon name="plus" size={14}/> Agregar cupón
+                            </button>
+                        )}
+
+                        {cerr("coupons") && !addingCoupon && (
+                            <div className="nc-coupons-err">
+                                <Icon name="close" size={12}/> Agrega al menos un cupón para publicar
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: 14, alignSelf: "flex-start" }}>
-                    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-                        <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div className="eyebrow">Vista previa cliente</div>
-                            <span className="badge badge-line">live</span>
+                {/* derecha: sidebar */}
+                <div className="nc-side">
+
+                    {/* vista previa cliente, usa la CouponCard real */}
+                    <div className="card nc-preview-card">
+                        <div className="nc-preview-head">
+                            <div className="eyebrow">Vista previa — cliente</div>
+                            <span className="badge badge-line">mapa</span>
                         </div>
-                        <div style={{ padding: 18 }}>
-                            <div className="card" style={{ padding: 14, border: "1px solid var(--line-strong)" }}>
-                                <div style={{
-                                    height: 140, borderRadius: 10,
-                                    background: `linear-gradient(135deg, color-mix(in oklab, var(--brand) 70%, var(--bg-sunken)) 0%, color-mix(in oklab, var(--accent-2) 30%, var(--bg-sunken)) 100%)`,
-                                    position: "relative", overflow: "hidden"
-                                }}>
-                  <span style={{ position: "absolute", top: 12, left: 12, background: "var(--ink)", color: "var(--bg)", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 14, padding: "4px 10px", borderRadius: 6 }}>
-                    −{discount}%
-                  </span>
-                                    <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(45deg, transparent 0 12px, color-mix(in oklab, var(--bg) 18%, transparent) 12px 13px)" }}/>
+                        <div className="nc-preview-body">
+                            {coupons.length === 0 ? (
+                                <div className="nc-preview-empty">
+                                    <div className="nc-preview-empty-icon"><Icon name="ticket" size={28}/></div>
+                                    <div>Los cupones aparecerán aquí</div>
                                 </div>
-                                <div style={{ marginTop: 12 }}>
-                                    <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Tanta — Pardo</div>
-                                    <div style={{ fontSize: 15, fontWeight: 500, marginTop: 2 }}>{name || "—"}</div>
-                                    <div style={{ display: "flex", gap: 10, marginTop: 8, fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
-                                        <span><Icon name="walking" size={11}/> 3 min</span>
-                                        <span><Icon name="clock" size={11}/> 8 días</span>
-                                        <span>{stock} disp.</span>
-                                    </div>
+                            ) : (
+                                <div className="nc-preview-list">
+                                    {coupons.map(c => (
+                                        <CouponCard
+                                            key={c.id}
+                                            c={toCouponPreview(c)}
+                                            isFav={false}
+                                            isReserved={false}
+                                            isSelected={false}
+                                            onToggleFav={() => {}}
+                                            onClick={() => {}}
+                                        />
+                                    ))}
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
-                    <div className="card" style={{ padding: 18 }}>
-                        <div className="eyebrow">Estimación de impacto</div>
-                        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    {/* resumen */}
+                    <div className="card nc-summary">
+                        <div className="eyebrow nc-summary-eyebrow">Resumen</div>
+                        <div className="nc-summary-rows">
                             {[
-                                { label: "Personas en radio", value: "~12,400" },
-                                { label: "Vistas estimadas",  value: `${Math.round(stock * 14)}` },
-                                { label: "Reservas esperadas", value: `~${Math.round(stock * 0.65)}` },
-                                { label: "ROI estimado",      value: "+185%", brand: true },
-                            ].map((row, i) => (
-                                <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < 3 ? "1px solid var(--line)" : "none" }}>
-                                    <span style={{ fontSize: 13, color: "var(--ink-2)" }}>{row.label}</span>
-                                    <span className="mono tnum" style={{ fontSize: 13, fontWeight: 600, color: row.brand ? "var(--brand-strong)" : "var(--ink)" }}>{row.value}</span>
+                                { label: "Nombre",   value: name.trim() || "—" },
+                                { label: "Tipo",     value: finalType || "—" },
+                                { label: "Inicio",   value: startDate ? fmtDate(startDate) : "—" },
+                                { label: "Fin",      value: endDate   ? fmtDate(endDate)   : "—" },
+                                { label: "Vigencia", value: endDate ? expiresLabel : "—" },
+                                { label: "Cupones",  value: coupons.length > 0 ? `${coupons.length} ${coupons.length > 1 ? "cupones" : "cupón"}` : "—" },
+                            ].map(row => (
+                                <div key={row.label} className="nc-summary-row">
+                                    <span className="nc-summary-label">{row.label}</span>
+                                    <span className="nc-summary-value">{row.value}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </div>
             </div>
-
         </div>
     );
+}
+
+/*
+   convierte un CampaignCoupon en un Coupon
+   para reusar la CouponCard real en el preview
+   Distancia/metros = 0 (dependen del cliente)
+*/
+function toCouponPreview(c: CampaignCoupon): Coupon {
+    return {
+        id: c.id,
+        brand: "Tu establecimiento",
+        category: "food",
+        x: 0, y: 0, lat: 0, lng: 0,
+        title: c.title,
+        discount: c.discount,
+        originalPrice: c.originalPrice,
+        finalPrice: c.finalPrice,
+        distance: 0,
+        walking: 0,
+        address: "",
+        stock: c.stock,
+        totalStock: c.stock,
+        expiresIn: c.expiresIn,
+        rating: 0,
+        reviews: 0,
+        description: c.description ?? "",
+        imageUrl: c.imageUrl,
+    };
+}
+
+/* small helpers */
+function Req() {
+    return <span className="req-mark">*</span>;
+}
+function ErrMsg({ children }: { children: React.ReactNode }) {
+    return <span className="field-error">{children}</span>;
+}
+
+/* formateo de fecha para la UI (presentacion) */
+function fmtDate(dt: string): string {
+    if (!dt) return "—";
+    return new Date(dt).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
 }

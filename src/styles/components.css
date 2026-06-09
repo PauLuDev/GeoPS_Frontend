@@ -1,4 +1,4 @@
-/* Typography helpers */
+/* typography helpers */
 .geops-app .mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
 .geops-app .tnum { font-variant-numeric: tabular-nums; }
 .geops-app .eyebrow {
@@ -10,12 +10,12 @@
 .geops-app .page-subtitle { margin: 6px 0 0; color: var(--ink-2); font-size: 14px; }
 .geops-app .section-title { font-size: 18px; font-weight: 600; margin-top: 4px; }
 
-/* Layout utilities */
+/* layout utilities */
 .geops-app .btn-row         { display: flex; gap: 8px; }
 .geops-app .card-header     { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .geops-app .card-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
 
-/* ===== Top bar ===== */
+/* top bar */
 .geops-app .topbar {
   display: flex; align-items: center; gap: var(--space-4);
   padding: 10px 18px; border-bottom: 1px solid var(--line);
@@ -55,7 +55,7 @@
 }
 .geops-app .btn .dot-pulse { position: absolute; }
 
-/* Role switch */
+/* role switch */
 .geops-app .role-switch {
   display: inline-flex; background: var(--bg-sunken); border: 1px solid var(--line);
   border-radius: var(--g-radius-pill); padding: 3px; position: relative;
@@ -74,7 +74,7 @@
   transition: left 320ms cubic-bezier(.4,1.4,.5,1), width 320ms cubic-bezier(.4,1.4,.5,1);
 }
 
-/* ===== Buttons ===== */
+/* buttons */
 .geops-app .btn {
   appearance: none; border: 1px solid var(--line-strong); background: var(--bg-elev);
   color: var(--ink); font-size: 13px; font-weight: 500; padding: 8px 14px;
@@ -96,7 +96,7 @@
 .geops-app .btn-light { background: color-mix(in oklab, var(--bg-elev) 20%, transparent); color: var(--bg-elev); border-color: color-mix(in oklab, var(--bg-elev) 35%, transparent); }
 .geops-app .btn-light:hover { background: color-mix(in oklab, var(--bg-elev) 30%, transparent); }
 
-/* ===== Pills / Chips ===== */
+/* pills / Chips */
 .geops-app .chip {
   display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
   border-radius: var(--g-radius-pill); background: var(--bg-elev); border: 1px solid var(--line);
@@ -107,7 +107,7 @@
 .geops-app .chip.active     { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .geops-app .chip .dot       { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
 
-/* ===== Badges ===== */
+/* badges */
 .geops-app .badge {
   display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
   font-size: 11px; border-radius: var(--g-radius-pill); font-family: var(--font-mono);
@@ -118,10 +118,10 @@
 .geops-app .badge-ink   { background: var(--ink); color: var(--bg); }
 .geops-app .badge-line  { background: transparent; color: var(--ink-2); border: 1px solid var(--line-strong); }
 
-/* ===== Cards ===== */
+/* cards */
 .geops-app .card { background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--g-radius-lg); box-shadow: var(--shadow-sm); }
 
-/* ===== Forms ===== */
+/* forms */
 .geops-app .input {
   width: 100%; appearance: none; border: 1px solid var(--line-strong); background: var(--bg-elev);
   color: var(--ink); border-radius: 10px; padding: 10px 12px;
@@ -132,7 +132,7 @@
 .geops-app .field       { display: flex; flex-direction: column; gap: 6px; }
 .geops-app .field label { font-size: 12px; color: var(--ink-2); font-weight: 500; }
 
-/* ===== Modal ===== */
+/* modal */
 .geops-app .overlay {
   position: fixed; inset: 0; background: color-mix(in oklab, var(--ink) 35%, transparent);
   backdrop-filter: blur(4px); z-index: 90;
@@ -145,23 +145,35 @@
   animation: geops-scale-in 320ms cubic-bezier(.2,.8,.2,1) both;
 }
 
-/* ===== Skeleton ===== */
+/* modal sobre <dialog> nativo (mismo look que .modal; backdrop = ::backdrop) */
+.geops-app .geops-dialog {
+  position: fixed; inset: 0; margin: auto;   /* centrado horizontal y vertical */
+  padding: 0; border: 1px solid var(--line); border-radius: var(--g-radius-xl);
+  background: var(--bg-elev); color: var(--ink); box-shadow: var(--shadow-lg);
+  width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto;
+  animation: geops-scale-in 320ms cubic-bezier(.2,.8,.2,1) both;
+}
+.geops-app .geops-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(4px);
+}
+
+/* skeleton */
 .geops-app .skel {
   background: linear-gradient(90deg, var(--bg-sunken) 0%, var(--line) 50%, var(--bg-sunken) 100%);
   background-size: 200% 100%; animation: geops-shimmer 1.6s infinite; border-radius: 8px;
 }
 
-/* ===== Divider with label ===== */
+/* divider with label */
 .geops-app .div-label {
   display: flex; align-items: center; gap: 12px; color: var(--ink-3);
   font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em;
 }
 .geops-app .div-label::before, .geops-app .div-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
-/* ===== Focus ring ===== */
+/* focus ring */
 .geops-app :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
 
-/* ===== Tooltip ===== */
+/* tooltip */
 .geops-app .tip { position: relative; }
 .geops-app .tip::after {
   content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%;
@@ -172,7 +184,7 @@
 }
 .geops-app .tip:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ===== Search ===== */
+/* search */
 .geops-app .search-wrap {
   display: flex; align-items: center; gap: 8px; background: var(--bg-elev);
   border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px;
@@ -181,7 +193,7 @@
 .geops-app .search-input { flex: 1; appearance: none; border: 0; outline: none; background: transparent; color: var(--ink); font-size: 14px; font-family: inherit; }
 .geops-app .search-input::placeholder { color: var(--ink-3); }
 
-/* ===== Sort pills ===== */
+/* sort pills */
 .geops-app .sort-pill {
   appearance: none; border: 1px solid var(--line); background: transparent; color: var(--ink-2);
   padding: 4px 10px; border-radius: 999px; font-size: 12px; cursor: pointer;

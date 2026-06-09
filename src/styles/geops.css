@@ -1,10 +1,11 @@
-/* Shared: tokens, animaciones, componentes transversales */
+/* shared: tokens, animaciones, componentes transversales */
 @import './tokens.css';
 @import './animations.css';
 @import './components.css';
 
-/* Bounded contexts */
+/* bounded contexts */
 @import '../features/iam/presentation/iam.css';
+@import '../features/establishments/presentation/establishments.css';
 @import '../features/geolocation/presentation/geolocation.css';
 @import '../features/coupons/presentation/coupons.css';
 @import '../features/campaigns/presentation/campaigns.css';

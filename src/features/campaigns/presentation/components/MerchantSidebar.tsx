@@ -1,5 +1,4 @@
 import { Icon } from "@/shared/ui/components/Icon";
-import {useState} from "react";
 
 interface SidebarProps {
     view: string;
@@ -16,7 +15,7 @@ const SIDEBAR_ITEMS = [
 export function MerchantSidebar({ view, setView, onSwitchRole }: SidebarProps) {
     return (
         <aside className="msb">
-            <div style={{ padding: "18px 18px 12px" }}>
+            <div className="msb-head">
                 <div className="brand">
                     <div className="brand-mark">
                         <svg viewBox="0 0 24 24" fill="none">
@@ -31,9 +30,9 @@ export function MerchantSidebar({ view, setView, onSwitchRole }: SidebarProps) {
 
             <div className="msb-store">
                 <div className="msb-store-avatar">T</div>
-                <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>Tanta — Pardo</div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>Plan Premium · activo</div>
+                <div className="msb-store-info">
+                    <div className="msb-store-name">Tanta — Pardo</div>
+                    <div className="msb-store-plan">Plan Premium · activo</div>
                 </div>
                 <Icon name="chevronDown" size={14}/>
             </div>
@@ -50,7 +49,12 @@ export function MerchantSidebar({ view, setView, onSwitchRole }: SidebarProps) {
                     </button>
                 ))}
 
-                <div className="msb-section" style={{ marginTop: 18 }}>Establecimiento</div>
+                <div className="msb-section msb-section-gap">Mi negocio</div>
+                <button type="button"
+                        className={"msb-item" + (view === "establishments" ? " active" : "")}
+                        onClick={() => setView("establishments")}>
+                    <Icon name="store" size={16}/><span>Establecimientos</span>
+                </button>
                 <button type="button" className="msb-item"><Icon name="settings" size={16}/><span>Configuración</span></button>
                 <button type="button" className="msb-item"><Icon name="user" size={16}/><span>Equipo</span></button>
                 <button type="button" className="msb-item"><Icon name="chart" size={16}/><span>Facturación</span></button>
@@ -59,17 +63,16 @@ export function MerchantSidebar({ view, setView, onSwitchRole }: SidebarProps) {
             <div className="msb-foot">
                 <div className="msb-card">
                     <div className="eyebrow">Próxima fecha</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginTop: 6 }}>Día de la Madre</div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>en 8 días · prepara campaña</div>
-                    <button type="button" className="btn btn-sm" style={{ marginTop: 10, width: "100%", justifyContent: "center" }}>
+                    <div className="msb-card-title">Día de la Madre</div>
+                    <div className="msb-card-sub">en 8 días · prepara campaña</div>
+                    <button type="button" className="btn btn-sm msb-card-btn">
                         <Icon name="sparkles" size={12}/> Plantilla
                     </button>
                 </div>
-                <button type="button" className="btn btn-ghost btn-sm" style={{ width: "100%", justifyContent: "flex-start", marginTop: 8 }} onClick={onSwitchRole}>
+                <button type="button" className="btn btn-ghost btn-sm msb-switch-btn" onClick={onSwitchRole}>
                     <Icon name="arrow_up_right" size={14}/> Vista cliente
                 </button>
             </div>
-
         </aside>
     );
 }

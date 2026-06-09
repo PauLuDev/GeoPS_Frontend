@@ -35,35 +35,32 @@ export function CustomerTopbar({ onProfileClick, onSignOut, locationName = "Mira
             <div className="topbar-spacer"/>
             <button type="button" className="topbar-loc" onClick={onLocationClick}>
                 <Icon name="location" size={13}/>
-                <span style={{ fontSize: 13, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{locationName}</span>
+                <span className="topbar-loc-text">{locationName}</span>
                 <Icon name="chevronDown" size={11}/>
             </button>
-            <div ref={menuRef} style={{ position: "relative" }}>
-                <button type="button"
-                    onClick={() => setMenuOpen(v => !v)}
-                    className="topbar-avatar-btn"
-                    style={{ borderColor: menuOpen ? "var(--brand)" : "transparent" }}
-                >
+            <div ref={menuRef} className="topbar-menu-wrap">
+                <button type="button" className="topbar-avatar-btn" aria-expanded={menuOpen}
+                        onClick={() => setMenuOpen(v => !v)}>
                     <div className="avatar-mini">D</div>
                 </button>
 
                 {menuOpen && (
                     <div className="topbar-menu">
-                        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 12 }}>
-                            <div className="avatar-mini" style={{ width: 36, height: 36, fontSize: 14, flexShrink: 0 }}>D</div>
+                        <div className="topbar-menu-head">
+                            <div className="avatar-mini topbar-menu-avatar">D</div>
                             <div>
-                                <div style={{ fontSize: 13, fontWeight: 600 }}>Daniela Gómez</div>
-                                <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 1 }}>daniela@email.com</div>
+                                <div className="topbar-menu-name">Daniela Gómez</div>
+                                <div className="topbar-menu-email">daniela@email.com</div>
                             </div>
                         </div>
-                        <div style={{ padding: "6px 0" }}>
+                        <div className="topbar-menu-body">
                             <button type="button" className="topbar-menu-item" onClick={() => { setMenuOpen(false); onProfileClick?.(); }}>
                                 <Icon name="user" size={14}/> Ver perfil
                             </button>
                             <button type="button" className="topbar-menu-item" onClick={() => { setMenuOpen(false); onLocationClick?.(); }}>
                                 <Icon name="location" size={14}/> Cambiar ubicación
                             </button>
-                            <button type="button" className="topbar-menu-item" style={{ color: "var(--danger)" }}
+                            <button type="button" className="topbar-menu-item danger"
                                     onClick={() => { setMenuOpen(false); onSignOut?.(); }}>
                                 <Icon name="arrowLeft" size={14}/> Cerrar sesión
                             </button>

@@ -34,6 +34,37 @@ export interface UserCoord {
     lng: number;
 }
 
+export interface BusinessHours {
+    day: string;
+    open: string;
+    close: string;
+    closed?: boolean;
+}
+
+/* las entidades de campana viven en
+ * features/campaigns/domain/entities (Campaign, CampaignCoupon, CampaignStatus)*/
+
+export interface Business {
+    id: string;
+    ruc: string;
+    name: string;
+    address: string;
+    district: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+    category: string;
+    description: string;
+    rating: number;
+    totalReviews: number;
+    hours: BusinessHours[];
+    imageUrl?: string;
+    logo?: string;
+    photos?: string[];
+    lat: number;
+    lng: number;
+}
+
 export interface UserLocation {
     lat: number;
     lng: number;

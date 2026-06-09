@@ -15,14 +15,16 @@ interface LimaMapProps {
   mapStyle?: string;
 }
 
+/* referencia estable para el default y no romper el memo en cada render */
+const EMPTY_PINS: Pin[] = [];
+
 export const LimaMap: React.FC<LimaMapProps> = ({
-  pins = [], activePin = null, onPinClick = () => {},
+  pins = EMPTY_PINS, activePin = null, onPinClick = () => {},
   userPos = { x: 520, y: 360 }, showRadar = true,
 }) => {
   const w = 1000, h = 700;
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid slice"
-         style={{ width: "100%", height: "100%", display: "block" }}>
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid slice" className="lima-map-svg">
       <defs>
         <linearGradient id="g-ocean" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--map-water)"/>
@@ -119,7 +121,7 @@ export const LimaMap: React.FC<LimaMapProps> = ({
         const isActive = activePin === p.id;
         return (
           <g key={p.id} transform={`translate(${p.x} ${p.y})`}
-             style={{ cursor: "pointer" }}
+             className="lima-pin"
              onClick={(e) => { e.stopPropagation(); onPinClick(p); }}>
             {isActive && (
               <circle r="32" fill="var(--brand)" opacity="0.18">
@@ -127,7 +129,7 @@ export const LimaMap: React.FC<LimaMapProps> = ({
                 <animate attributeName="opacity" from="0.35" to="0" dur="1.6s" repeatCount="indefinite"/>
               </circle>
             )}
-            <g style={{ transformOrigin: "0 0", transform: isActive ? "scale(1.18)" : "scale(1)", transition: "transform 240ms cubic-bezier(.4,1.4,.5,1)" }}>
+            <g className={"lima-pin-scale" + (isActive ? " active" : "")}>
               <path d="M 0 -22 C -10 -22 -16 -14 -16 -6 C -16 4 -8 12 0 22 C 8 12 16 4 16 -6 C 16 -14 10 -22 0 -22 Z"
                     fill={isActive ? "var(--ink)" : "var(--bg-elev)"}
                     stroke="var(--ink)" strokeWidth="2"/>

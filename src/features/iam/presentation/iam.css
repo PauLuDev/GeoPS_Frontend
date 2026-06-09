@@ -1,27 +1,4 @@
-/* ===== Onboarding ===== */
-.geops-app .onboarding { min-height: 100vh; padding: 32px; background: var(--bg); }
-.geops-app .onboarding-grid {
-  height: calc(100vh - 64px); min-height: 640px;
-  display: grid; grid-template-columns: minmax(420px, 1fr) 1.3fr; gap: 28px;
-}
-@media (max-width: 880px) {
-  .geops-app .onboarding-grid  { grid-template-columns: 1fr; height: auto; min-height: 0; }
-  .geops-app .onboarding-visual { min-height: 360px; }
-}
-.geops-app .onboarding-content {
-  background: var(--bg-elev); border: 1px solid var(--line);
-  border-radius: var(--g-radius-xl); padding: 40px;
-  display: flex; flex-direction: column; gap: 32px;
-}
-.geops-app .onboarding-title { font-size: clamp(36px, 4.4vw, 56px); line-height: 1.02; letter-spacing: -0.035em; font-weight: 600; margin: 0; text-wrap: balance; }
-.geops-app .onboarding-body  { font-size: 17px; line-height: 1.5; color: var(--ink-2); max-width: 44ch; margin: 0; }
-.geops-app .onboarding-foot  { margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
-.geops-app .onboarding-visual { background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--g-radius-xl); overflow: hidden; position: relative; }
-.geops-app .dots       { display: flex; gap: 6px; }
-.geops-app .dots .dot  { appearance: none; border: 0; width: 8px; height: 8px; border-radius: 999px; background: var(--line-strong); cursor: pointer; transition: width 240ms ease, background 240ms ease; }
-.geops-app .dots .dot.active { width: 28px; background: var(--ink); }
-
-/* ===== Auth screen ===== */
+/* auth screen */
 .geops-app .auth-col-pair {
   position: relative; z-index: 1; width: min(900px, 100%);
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -54,4 +31,65 @@
   position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
   color: var(--ink-3); font-size: 11px; font-family: var(--font-mono);
   letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* fondo decorativo */
+.geops-app .auth-bg { position: absolute; inset: 0; pointer-events: none; opacity: 0.4; }
+.geops-app .auth-bg-svg { width: 100%; height: 100%; }
+
+/* tarjeta de login */
+.geops-app .auth-card { padding: 36px; box-shadow: var(--shadow-lg); }
+.geops-app .auth-brand-row { display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
+.geops-app .auth-title { margin: 0 0 8px; font-size: 28px; letter-spacing: -0.03em; font-weight: 600; }
+.geops-app .auth-subtitle { margin: 0 0 24px; color: var(--ink-2); font-size: 14px; }
+.geops-app .auth-fullbtn { width: 100%; justify-content: center; padding: 12px; }
+.geops-app .auth-submit { margin-top: 6px; }
+.geops-app .auth-divider { margin: 20px 0; }
+.geops-app .auth-form { display: flex; flex-direction: column; gap: 12px; }
+.geops-app .auth-error { font-size: 12px; color: var(--danger); display: flex; align-items: center; gap: 6px; }
+.geops-app .auth-switch-row { margin-top: 20px; text-align: center; font-size: 13px; color: var(--ink-2); }
+
+/* switch de rol (dueno de negocio) */
+.geops-app .auth-role-toggle {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; margin-top: 4px; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--line); background: var(--bg-elev);
+  appearance: none; font-family: inherit; text-align: left; transition: all 160ms ease;
+}
+.geops-app .auth-role-toggle[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); }
+.geops-app .auth-role-icon {
+  width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: grid; place-items: center;
+  background: var(--bg-sunken); color: var(--ink-3);
+}
+.geops-app .auth-role-toggle[aria-pressed="true"] .auth-role-icon { background: var(--brand); color: var(--brand-ink); }
+.geops-app .auth-role-text { flex: 1; min-width: 0; }
+.geops-app .auth-role-title { font-size: 13px; font-weight: 600; }
+.geops-app .auth-role-sub { font-size: 11px; color: var(--ink-3); }
+.geops-app .auth-role-track {
+  width: 40px; height: 23px; border-radius: 999px; flex-shrink: 0; position: relative;
+  background: var(--line-strong); transition: background 160ms ease;
+}
+.geops-app .auth-role-toggle[aria-pressed="true"] .auth-role-track { background: var(--brand); }
+.geops-app .auth-role-thumb {
+  position: absolute; top: 2px; left: 2px; width: 19px; height: 19px;
+  border-radius: 50%; background: #fff; transition: left 160ms ease; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.geops-app .auth-role-toggle[aria-pressed="true"] .auth-role-thumb { left: 19px; }
+
+/* panel promocional */
+.geops-app .auth-promo-delay { animation-delay: 80ms; }
+.geops-app .auth-promo-eyebrow { color: var(--brand-ink); opacity: 0.65; margin-bottom: 8px; }
+.geops-app .auth-promo-title { margin: 0 0 10px; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--brand-ink); line-height: 1.15; }
+.geops-app .auth-promo-em { font-style: normal; border-bottom: 2px solid color-mix(in oklab, var(--brand-ink) 50%, transparent); }
+.geops-app .auth-promo-text { margin: 0; font-size: 13.5px; color: var(--brand-ink); opacity: 0.82; line-height: 1.6; }
+.geops-app .auth-promo-features { display: flex; flex-direction: column; gap: 9px; }
+.geops-app .auth-feature { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--brand-ink); opacity: 0.88; }
+.geops-app .auth-feature-icon {
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0; display: grid; place-items: center;
+  background: color-mix(in oklab, var(--brand-ink) 14%, transparent);
+}
+.geops-app .auth-promo-cta { align-self: flex-start; }
+.geops-app .auth-promo-foot {
+  font-size: 10px; color: var(--brand-ink); opacity: 0.45;
+  font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase;
 }

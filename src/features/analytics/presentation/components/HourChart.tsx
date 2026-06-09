@@ -5,14 +5,14 @@ const CHART_MAX = Math.max(...RESERVED);
 
 export function HourChart() {
     return (
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 200 }}>
+        <div className="hc-chart">
             {HOURS.map((h, i) => (
-                <div key={h} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%" }}>
-                    <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 2, width: "100%", justifyContent: "center" }}>
-                        <div style={{ width: "42%", background: "var(--ink)", borderRadius: "3px 3px 0 0", height: `${(RESERVED[i] / CHART_MAX) * 100}%`, transition: "height 800ms cubic-bezier(.2,.8,.2,1)", transitionDelay: `${i * 30}ms` }}/>
-                        <div style={{ width: "42%", background: "var(--brand)", borderRadius: "3px 3px 0 0", height: `${(REDEEMED[i] / CHART_MAX) * 100}%`, transition: "height 800ms cubic-bezier(.2,.8,.2,1)", transitionDelay: `${i * 30 + 80}ms` }}/>
+                <div key={h} className="hc-col">
+                    <div className="hc-bars">
+                        <div className="hc-bar hc-bar-reserved" style={{ height: `${(RESERVED[i] / CHART_MAX) * 100}%`, transitionDelay: `${i * 30}ms` }}/>
+                        <div className="hc-bar hc-bar-redeemed" style={{ height: `${(REDEEMED[i] / CHART_MAX) * 100}%`, transitionDelay: `${i * 30 + 80}ms` }}/>
                     </div>
-                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: i === 5 || i === 6 ? "var(--ink)" : "var(--ink-3)", fontWeight: i === 5 || i === 6 ? 600 : 400 }}>
+                    <div className={"hc-label" + (i === 5 || i === 6 ? " peak" : "")}>
                         {h.toString().padStart(2, "0")}
                     </div>
                 </div>

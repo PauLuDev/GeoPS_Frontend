@@ -50,6 +50,9 @@ interface Pin {
   [key: string]: any;
 }
 
+/* referencia estable para el default y no romper el memo en cada render */
+const EMPTY_PINS: Pin[] = [];
+
 interface OSMMapProps {
   pins?: Pin[];
   activePin?: string | null;
@@ -62,7 +65,7 @@ interface OSMMapProps {
 }
 
 export const OSMMap: FC<OSMMapProps> = ({
-  pins = [], activePin = null, onPinClick = () => {},
+  pins = EMPTY_PINS, activePin = null, onPinClick = () => {},
   userCoord = USER_COORD, showRadar = true, theme = "light",
   interactive = true, zoom = 15,
 }) => {
@@ -71,6 +74,10 @@ export const OSMMap: FC<OSMMapProps> = ({
   const markersRef = useRef<Record<string, LMarker>>({});
   const userMarkerRef = useRef<LMarker | null>(null);
   const tileLayerRef = useRef<LTileLayer | null>(null);
+  /* el handler de click se guarda en un ref para que los marcadores ya creados
+     siempre llamen a la version actual sin recrear el efecto de marcadores */
+  const onPinClickRef = useRef(onPinClick);
+  onPinClickRef.current = onPinClick;
   const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
@@ -174,7 +181,7 @@ export const OSMMap: FC<OSMMapProps> = ({
         existing[p.id].setLatLng([p.lat, p.lng]);
       } else {
         const m = L.marker([p.lat, p.lng], { icon, riseOnHover: true }).addTo(map);
-        m.on("click", () => onPinClick(p));
+        m.on("click", () => onPinClickRef.current(p));
         existing[p.id] = m;
       }
     });
@@ -187,7 +194,6 @@ export const OSMMap: FC<OSMMapProps> = ({
     });
 
     return () => {
-      // Click listeners are cleaned up when the map is destroyed in the mount effect
     };
   }, [pins, activePin, mapReady]);
 
