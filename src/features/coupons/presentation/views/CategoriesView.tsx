@@ -1,4 +1,5 @@
-import {useEffect, useMemo, useRef, useState} from "react";
+import {useMemo} from "react";
+import {useTranslation} from "react-i18next";
 import {Coupon} from "@/shared/types.ts";
 import { CATEGORIES } from "@/shared/constants";
 import { Icon } from "@/shared/ui/components/Icon";
@@ -10,6 +11,7 @@ interface CategoriesViewProps {
 }
 
 export function CategoriesView({ coupons, onPick, onOpenCoupon }: CategoriesViewProps) {
+    const { t } = useTranslation();
     const counts = useMemo(() => {
         const m: Record<string, number> = {};
         coupons.forEach(c => { m[c.category] = (m[c.category] || 0) + 1; });
@@ -23,21 +25,21 @@ export function CategoriesView({ coupons, onPick, onOpenCoupon }: CategoriesView
         <div className="cat-view">
             <div className="cat-hero">
                 <div>
-                    <div className="eyebrow">Explorar</div>
+                    <div className="eyebrow">{t("categories.explore")}</div>
                     <h1 className="cat-h1">
-                        ¿Qué se te antoja <em className="cat-h1-em">hoy</em>?
+                        {t("categories.headingPre")}<em className="cat-h1-em">{t("categories.headingEm")}</em>{t("categories.headingPost")}
                     </h1>
                     <p className="cat-intro">
-                        Cupones activos en tu zona, agrupados por categoría. Toca una para ver los locales en el mapa.
+                        {t("categories.intro")}
                     </p>
                 </div>
                 <div className="cat-hero-stats">
                     <div>
-                        <div className="eyebrow">Cupones activos</div>
+                        <div className="eyebrow">{t("categories.activeCoupons")}</div>
                         <div className="mono cat-stat-num">{coupons.length}</div>
                     </div>
                     <div>
-                        <div className="eyebrow">Ahorro potencial</div>
+                        <div className="eyebrow">{t("categories.potentialSavings")}</div>
                         <div className="mono cat-stat-num accent">S/{totalDiscount}</div>
                     </div>
                 </div>
@@ -54,13 +56,13 @@ export function CategoriesView({ coupons, onPick, onOpenCoupon }: CategoriesView
                             }}/>
                             <div className="cat-card-icon"><Icon name={cat.icon} size={28} stroke={1.4}/></div>
                             <div className="cat-card-body">
-                                <div className="cat-card-title">{cat.label}</div>
+                                <div className="cat-card-title">{t(`cat.${cat.id}`)}</div>
                                 <div className="cat-card-sub">
-                                    {n === 0 ? "Sin ofertas activas" : `${n} ${n === 1 ? "cupón disponible" : "cupones disponibles"}`}
+                                    {n === 0 ? t("categories.noOffers") : t("categories.available", { count: n })}
                                 </div>
                                 {sample && n > 0 && (
                                     <div className="cat-card-sample">
-                                        Desde <span className="mono cat-card-sample-brand">{sample.brand}</span>
+                                        {t("categories.from")} <span className="mono cat-card-sample-brand">{sample.brand}</span>
                                     </div>
                                 )}
                             </div>
@@ -73,10 +75,10 @@ export function CategoriesView({ coupons, onPick, onOpenCoupon }: CategoriesView
             <div className="cat-section">
                 <div className="cat-section-head">
                     <div>
-                        <div className="eyebrow">Lo más reservado</div>
-                        <h2 className="cat-section-title">Trending esta semana</h2>
+                        <div className="eyebrow">{t("categories.mostReserved")}</div>
+                        <h2 className="cat-section-title">{t("categories.trending")}</h2>
                     </div>
-                    <button type="button" className="btn btn-sm" onClick={() => onPick("all")}>Ver todo <Icon name="arrowRight" size={13}/></button>
+                    <button type="button" className="btn btn-sm" onClick={() => onPick("all")}>{t("common.seeAll")} <Icon name="arrowRight" size={13}/></button>
                 </div>
                 <div className="cat-trending">
                     {trending.map((c, i) => (
@@ -89,7 +91,7 @@ export function CategoriesView({ coupons, onPick, onOpenCoupon }: CategoriesView
                             </div>
                             <div className="mono trend-rating">
                                 <div className="trend-rating-val"><Icon name="star" size={11} filled/> {c.rating}</div>
-                                <div className="trend-reservas">{c.reviews} reservas</div>
+                                <div className="trend-reservas">{t("categories.reservations", { count: c.reviews })}</div>
                             </div>
                         </button>
                     ))}

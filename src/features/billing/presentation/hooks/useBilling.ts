@@ -6,6 +6,7 @@ import { HttpBillingRepository } from "../../infrastructure/repositories/HttpBil
 import { getPlans } from "../../application/use-cases/GetPlans.ts";
 import { subscribeToPlan } from "../../application/use-cases/SubscribeToPlan.ts";
 import { getMySubscriptions } from "../../application/use-cases/GetMySubscriptions.ts";
+import { cancelRenewal } from "../../application/use-cases/CancelRenewal.ts";
 
 /**
  * hook de presentacion: planes, suscripcion y estado del usuario
@@ -35,5 +36,7 @@ export function useBilling(repository?: IBillingRepository) {
         /* devuelve el clientSecret de Stripe para confirmar el pago */
         subscribe:        (planId: string): Promise<string | null> => run(() => subscribeToPlan(repoRef.current, planId)),
         mySubscriptions:  (userId: string): Promise<Subscription[] | null> => run(() => getMySubscriptions(repoRef.current, userId)),
+        /* cancela la renovacion automatica del plan */
+        cancelRenewal:    (subscriptionId: string): Promise<void | null> => run(() => cancelRenewal(repoRef.current, subscriptionId)),
     };
 }

@@ -4,15 +4,17 @@ interface SidebarProps {
     view: string;
     setView: (v: string) => void;
     onSwitchRole: () => void;
+    onSignOut: () => void;
 }
 
 const SIDEBAR_ITEMS = [
     { id: "dashboard", label: "Resumen", icon: "home" },
     { id: "campaigns", label: "Campañas", icon: "tag", badge: 4 },
-    { id: "new", label: "Nueva campaña", icon: "plus", primary: true },
+    { id: "new", label: "Nueva campaña", icon: "plus" },
+    { id: "redeem", label: "Canjear cupón", icon: "redeem" },
 ];
 
-export function MerchantSidebar({ view, setView, onSwitchRole }: SidebarProps) {
+export function MerchantSidebar({ view, setView, onSwitchRole, onSignOut }: SidebarProps) {
     return (
         <aside className="msb">
             <div className="msb-head">
@@ -28,20 +30,10 @@ export function MerchantSidebar({ view, setView, onSwitchRole }: SidebarProps) {
                 </div>
             </div>
 
-            <div className="msb-store">
-                <div className="msb-store-avatar">T</div>
-                <div className="msb-store-info">
-                    <div className="msb-store-name">Tanta — Pardo</div>
-                    <div className="msb-store-plan">Plan Premium · activo</div>
-                </div>
-                <Icon name="chevronDown" size={14}/>
-            </div>
-
             <nav className="msb-nav">
-                <div className="msb-section">Operación</div>
                 {SIDEBAR_ITEMS.map(item => (
                     <button type="button" key={item.id}
-                            className={"msb-item" + (view === item.id ? " active" : "") + (item.primary ? " primary" : "")}
+                            className={"msb-item" + (view === item.id ? " active" : "")}
                             onClick={() => setView(item.id)}>
                         <Icon name={item.icon} size={16}/>
                         <span>{item.label}</span>
@@ -55,22 +47,29 @@ export function MerchantSidebar({ view, setView, onSwitchRole }: SidebarProps) {
                         onClick={() => setView("establishments")}>
                     <Icon name="store" size={16}/><span>Establecimientos</span>
                 </button>
-                <button type="button" className="msb-item"><Icon name="settings" size={16}/><span>Configuración</span></button>
-                <button type="button" className="msb-item"><Icon name="user" size={16}/><span>Equipo</span></button>
-                <button type="button" className="msb-item"><Icon name="chart" size={16}/><span>Facturación</span></button>
+                <button type="button"
+                        className={"msb-item" + (view === "coupons" ? " active" : "")}
+                        onClick={() => setView("coupons")}>
+                    <Icon name="ticket" size={16}/><span>Cupones</span>
+                </button>
+                <button type="button"
+                        className={"msb-item" + (view === "subscription" ? " active" : "")}
+                        onClick={() => setView("subscription")}>
+                    <Icon name="card" size={16}/><span>Suscripción</span>
+                </button>
+                <button type="button"
+                        className={"msb-item" + (view === "account" ? " active" : "")}
+                        onClick={() => setView("account")}>
+                    <Icon name="user" size={16}/><span>Mi cuenta</span>
+                </button>
             </nav>
 
             <div className="msb-foot">
-                <div className="msb-card">
-                    <div className="eyebrow">Próxima fecha</div>
-                    <div className="msb-card-title">Día de la Madre</div>
-                    <div className="msb-card-sub">en 8 días · prepara campaña</div>
-                    <button type="button" className="btn btn-sm msb-card-btn">
-                        <Icon name="sparkles" size={12}/> Plantilla
-                    </button>
-                </div>
                 <button type="button" className="btn btn-ghost btn-sm msb-switch-btn" onClick={onSwitchRole}>
                     <Icon name="arrow_up_right" size={14}/> Vista cliente
+                </button>
+                <button type="button" className="msb-signout" onClick={onSignOut}>
+                    <Icon name="arrowLeft" size={14}/> Cerrar sesión
                 </button>
             </div>
         </aside>

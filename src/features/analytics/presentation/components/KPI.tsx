@@ -34,8 +34,8 @@ export function KPI({ label, value, delta, trend, sparkData }: KPIProps) {
                         <stop offset="100%" stopColor="var(--brand)" stopOpacity="0"/>
                     </linearGradient>
                 </defs>
-                <path d={`${path} L ${w} ${h} L 0 ${h} Z`} fill={`url(#grad-${slug})`}/>
-                <path d={path} fill="none" stroke="var(--brand-strong)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path className="kpi-spark-fill" d={`${path} L ${w} ${h} L 0 ${h} Z`} fill={`url(#grad-${slug})`}/>
+                <path className="kpi-spark-line" d={path} pathLength={1} fill="none" stroke="var(--brand-strong)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
         </div>
     );

@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Coupon } from "@/shared/types.ts";
+import { reservationCode } from "@/shared/utils/reservationCode.ts";
 
 function fmt(val: string, type: "card" | "expiry" | "cvv") {
   const d = val.replace(/\D/g, "");
@@ -52,6 +54,7 @@ interface PaymentModalProps {
 type Step = "method" | "card" | "processing" | "success";
 
 export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) {
+  const { t } = useTranslation();
   const [step, setStep]       = useState<Step>("method");
   const [, setMethod]         = useState<"izipay" | "yape" | "plin" | "">("");
   const [card, setCard]       = useState({ number: "", expiry: "", cvv: "", name: "" });
@@ -61,10 +64,10 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!card.name.trim())                                      e.name   = "Ingresa tu nombre";
-    if (card.number.replace(/\s/g, "").length < 16)            e.number = "Número inválido";
-    if (card.expiry.length < 5)                                 e.expiry = "Fecha inválida";
-    if (card.cvv.length < 3)                                    e.cvv    = "CVV inválido";
+    if (!card.name.trim())                                      e.name   = t("payment.errName");
+    if (card.number.replace(/\s/g, "").length < 16)            e.number = t("payment.errNumber");
+    if (card.expiry.length < 5)                                 e.expiry = t("payment.errExpiry");
+    if (card.cvv.length < 3)                                    e.cvv    = t("payment.errCvv");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -97,10 +100,10 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
               )}
               <div>
                 <div className="pay-eyebrow">
-                  {step === "method" ? "Checkout seguro" : "Datos de tarjeta"}
+                  {step === "method" ? t("payment.secureCheckout") : t("payment.cardData")}
                 </div>
                 <div className="pay-title">
-                  Reservar cupón
+                  {t("payment.reserveCoupon")}
                 </div>
               </div>
             </div>
@@ -122,12 +125,12 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
             <div className="pay-sum-main">
               <div className="pay-sum-brand">{coupon.brand}</div>
               <div className="pay-sum-title">{coupon.title}</div>
-              <div className="pay-sum-disc">Descuento: −{coupon.discount}</div>
+              <div className="pay-sum-disc">{t("payment.discount", { discount: coupon.discount })}</div>
             </div>
             <div className="pay-sum-price">
               <div className="pay-sum-orig">S/{coupon.originalPrice}</div>
               <div className={"pay-sum-final" + (isFree ? " free" : "")}>
-                {isFree ? "GRATIS" : `S/${coupon.finalPrice}`}
+                {isFree ? t("payment.free") : `S/${coupon.finalPrice}`}
               </div>
             </div>
           </div>
@@ -137,14 +140,14 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
           <div className="pay-method-list">
             <div className="pay-method-head">
               <div className="pay-method-head-label">
-                Pago seguro con
+                {t("payment.secureWith")}
               </div>
               <div className="pay-brand-badge">IziPay</div>
             </div>
 
             {isFree ? (
               <button type="button" className="btn btn-brand pay-btn-block" onClick={pay}>
-                Confirmar reserva gratis <Icon name="arrowRight" size={16}/>
+                {t("payment.confirmFree")} <Icon name="arrowRight" size={16}/>
               </button>
             ) : (
               <>
@@ -157,7 +160,7 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
                   </div>
                   <div className="pay-mb-main">
                     <div className="pay-mb-title">Yape</div>
-                    <div className="pay-mb-sub">Paga con tu celular BCP</div>
+                    <div className="pay-mb-sub">{t("payment.yapeSub")}</div>
                   </div>
                   <Icon name="arrowRight" size={14} />
                 </button>
@@ -170,7 +173,7 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
                   </div>
                   <div className="pay-mb-main">
                     <div className="pay-mb-title">Plin</div>
-                    <div className="pay-mb-sub">Interbank, BBVA, Scotiabank</div>
+                    <div className="pay-mb-sub">{t("payment.plinSub")}</div>
                   </div>
                   <Icon name="arrowRight" size={14}/>
                 </button>
@@ -180,7 +183,7 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
                     <Icon name="card" size={20}/>
                   </div>
                   <div className="pay-mb-main">
-                    <div className="pay-mb-title">Tarjeta de crédito / débito</div>
+                    <div className="pay-mb-title">{t("payment.cardOption")}</div>
                     <div className="pay-mb-cards">
                       <CardIcon brand="visa"/><CardIcon brand="mastercard"/><CardIcon brand="amex"/>
                     </div>
@@ -191,7 +194,7 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
             )}
 
             <div className="pay-ssl">
-              <Icon name="check" size={12}/> Pago cifrado SSL · Sin guardar datos
+              <Icon name="check" size={12}/> {t("payment.sslNote")}
             </div>
           </div>
         )}
@@ -202,7 +205,7 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
               <div className="pay-card-deco1"/>
               <div className="pay-card-deco2"/>
               <div className="pay-card-top">
-                <div className="pay-card-label">TARJETA</div>
+                <div className="pay-card-label">{t("payment.card")}</div>
                 <CardIcon brand={brand}/>
               </div>
               <div className="pay-card-number">
@@ -210,29 +213,29 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
               </div>
               <div className="pay-card-bottom">
                 <div>
-                  <div className="pay-card-sublabel">TITULAR</div>
+                  <div className="pay-card-sublabel">{t("payment.holder")}</div>
                   <div className="pay-card-holder">
-                    {card.name || "NOMBRE APELLIDO"}
+                    {card.name || t("payment.holderPlaceholder")}
                   </div>
                 </div>
                 <div className="pay-card-right">
-                  <div className="pay-card-sublabel">VENCE</div>
-                  <div className="pay-card-value">{card.expiry || "MM/AA"}</div>
+                  <div className="pay-card-sublabel">{t("payment.expiresShort")}</div>
+                  <div className="pay-card-value">{card.expiry || t("payment.dateFormat")}</div>
                 </div>
               </div>
             </div>
 
             <div className="field">
-              <label htmlFor="pay-name">Nombre en la tarjeta</label>
+              <label htmlFor="pay-name">{t("payment.nameLabel")}</label>
               <input id="pay-name" className={"input" + (errors.name ? " input-error" : "")}
-                     placeholder="Juan Pérez"
+                     placeholder={t("payment.namePlaceholder")}
                      value={card.name}
                      onChange={e => { setCard(c => ({ ...c, name: e.target.value })); setErrors(er => ({ ...er, name: "" })); }}/>
               {errors.name && <span className="field-error">{errors.name}</span>}
             </div>
 
             <div className="field">
-              <label htmlFor="pay-number">Número de tarjeta</label>
+              <label htmlFor="pay-number">{t("payment.numberLabel")}</label>
               <div className="pay-input-wrap">
                 <input id="pay-number" className={"input pay-input-card" + (errors.number ? " input-error" : "")}
                        placeholder="0000 0000 0000 0000"
@@ -248,16 +251,16 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
 
             <div className="pay-grid2">
               <div className="field">
-                <label htmlFor="pay-expiry">Vencimiento</label>
+                <label htmlFor="pay-expiry">{t("payment.expiryLabel")}</label>
                 <input id="pay-expiry" className={"input" + (errors.expiry ? " input-error" : "")}
-                       placeholder="MM/AA"
+                       placeholder={t("payment.dateFormat")}
                        value={card.expiry}
                        maxLength={5}
                        onChange={e => { setCard(c => ({ ...c, expiry: fmt(e.target.value, "expiry") })); setErrors(er => ({ ...er, expiry: "" })); }}/>
                 {errors.expiry && <span className="field-error">{errors.expiry}</span>}
               </div>
               <div className="field">
-                <label htmlFor="pay-cvv">CVV</label>
+                <label htmlFor="pay-cvv">{t("payment.cvvLabel")}</label>
                 <input id="pay-cvv" className={"input" + (errors.cvv ? " input-error" : "")}
                        placeholder="•••"
                        type="password"
@@ -269,11 +272,11 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
             </div>
 
             <button type="button" className="btn btn-brand pay-btn-block pay-btn-pay" onClick={handleCardPay}>
-              Pagar S/{coupon.finalPrice} <Icon name="arrowRight" size={16}/>
+              {t("payment.pay", { price: coupon.finalPrice })} <Icon name="arrowRight" size={16}/>
             </button>
 
             <div className="pay-ssl pay-ssl-card">
-              <Icon name="check" size={12}/> Cifrado de 256-bit · IziPay certificado
+              <Icon name="check" size={12}/> {t("payment.encNote")}
             </div>
           </div>
         )}
@@ -292,8 +295,8 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
               </div>
             </div>
             <div className="pay-proc-text">
-              <div className="pay-proc-title">Procesando pago…</div>
-              <div className="pay-proc-sub">No cierres esta pantalla</div>
+              <div className="pay-proc-title">{t("payment.processing")}</div>
+              <div className="pay-proc-sub">{t("payment.dontClose")}</div>
             </div>
           </div>
         )}
@@ -306,18 +309,18 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
               </svg>
             </div>
             <div>
-              <div className="pay-success-title">¡Cupón reservado!</div>
+              <div className="pay-success-title">{t("payment.successTitle")}</div>
               <div className="pay-success-text">
-                Muestra esta pantalla al llegar a <strong>{coupon.brand}</strong>. Tu reserva expira en 30 minutos.
+                {t("payment.successText", { brand: coupon.brand })}
               </div>
             </div>
             <div className="pay-code-box">
-              <div className="pay-code-label">CÓDIGO DE RESERVA</div>
+              <div className="pay-code-label">{t("payment.codeLabel")}</div>
               <div className="pay-code-value">
-                GEOPS-{coupon.id.toUpperCase()}-7K3X
+                GEOPS-{coupon.id.toUpperCase()}-{reservationCode(coupon.id)}
               </div>
             </div>
-            <div className="pay-closing">Cerrando automáticamente…</div>
+            <div className="pay-closing">{t("payment.closing")}</div>
           </div>
         )}
 

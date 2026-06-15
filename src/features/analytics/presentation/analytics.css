@@ -10,6 +10,23 @@
 .geops-app .md-heatmap { padding: 0; overflow: hidden; }
 .geops-app .md-chart-legend { display: flex; align-items: center; gap: 18px; margin-top: 14px; font-size: 12px; color: var(--ink-2); }
 .geops-app .md-chart-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+/* menu de exportacion de reporte */
+.geops-app .md-export { position: relative; }
+.geops-app .md-export-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 30;
+  min-width: 210px; padding: 6px;
+  background: var(--bg-surface, #fff); border: 1px solid var(--border, rgba(0,0,0,.1));
+  border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.14);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.geops-app .md-export-item {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 9px 10px; border: none; background: transparent;
+  border-radius: 8px; cursor: pointer; text-align: left;
+  font-size: 13px; font-weight: 500; color: var(--ink, inherit);
+}
+.geops-app .md-export-item:hover { background: var(--bg-sunken); }
+
 .geops-app .funnel-row { margin-bottom: 14px; }
 .geops-app .funnel-row:last-child { margin-bottom: 0; }
 .geops-app .funnel-bar  { height: 8px; background: var(--bg-sunken); border-radius: 4px; overflow: hidden; }
@@ -24,20 +41,48 @@
 .geops-app .kpi-delta.down { color: var(--danger); }
 .geops-app .kpi-spark { margin-top: 4px; }
 
+/* animacion de entrada del sparkline (al montar el dashboard) */
+/* linea: se dibuja de izq. a der. usando dasharray normalizado (pathLength=1) */
+.geops-app .kpi-spark-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: kpi-spark-draw 1.4s ease-in-out forwards;
+}
+/* relleno: se revela de izq. a der. acompañando al trazo (sin distorsion) */
+.geops-app .kpi-spark-fill {
+  clip-path: inset(0 100% 0 0);
+  animation: kpi-spark-reveal 1.4s ease-in-out forwards;
+}
+@keyframes kpi-spark-draw   { to { stroke-dashoffset: 0; } }
+@keyframes kpi-spark-reveal { to { clip-path: inset(0 0 0 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .geops-app .kpi-spark-line { animation: none; stroke-dashoffset: 0; }
+  .geops-app .kpi-spark-fill { animation: none; clip-path: none; }
+}
+
 /* HourChart: migrado de inline (height y delay de barras quedan inline: dinamicos) */
 .geops-app .hc-chart { display: flex; align-items: flex-end; gap: 6px; height: 200px; }
 .geops-app .hc-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
 .geops-app .hc-bars { flex: 1; display: flex; align-items: flex-end; gap: 2px; width: 100%; justify-content: center; }
 .geops-app .hc-bar { width: 42%; border-radius: 3px 3px 0 0; transition: height 800ms cubic-bezier(.2,.8,.2,1); }
-.geops-app .hc-bar-reserved { background: var(--ink); }
-.geops-app .hc-bar-redeemed { background: var(--brand); }
+/* colores suaves sin morado: gris (reservados) + verde medio (redimidos) */
+.geops-app .hc-bar-reserved { background: color-mix(in oklab, var(--ink) 26%, var(--bg-elev)); }
+.geops-app .hc-bar-redeemed { background: color-mix(in oklab, var(--brand) 75%, var(--bg-elev)); }
+.geops-app .hc-col:hover .hc-bar { filter: brightness(1.08); }
+.geops-app .hc-col { cursor: default; }
+.geops-app .dot.dot-reserved { background: color-mix(in oklab, var(--ink) 26%, var(--bg-elev)); }
+.geops-app .dot.dot-redeemed { background: color-mix(in oklab, var(--brand) 75%, var(--bg-elev)); }
 .geops-app .hc-label { font-size: 10px; font-family: var(--font-mono); color: var(--ink-3); font-weight: 400; }
 .geops-app .hc-label.peak { color: var(--ink); font-weight: 600; }
 
 /* MerchantDashboard: migrado de inline (funnel-fill y barra de color top quedan inline: dinamicos) */
 .geops-app .md-hl { color: var(--ink); }
 .geops-app .md-range-switch { padding: 2px; font-size: 11px; }
+.geops-app .md-range-top { width: fit-content; margin-bottom: 14px; }
 .geops-app .md-range-btn { padding: 4px 10px; font-size: 11px; }
+.geops-app .md-state { padding: 28px; text-align: center; color: var(--ink-3); font-size: 13px; }
+.geops-app .hc-empty { display: flex; align-items: center; justify-content: center; color: var(--ink-3); font-size: 13px; }
 .geops-app .dot.ink { background: var(--ink); }
 .geops-app .dot.brand { background: var(--brand); }
 .geops-app .md-legend-spacer { margin-left: auto; color: var(--ink-3); font-size: 11px; }

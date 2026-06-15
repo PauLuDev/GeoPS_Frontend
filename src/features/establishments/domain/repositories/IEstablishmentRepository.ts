@@ -1,12 +1,11 @@
 import { Business } from "@/shared/types.ts";
 
-/**
- * puerto (interface) del repositorio de establecimientos
- * el tipo `Business` vive en shared porque es un kernel compartido
- * con el BC `coupons` (vista cliente del local)
- */
+/*
+ contrato del repositorio de establecimientos
+ el tipo Business vive en shared porque lo comparte con la vista del cliente
+*/
 export interface IEstablishmentRepository {
-    getAll(): Business[];
-    save(establishment: Business): void;   // crea o actualiza (upsert por id)
-    remove(id: string): void;
+    getAll(): Promise<Business[]>;
+    save(establishment: Business): Promise<Business>;   // crea o actualiza segun el id
+    remove(id: string): Promise<void>;
 }

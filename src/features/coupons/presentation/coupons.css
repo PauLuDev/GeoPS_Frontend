@@ -4,11 +4,32 @@
   background: var(--bg); overflow: hidden;
 }
 .geops-app .map-shell {
-  flex: 1; min-height: 0;
+  flex: 1; min-height: 0; position: relative;
   display: grid; grid-template-columns: 1fr 420px; gap: 0;
+  transition: grid-template-columns 280ms cubic-bezier(.2,.8,.2,1);
 }
 @media (max-width: 980px) {
-  .geops-app .map-shell { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
+  .geops-app .map-shell { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; transition: none; }
+}
+/* panel contraido: el mapa toma todo el ancho (se desliza, no de golpe) */
+.geops-app .map-shell.panel-collapsed { grid-template-columns: 1fr 0; }
+
+/* pestaña para contraer / expandir el panel */
+.geops-app .panel-toggle {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  right: 420px; z-index: 1100;
+  width: 24px; height: 48px; display: grid; place-items: center; cursor: pointer;
+  background: var(--bg-elev); border: 1px solid var(--line); border-right: 0;
+  border-radius: 10px 0 0 10px; color: var(--ink-2);
+  box-shadow: -3px 0 10px rgba(0,0,0,0.08); transition: right 200ms ease;
+}
+.geops-app .panel-toggle:hover { color: var(--ink); }
+.geops-app .map-shell.panel-collapsed .panel-toggle { right: 0; }
+.geops-app .panel-toggle svg { transition: transform 200ms ease; }
+.geops-app .map-shell:not(.panel-collapsed) .panel-toggle svg { transform: rotate(180deg); }
+@media (max-width: 980px) {
+  .geops-app .panel-toggle { display: none; }
+  .geops-app .map-shell.panel-collapsed { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
 }
 .geops-app .map-area {
   position: relative; background: var(--map-bg);
@@ -48,7 +69,7 @@
 
 /* coupon card */
 .geops-app .coupon-card {
-  display: flex; gap: 14px; padding: 12px;
+  display: flex; align-items: center; gap: 14px; padding: 12px;
   border: 1px solid var(--line); border-radius: var(--g-radius);
   background: var(--bg-elev); cursor: pointer; transition: all 200ms ease; position: relative;
   text-align: left;
@@ -195,7 +216,7 @@
   display: grid; place-items: center; font-size: 22px; font-weight: 600; flex-shrink: 0;
 }
 .geops-app .profile-stats {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 1px; background: var(--line); border-bottom: 1px solid var(--line);
 }
 @media (max-width: 880px) { .geops-app .profile-stats { grid-template-columns: repeat(2, 1fr); } }
@@ -207,7 +228,8 @@
 }
 .geops-app .signout-btn {
   appearance: none; border: 0; background: transparent; color: var(--ink-3);
-  font-size: 13px; padding: 28px; cursor: pointer; font-family: var(--font-sans); width: 100%; text-align: left;
+  font-size: 13px; padding: 28px; cursor: pointer; font-family: var(--font-sans);
+  display: inline-flex; align-items: center; gap: 8px; width: auto;
 }
 .geops-app .signout-btn:hover { color: var(--danger); }
 .geops-app .activity-feed { display: flex; flex-direction: column; }
@@ -367,9 +389,9 @@
 /* favorito: hermano del card (no anidado) posicionado sobre la esquina sup. derecha */
 .geops-app .cc-fav { position: absolute; top: 12px; right: 12px; z-index: 1; appearance: none; border: 0; background: transparent; padding: 4px; cursor: pointer; color: var(--ink-3); }
 .geops-app .cc-fav[aria-pressed="true"] { color: var(--brand-strong); }
-.geops-app .cc-meta { display: flex; gap: 10px; align-items: center; margin-top: 8px; font-size: 11px; color: var(--ink-3); }
-.geops-app .cc-meta-item { display: inline-flex; align-items: center; gap: 4px; }
-.geops-app .cc-reserved { font-size: 9px; }
+.geops-app .cc-meta { display: flex; flex-wrap: nowrap; gap: 10px; align-items: center; margin-top: 8px; font-size: 11px; color: var(--ink-3); }
+.geops-app .cc-meta-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0; }
+.geops-app .cc-reserved { font-size: 9px; flex-shrink: 0; margin-left: auto; }
 .geops-app .cc-stock-text { font-size: 10px; color: var(--ink-3); margin-top: 4px; font-family: var(--font-mono); }
 
 /* BusinessDetailView: migrado de inline */
@@ -384,6 +406,17 @@
   background: linear-gradient(135deg, color-mix(in oklab, var(--brand) 50%, var(--bg-sunken)), color-mix(in oklab, var(--accent-2) 30%, var(--bg-sunken)));
 }
 .geops-app .biz-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* carrusel: crossfade entre fotos */
+.geops-app .biz-hero-slide { opacity: 0; transition: opacity 700ms ease; }
+.geops-app .biz-hero-slide.active { opacity: 1; }
+/* puntitos indicadores (el activo se alarga) */
+.geops-app .biz-hero-dots { position: absolute; top: 12px; right: 14px; z-index: 2; display: flex; gap: 5px; }
+.geops-app .biz-hero-dot {
+  width: 6px; height: 6px; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,0.55); box-shadow: 0 0 2px rgba(0,0,0,0.3);
+  transition: width 280ms ease, background 280ms ease;
+}
+.geops-app .biz-hero-dot.active { width: 18px; background: #fff; }
 .geops-app .biz-hero-scrim { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.05) 60%); }
 .geops-app .biz-hero-content { position: absolute; left: 20px; bottom: 16px; right: 20px; }
 .geops-app .biz-hero-tags { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
@@ -412,7 +445,7 @@
 .geops-app .biz-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .geops-app .biz-verified { font-size: 10px; padding: 2px 7px; border-radius: 999px; background: #22c55e18; color: #16a34a; font-weight: 600; flex-shrink: 0; }
 .geops-app .biz-noshrink { flex-shrink: 0; }
-.geops-app .biz-web-link { font-size: 13px; color: var(--brand-strong); margin-top: 1px; display: block; text-decoration: none; }
+.geops-app .biz-web-link { font-size: 13px; color: var(--brand-strong); margin-top: 1px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
 .geops-app .biz-about { margin: 4px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.6; }
 .geops-app .biz-info-list .biz-info-row:last-child { border-bottom: none; }
 
@@ -660,6 +693,40 @@
 .geops-app .cd-rev-item-head { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .geops-app .cd-rev-author { display: flex; align-items: center; gap: 8px; }
 .geops-app .cd-rev-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-sunken); border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; font-weight: 600; overflow: hidden; }
+
+/* ─────────── canje de cupon (merchant) ─────────── */
+.geops-app .rd-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; align-items: start; }
+@media (max-width: 1000px) { .geops-app .rd-grid { grid-template-columns: 1fr; } }
+.geops-app .rd-card { padding: 24px; }
+.geops-app .rd-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.geops-app .rd-input { font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 16px; text-align: center; }
+.geops-app .rd-hint { display: flex; align-items: center; gap: 6px; margin: 10px 0 16px; font-size: 12px; color: var(--ink-3); }
+.geops-app .rd-submit { width: 100%; justify-content: center; }
+
+.geops-app .rd-result { margin-top: 20px; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid var(--line); }
+.geops-app .rd-result-icon { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 10px; color: #fff; }
+.geops-app .rd-result-icon.ok   { background: var(--brand-strong); }
+.geops-app .rd-result-icon.warn { background: var(--warn); }
+.geops-app .rd-result-icon.err  { background: var(--danger); }
+.geops-app .rd-ok   { border-color: var(--brand-strong); background: color-mix(in oklab, var(--brand) 7%, var(--bg-elev)); }
+.geops-app .rd-warn { border-color: var(--warn);   background: color-mix(in oklab, var(--warn) 8%, var(--bg-elev)); }
+.geops-app .rd-err  { border-color: var(--danger); background: color-mix(in oklab, var(--danger) 8%, var(--bg-elev)); }
+.geops-app .rd-result-title { font-size: 16px; font-weight: 600; }
+.geops-app .rd-result-coupon { margin-top: 6px; font-size: 14px; color: var(--ink-2); }
+.geops-app .rd-result-disc { color: var(--brand-strong); font-weight: 600; margin-left: 6px; }
+.geops-app .rd-result-sub { margin-top: 6px; font-size: 12.5px; color: var(--ink-3); }
+
+.geops-app .rd-history { padding: 20px; }
+.geops-app .rd-history-empty { padding: 28px 12px; text-align: center; color: var(--ink-3); font-size: 13px; }
+.geops-app .rd-history-empty-icon { opacity: 0.3; margin: 0 auto 10px; display: block; }
+.geops-app .rd-history-list { display: flex; flex-direction: column; margin-top: 10px; }
+.geops-app .rd-history-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.geops-app .rd-history-row:last-child { border-bottom: 0; }
+.geops-app .rd-history-check { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; background: color-mix(in oklab, var(--brand) 16%, transparent); color: var(--brand-strong); display: grid; place-items: center; }
+.geops-app .rd-history-main { flex: 1; min-width: 0; }
+.geops-app .rd-history-title { font-size: 13px; font-weight: 500; }
+.geops-app .rd-history-meta { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.geops-app .rd-history-time { font-size: 12px; color: var(--ink-3); flex-shrink: 0; }
 .geops-app .cd-rev-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 .geops-app .cd-rev-name { font-size: 13px; font-weight: 600; }
 .geops-app .cd-rev-date { font-size: 11px; color: var(--ink-3); }
@@ -693,7 +760,38 @@
 .geops-app .rp-filters { border-bottom: 1px solid var(--line); }
 .geops-app .rp-sort-row { flex-wrap: nowrap; overflow-x: auto; }
 .geops-app .rp-sort-divided { border-bottom: 1px solid var(--line); }
+/* la fila del radio no debe recortar el dropdown */
+.geops-app .rp-sort-row.rp-sort-divided { overflow: visible; }
 .geops-app .rp-sort-label { font-size: 10px; color: var(--ink-3); flex-shrink: 0; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; padding-right: 2px; }
+
+/* fila de filtros del mapa (radio, orden, mostrar) */
+.geops-app .rp-filter-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 12px 16px; border-bottom: 1px solid var(--line);
+}
+.geops-app .rp-dd-group { display: inline-flex; align-items: center; gap: 8px; }
+
+/* dropdown de filtro (estilo como el menu de exportar) */
+.geops-app .rp-dd { position: relative; }
+.geops-app .rp-dd-btn {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 500;
+  background: var(--bg-elev); border: 1px solid var(--line); color: var(--ink);
+}
+.geops-app .rp-dd-btn:hover { border-color: var(--line-strong); }
+.geops-app .rp-dd-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+  min-width: 140px; padding: 6px; display: flex; flex-direction: column; gap: 2px;
+  background: var(--bg-elev); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.14);
+}
+.geops-app .rp-dd-item {
+  display: flex; align-items: center; width: 100%; padding: 8px 10px;
+  border: 0; background: transparent; border-radius: 8px; cursor: pointer;
+  text-align: left; font-size: 13px; color: var(--ink);
+}
+.geops-app .rp-dd-item:hover { background: var(--bg-sunken); }
+.geops-app .rp-dd-item.active { color: var(--brand-strong); font-weight: 600; }
 .geops-app .chip-sm { font-size: 11px; padding: 3px 9px; flex-shrink: 0; }
 
 /* empty */
@@ -703,3 +801,6 @@
 .geops-app .rp-empty-text { font-size: 13px; color: var(--ink-3); line-height: 1.5; }
 .geops-app .rp-empty-cta { margin-top: 14px; }
 .geops-app .rp-empty-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+/* fila de idioma en preferencias */
+.geops-app .pv-lang-row { cursor: default; }
+.geops-app .pv-lang-row .lang-switch { flex-shrink: 0; }

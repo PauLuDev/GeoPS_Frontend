@@ -8,4 +8,6 @@ export interface Plan {
     name: string;          // ej. "Premium"
     price: Money;
     durationDays: number;
+    couponLimit: number;   // maximo de cupones activos del plan (0 = ilimitado)
+    campaignLimit: number; // maximo de campanas activas a la vez (0 = ilimitado)
 }

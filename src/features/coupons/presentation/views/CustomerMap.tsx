@@ -1,13 +1,15 @@
 import {useMemo, useState} from "react";
+import {useTranslation} from "react-i18next";
 import { BottomNav } from "../components/BottomNav.tsx"
 import { Coupon, UserLocation } from "@/shared/types.ts";
 import { DEFAULT_LOCATION } from "@/features/geolocation/domain/value-objects/defaultLocation.ts";
 import { RADIUS_OPTIONS, SORT_OPTIONS } from "@/features/coupons/domain/value-objects/filterConfig.ts";
 import { haversine, parseDiscount, parseExpiry, radiusToZoom } from "@/shared/utils/mapUtils.ts";
-import {CATEGORIES, COUPONS} from "@/shared/constants.ts";
+import {CATEGORIES} from "@/shared/constants.ts";
 import { CustomerTopbar } from "../components/CustomerTopbar.tsx";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import {CouponCard} from "@/features/coupons/presentation/components/CouponCard.tsx";
+import {FilterDropdown} from "@/features/coupons/presentation/components/FilterDropdown.tsx";
 import {CategoriesView} from "@/features/coupons/presentation/views/CategoriesView.tsx";
 import {ProfileView} from "@/features/coupons/presentation/views/ProfileView.tsx";
 import {LocationModal} from "@/features/geolocation/presentation/components/LocationModal.tsx";
@@ -15,7 +17,17 @@ import {CouponDetailView} from "@/features/coupons/presentation/components/Coupo
 import {BusinessDetailView} from "@/features/coupons/presentation/components/BusinessDetailView.tsx";
 import {GeoMap} from "@/features/geolocation/presentation/components/OSMMap.tsx";
 import { Business } from "@/shared/types.ts";
-import { getBusinessForCoupon } from "@/shared/constants.ts";
+import { useNearbyCoupons } from "@/features/coupons/presentation/hooks/useNearbyCoupons.ts";
+
+/* local de respaldo cuando el cupon no trae su establecimiento resuelto */
+function stubBusiness(c: Coupon): Business {
+    return {
+        id: `b-stub-${c.id}`, ruc: "No disponible", name: c.brand,
+        address: c.address, district: c.address.split(",").pop()?.trim() ?? "Lima",
+        category: c.category, description: "", rating: c.rating, totalReviews: c.reviews,
+        lat: c.lat, lng: c.lng, hours: [],
+    };
+}
 
 interface CustomerMapProps {
     onSwitchRole: () => void;
@@ -31,18 +43,32 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     const [detailCoupon, setDetailCoupon] = useState<Coupon | null>(null);
     const [detailBusiness, setDetailBusiness] = useState<Business | null>(null);
     const [activePinId, setActivePinId] = useState<string | undefined>(undefined);
-    const [favorites, setFavorites] = useState(new Set<string>());
     const [reserved, setReserved] = useState(new Set<string>());
     const [search, setSearch] = useState("");
-    const [userLocation, setUserLocation] = useState<UserLocation>(DEFAULT_LOCATION);
-    const [radius, setRadius] = useState(5000);
+    const [userLocation, setUserLocation] = useState<UserLocation>(() => {
+        try { const raw = localStorage.getItem("geops_location"); return raw ? JSON.parse(raw) as UserLocation : DEFAULT_LOCATION; }
+        catch { return DEFAULT_LOCATION; }
+    });
+    const [radius, setRadius] = useState(100);
     const [sortBy, setSortBy] = useState("distance");
-    const [showLocationModal, setShowLocationModal] = useState(true);
-    const showFavorites = tab === "saved";
 
-    /* cambia de tab; al entrar a "guardados" resetea la categoria (en el handler, no en un effect) */
+    /* cupones cerca del usuario, armados juntando varias fuentes */
+    const { coupons, resolveBusiness, loading: couponsLoading } = useNearbyCoupons(userLocation.lat, userLocation.lng, radius);
+    const openBusiness = (c: Coupon): Business => resolveBusiness(c.brand, stubBusiness(c));
+    const [showFilter, setShowFilter] = useState("all");   // all | top | popular
+    const [panelCollapsed, setPanelCollapsed] = useState(false);
+    /* solo fuerza el modal en la primera visita (sin ubicacion guardada) */
+    const [showLocationModal, setShowLocationModal] = useState(() => !localStorage.getItem("geops_location"));
+    const { t } = useTranslation();
+    const showSaved = tab === "saved";
+    const radiusText = radius === Infinity ? t("map.radiusFull") : radius >= 1000 ? `${radius / 1000}km` : `${radius}m`;
+
+    /* cambia de tab; limpia el detalle abierto y, al entrar a "guardados", resetea la categoria */
     const selectTab = (t: string) => {
         if (t === "saved") setActiveCategory("all");
+        setDetailCoupon(null);
+        setDetailBusiness(null);
+        setActivePinId(undefined);
         setTab(t);
     };
 
@@ -51,11 +77,13 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
 
     const filtered = useMemo(() => {
         const r = radius === Infinity ? Infinity : radius;
-        const list = COUPONS.filter(c => {
+        const list = coupons.filter(c => {
             if (activeCategory !== "all" && c.category !== activeCategory) return false;
             if (search && !`${c.brand} ${c.title}`.toLowerCase().includes(search.toLowerCase())) return false;
-            if (showFavorites && !favorites.has(c.id)) return false;
+            if (showSaved && !reserved.has(c.id)) return false;
             if (r !== Infinity && haversine(userLocation.lat, userLocation.lng, c.lat, c.lng) > r) return false;
+            if (showFilter === "top" && !c.featured) return false;        // solo destacados
+            if (showFilter === "popular" && c.reviews < 100) return false; // solo los mas reseñados
             return true;
         });
         return list.sort((a, b) => {
@@ -65,26 +93,25 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
             return haversine(userLocation.lat, userLocation.lng, a.lat, a.lng)
                 - haversine(userLocation.lat, userLocation.lng, b.lat, b.lng);
         });
-    }, [activeCategory, search, showFavorites, favorites, userLocation, radius, sortBy]);
+    }, [coupons, activeCategory, search, showSaved, reserved, userLocation, radius, sortBy, showFilter]);
 
-    const countWithoutRadius = useMemo(() => COUPONS.filter(c => {
+    const countWithoutRadius = useMemo(() => coupons.filter(c => {
         if (activeCategory !== "all" && c.category !== activeCategory) return false;
         if (search && !`${c.brand} ${c.title}`.toLowerCase().includes(search.toLowerCase())) return false;
-        if (showFavorites && !favorites.has(c.id)) return false;
+        if (showSaved && !reserved.has(c.id)) return false;
         return true;
-    }).length, [activeCategory, search, showFavorites, favorites]);
+    }).length, [coupons, activeCategory, search, showSaved, reserved]);
 
     const emptyByRadius = filtered.length === 0 && countWithoutRadius > 0;
 
-    const toggleFav = (id: string) => {
-        setFavorites(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-    };
-    const reserve = (id: string) => {
-        setReserved(prev => new Set(prev).add(id));
+    /* reservar = guardar: alterna el cupon en la seccion Guardados */
+    const toggleSaved = (id: string) => {
+        setReserved(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
     };
 
     const handleSelectLocation = (loc: UserLocation) => {
         setUserLocation(loc);
+        try { localStorage.setItem("geops_location", JSON.stringify(loc)); } catch { /* ignore */ }
         setShowLocationModal(false);
     };
 
@@ -99,7 +126,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 onLocationClick={() => setShowLocationModal(true)}
             />
 
-            <div className={"map-shell" + (tab === "map" || tab === "saved" ? "" : " stacked")}>
+            <div className={"map-shell" + (tab === "map" || tab === "saved" ? "" : " stacked") + (panelCollapsed ? " panel-collapsed" : "")}>
                 {(tab === "map" || tab === "saved") && (
                     <>
                         <div className="map-area">
@@ -109,7 +136,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     onPinClick={(p) => {
                                         const coupon = p as Coupon;
                                         setActivePinId(coupon.id);
-                                        setDetailBusiness(getBusinessForCoupon(coupon));
+                                        setDetailBusiness(openBusiness(coupon));
                                         setDetailCoupon(null);
                                     }}
                                     userPos={{ x: 520, y: 400 }} userCoord={userLocation}
@@ -118,7 +145,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                             <div className="map-controls fade-up">
                                 <div className="search-wrap">
                                     <Icon name="search" size={16}/>
-                                    <input className="search-input" aria-label="Buscar cupones o locales" placeholder="Buscar cupones, locales..."
+                                    <input className="search-input" aria-label={t("map.searchAria")} placeholder={t("map.searchPlaceholder")}
                                            value={search} onChange={e => setSearch(e.target.value)}/>
                                     {search && (
                                         <button type="button" className="map-search-clear" onClick={() => setSearch("")}>
@@ -129,14 +156,14 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                 <div className="cat-row">
                                     {CATEGORIES.map(cat => {
                                         const count = cat.id === "all"
-                                            ? COUPONS.length
-                                            : COUPONS.filter(c => c.category === cat.id).length;
+                                            ? coupons.length
+                                            : coupons.filter(c => c.category === cat.id).length;
                                         return (
                                             <button type="button" key={cat.id}
                                                     className={"chip " + (activeCategory === cat.id ? "active" : "")}
                                                     onClick={() => setActiveCategory(cat.id)}>
                                                 <Icon name={cat.icon} size={14}/>
-                                                {cat.label}
+                                                {t(`cat.${cat.id}`)}
                                                 <span className="mono chip-count">{count}</span>
                                             </button>
                                         );
@@ -153,11 +180,11 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                             </div>
 
                             <div className="map-tools">
-                                <button type="button" className="btn btn-icon tip" data-tip="Centrar en mi ubicación"
+                                <button type="button" className="btn btn-icon tip" data-tip={t("map.centerLocation")}
                                         onClick={() => setShowLocationModal(true)}>
                                     <Icon name="location" size={16}/>
                                 </button>
-                                <button type="button" className="btn btn-icon tip" data-tip="Capas">
+                                <button type="button" className="btn btn-icon tip" data-tip={t("map.layers")}>
                                     <Icon name="layers" size={16}/>
                                 </button>
                                 <div className="zoom-stack">
@@ -171,10 +198,9 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                             {detailBusiness ? (
                                 <BusinessDetailView
                                     business={detailBusiness}
-                                    coupons={COUPONS.filter(c => c.brand === detailBusiness.name)}
-                                    favorites={favorites}
+                                    coupons={coupons.filter(c => c.brand === detailBusiness.name)}
                                     reserved={reserved}
-                                    onToggleFav={toggleFav}
+                                    onToggleSaved={toggleSaved}
                                     onBack={() => setDetailBusiness(null)}
                                     onViewCoupon={(c) => { setDetailCoupon(c); setDetailBusiness(null); }}
                                     realDist={realDist}
@@ -183,94 +209,113 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                             ) : detailCoupon ? (
                                 <CouponDetailView
                                     c={detailCoupon}
-                                    isFav={favorites.has(detailCoupon.id)}
                                     isReserved={reserved.has(detailCoupon.id)}
-                                    onToggleFav={() => toggleFav(detailCoupon.id)}
-                                    onReserve={() => reserve(detailCoupon.id)}
+                                    onReserve={() => toggleSaved(detailCoupon.id)}
                                     onBack={() => setDetailCoupon(null)}
-                                    onViewBusiness={() => setDetailBusiness(getBusinessForCoupon(detailCoupon))}
+                                    onViewBusiness={() => setDetailBusiness(openBusiness(detailCoupon))}
                                     realDist={realDist(detailCoupon)}
                                     realWalk={realWalk(detailCoupon)}
                                 />
                             ) : (<>
                                 <div className="results-head">
                                     <div>
-                                        <div className="eyebrow">{showFavorites ? "Tus guardados" : `Radio: ${radius === Infinity ? "Lima completa" : radius >= 1000 ? `${radius/1000}km` : `${radius}m`}`}</div>
+                                        <div className="eyebrow">{showSaved ? t("map.yourCoupons") : t("map.radiusLabel", { value: radiusText })}</div>
                                         <div className="rp-count">
-                                            {filtered.length} cupone{filtered.length !== 1 ? "s" : ""}{showFavorites ? " guardados" : " cercanos"}
+                                            {showSaved ? t("map.countSaved", { count: filtered.length }) : t("map.countNear", { count: filtered.length })}
                                         </div>
                                     </div>
                                 </div>
 
-                                {!showFavorites && (
+                                {!showSaved && (
                                     <div className="rp-filters">
-                                        <div className="results-sort rp-sort-row rp-sort-divided">
-                                            <span className="rp-sort-label">Radio</span>
-                                            {RADIUS_OPTIONS.map(o => (
-                                                <button type="button" key={o.label}
-                                                        className={"chip chip-sm" + (radius === o.value ? " active" : "")}
-                                                        onClick={() => setRadius(o.value)}>
-                                                    {o.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <div className="results-sort rp-sort-row">
-                                            <span className="rp-sort-label">Orden</span>
-                                            {SORT_OPTIONS.map(o => (
-                                                <button type="button" key={o.id}
-                                                        className={"chip chip-sm" + (sortBy === o.id ? " active" : "")}
-                                                        onClick={() => setSortBy(o.id)}>
-                                                    {o.label}
-                                                </button>
-                                            ))}
+                                        <div className="rp-filter-row">
+                                            <FilterDropdown
+                                                label={t("map.radius")}
+                                                display={radius === Infinity ? t("map.radiusAll") : radiusText}
+                                                items={RADIUS_OPTIONS.map(o => ({
+                                                    key: o.label,
+                                                    label: o.value === Infinity ? t("map.radiusAll") : o.label,
+                                                    active: radius === o.value,
+                                                    onSelect: () => setRadius(o.value),
+                                                }))}
+                                            />
+                                            <FilterDropdown
+                                                label={t("map.sort")}
+                                                display={t(`map.sortOpt.${sortBy}`)}
+                                                items={SORT_OPTIONS.map(o => ({
+                                                    key: o.id,
+                                                    label: t(`map.sortOpt.${o.id}`),
+                                                    active: sortBy === o.id,
+                                                    onSelect: () => setSortBy(o.id),
+                                                }))}
+                                            />
+                                            <FilterDropdown
+                                                label={t("map.show")}
+                                                display={t(`map.showOpt.${showFilter}`)}
+                                                items={["all", "top", "popular"].map(id => ({
+                                                    key: id,
+                                                    label: t(`map.showOpt.${id}`),
+                                                    active: showFilter === id,
+                                                    onSelect: () => setShowFilter(id),
+                                                }))}
+                                            />
                                         </div>
                                     </div>
                                 )}
 
                                 <div className="results-list">
-                                    {filtered.length === 0 ? (
+                                    {couponsLoading ? (
+                                        <div className="rp-empty">
+                                            <div className="rp-empty-icon"><Icon name="location" size={24}/></div>
+                                            <div className="rp-empty-title">Cargando cupones…</div>
+                                        </div>
+                                    ) : filtered.length === 0 ? (
                                         <div className="rp-empty">
                                             <div className="rp-empty-icon">
-                                                <Icon name="location" size={24}/>
+                                                <Icon name={showSaved ? "ticket" : "location"} size={24}/>
                                             </div>
-                                            {showFavorites ? (
+                                            {showSaved ? (
                                                 <>
-                                                    <div className="rp-empty-title">Aún no tienes guardados</div>
+                                                    <div className="rp-empty-title">{t("map.emptySavedTitle")}</div>
                                                     <div className="rp-empty-text">
-                                                        Explora el mapa y guarda los cupones que más te interesen.
+                                                        {t("map.emptySavedText")}
                                                     </div>
                                                     <button type="button" className="btn btn-brand btn-sm rp-empty-cta" onClick={() => setTab("map")}>
-                                                        Explorar cupones <Icon name="arrowRight" size={13}/>
+                                                        {t("map.exploreCoupons")} <Icon name="arrowRight" size={13}/>
                                                     </button>
                                                 </>
                                             ) : emptyByRadius ? (
                                                 <>
-                                                    <div className="rp-empty-title">Sin ofertas en este radio</div>
+                                                    <div className="rp-empty-title">{t("map.emptyRadiusTitle")}</div>
                                                     <div className="rp-empty-text">
-                                                        No hay cupones{activeCategory !== "all" ? ` de "${CATEGORIES.find(c => c.id === activeCategory)?.label}"` : ""} en un radio de {radius >= 1000 ? `${radius/1000}km` : `${radius}m`} cerca de <strong>{userLocation.name}</strong>.
+                                                        {t("map.emptyRadiusText", {
+                                                            cat: activeCategory !== "all" ? t("map.emptyRadiusCat", { label: t(`cat.${activeCategory}`) }) : "",
+                                                            radius: radius >= 1000 ? `${radius / 1000}km` : `${radius}m`,
+                                                            name: userLocation.name,
+                                                        })}
                                                     </div>
                                                     <div className="rp-empty-actions">
                                                         <button type="button" className="btn btn-brand btn-sm" onClick={() => setRadius(Infinity)}>
-                                                            Ver toda Lima <Icon name="arrowRight" size={13}/>
+                                                            {t("map.seeAllLima")} <Icon name="arrowRight" size={13}/>
                                                         </button>
                                                         {activeCategory !== "all" && (
                                                             <button type="button" className="btn btn-sm" onClick={() => setActiveCategory("all")}>
-                                                                Quitar filtro
+                                                                {t("map.removeFilter")}
                                                             </button>
                                                         )}
                                                         <button type="button" className="btn btn-sm" onClick={() => setShowLocationModal(true)}>
-                                                            <Icon name="location" size={13}/> Cambiar zona
+                                                            <Icon name="location" size={13}/> {t("map.changeZone")}
                                                         </button>
                                                     </div>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div className="rp-empty-title">No hay resultados</div>
+                                                    <div className="rp-empty-title">{t("map.noResultsTitle")}</div>
                                                     <div className="rp-empty-text">
-                                                        Prueba con otra categoría o ajusta el radio de búsqueda.
+                                                        {t("map.noResultsText")}
                                                     </div>
                                                     <button type="button" className="btn btn-sm rp-empty-cta" onClick={() => { setActiveCategory("all"); setRadius(Infinity); }}>
-                                                        Ver todos los cupones
+                                                        {t("map.seeAllCoupons")}
                                                     </button>
                                                 </>
                                             )}
@@ -278,9 +323,8 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     ) : (
                                         filtered.map(c => (
                                             <CouponCard key={c.id} c={c}
-                                                        isFav={favorites.has(c.id)}
                                                         isReserved={reserved.has(c.id)}
-                                                        onToggleFav={() => toggleFav(c.id)}
+                                                        onToggleSaved={() => toggleSaved(c.id)}
                                                         onClick={() => { setDetailCoupon(c); setActivePinId(c.id); setDetailBusiness(null); }}
                                                         isSelected={activePinId === c.id}
                                                         realDist={realDist(c)}
@@ -290,12 +334,20 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                 </div>
                             </>)}
                         </aside>
+
+                        {/* contraer / expandir el panel lateral */}
+                        <button type="button" className="panel-toggle"
+                                onClick={() => setPanelCollapsed(c => !c)}
+                                aria-label={panelCollapsed ? t("map.panelExpand") : t("map.panelCollapse")}
+                                title={panelCollapsed ? t("map.panelExpand") : t("map.panelCollapse")}>
+                            <Icon name="chevron" size={16}/>
+                        </button>
                     </>
                 )}
 
                 {tab === "categories" && (
                     <CategoriesView
-                        coupons={COUPONS}
+                        coupons={coupons}
                         onPick={catId => { setActiveCategory(catId); setTab("map"); }}
                         onOpenCoupon={c => { setDetailCoupon(c); setTab("map"); }}
                     />
@@ -303,10 +355,8 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
 
                 {tab === "profile" && (
                     <ProfileView
-                        favCount={favorites.size}
                         reservedCount={reserved.size}
-                        reservedCoupons={COUPONS.filter(c => reserved.has(c.id))}
-                        onOpenCoupon={c => { setDetailCoupon(c); setTab("map"); }}
+                        reservedCoupons={coupons.filter(c => reserved.has(c.id))}
                         theme={theme}
                         onThemeChange={onThemeChange}
                         onSignOut={onSignOut}
@@ -314,7 +364,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 )}
             </div>
 
-            <BottomNav tab={tab} setTab={selectTab} favCount={favorites.size}/>
+            <BottomNav tab={tab} setTab={selectTab} savedCount={reserved.size}/>
 
             {showLocationModal && (
                 <LocationModal

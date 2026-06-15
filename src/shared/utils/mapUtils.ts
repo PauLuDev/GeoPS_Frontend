@@ -20,9 +20,11 @@ export function parseExpiry(e: string): number {
 }
 
 export function radiusToZoom(r: number): number {
+    if (r <= 100)  return 17;
+    if (r <= 200)  return 16;
+    if (r <= 500)  return 15;
     if (r <= 1000) return 14;
-    if (r <= 3000) return 13;
+    if (r <= 2000) return 13;
     if (r <= 5000) return 12;
-    if (r <= 10000) return 12;
-    return 11;
+    return 11;   // Lima / sin limite
 }

@@ -63,6 +63,7 @@ export interface Business {
     photos?: string[];
     lat: number;
     lng: number;
+    active?: boolean;   // visibilidad en la plataforma (undefined = activo)
 }
 
 export interface UserLocation {

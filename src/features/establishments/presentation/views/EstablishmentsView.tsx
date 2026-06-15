@@ -30,9 +30,9 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
             <div className="md est-page">
                 <header className="md-head">
                     <div>
-                        <button type="button" className="btn btn-ghost btn-sm est-form-back"
+                        <button type="button" className="btn btn-sm back-btn"
                                 onClick={() => setMode({ kind: "list" })}>
-                            <Icon name="arrowLeft" size={13}/> Establecimientos
+                            <Icon name="arrowLeft" size={14}/> Volver a establecimientos
                         </button>
                         <h1 className="page-title est-form-title">
                             {editing ? "Editar establecimiento" : "Nuevo establecimiento"}
@@ -84,14 +84,17 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
                 <div className="est-grid">
                     {establishments.map(b => {
                         const cover = b.photos?.[0] || b.imageUrl;
+                        const active = b.active !== false;
+                        const photoCount = (b.photos?.length ?? 0) || (b.imageUrl ? 1 : 0);
                         return (
-                            <div key={b.id} className="card est-card">
+                            <div key={b.id} className={"card est-card" + (active ? "" : " inactive")}>
                                 {/* cover (la imagen es dinamica; el gradiente por defecto va en CSS) */}
                                 <div className="est-cover" style={cover ? { backgroundImage: `url(${cover})` } : undefined}>
                                     {b.logo && <img className="est-logo" src={b.logo} alt={`${b.name} logo`}/>}
                                     <span className="est-cat">
                                         <Icon name={catIcon(b.category)} size={11}/> {catLabel(b.category)}
                                     </span>
+                                    {!active && <span className="est-inactive-badge">Inactivo</span>}
                                 </div>
 
                                 {/* body */}
@@ -104,9 +107,19 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
                                     <p className="est-desc">{b.description}</p>
 
                                     <div className="est-meta">
-                                        <span><Icon name="image" size={11}/> {(b.photos?.length ?? 0)} foto{(b.photos?.length ?? 0) !== 1 ? "s" : ""}</span>
+                                        <span><Icon name="image" size={11}/> {photoCount} foto{photoCount !== 1 ? "s" : ""}</span>
                                         <span><Icon name="clock" size={11}/> {b.hours.filter(h => !h.closed).length} días abierto</span>
                                     </div>
+
+                                    {/* visibilidad: activar/desactivar el negocio en la plataforma */}
+                                    <button type="button" className="est-visibility" aria-pressed={active}
+                                            onClick={() => onSave({ ...b, active: !active })}>
+                                        <span className="est-visibility-label">
+                                            <span className={"est-status-dot" + (active ? " on" : "")}/>
+                                            {active ? "Visible para clientes" : "Oculto para clientes"}
+                                        </span>
+                                        <span className={"toggle" + (active ? " on" : "")}><span className="toggle-knob"/></span>
+                                    </button>
 
                                     <div className="est-actions">
                                         <button type="button" className="btn btn-sm est-action-btn"

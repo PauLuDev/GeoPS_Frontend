@@ -1,35 +1,48 @@
 import { Business } from "@/shared/types.ts";
-import { BUSINESSES } from "@/shared/constants.ts";
 import { IEstablishmentRepository } from "../../domain/repositories/IEstablishmentRepository.ts";
-// contrato de integracion (business-service):
-// import { toBusiness, toCreateEstablishmentResource, toUpdateEstablishmentResource } from "../../application/mappers/EstablishmentMapper.ts";
+import {
+    toBusiness,
+    toCreateEstablishmentResource,
+    toUpdateEstablishmentResource,
+} from "../../application/mappers/EstablishmentMapper.ts";
+import { establishmentApi } from "../api/establishmentApi.ts";
+import { ApiError } from "@/shared/api/apiClient.ts";
 
-/* base del API business */
-const API_BASE = import.meta.env.VITE_BUSINESS_URL ?? "http://localhost:8083/api/v1";
-
-/**
- * implementacion del repositorio de establecimientos contra el backend (HTTP)
- */
+/*
+ repositorio de establecimientos del dueno -> listar, crear, editar y borrar
+ solo se guardan nombre, ruc, direccion, horario y ubicacion -> fotos, logo, distrito y descripcion todavia no se pueden guardar
+*/
 export class HttpEstablishmentRepository implements IEstablishmentRepository {
-    private establishments: Business[];
+    /* ids ya guardados, para saber si toca crear o editar */
+    private knownIds = new Set<string>();
 
-    constructor(seed: Business[] = BUSINESSES.slice(0, 2)) {
-        this.establishments = [...seed];
+    async getAll(): Promise<Business[]> {
+        try {
+            const list = (await establishmentApi.mine()).map(toBusiness);
+            this.knownIds = new Set(list.map(b => b.id));
+            return list;
+        } catch (e) {
+            // si todavia no se puede traer la lista del dueno, devolvemos vacio en vez de romper
+            if (e instanceof ApiError && (e.status === 404 || e.status === 501)) return [];
+            throw e;
+        }
     }
 
-    getAll(): Business[] {
-        void API_BASE;
-        return [...this.establishments];
+    async save(establishment: Business): Promise<Business> {
+        if (this.knownIds.has(establishment.id)) {
+            const updated = toBusiness(
+                await establishmentApi.update(establishment.id, toUpdateEstablishmentResource(establishment)),
+            );
+            this.knownIds.add(updated.id);
+            return updated;
+        }
+        const created = toBusiness(await establishmentApi.create(toCreateEstablishmentResource(establishment)));
+        this.knownIds.add(created.id);
+        return created;
     }
 
-    save(establishment: Business): void {
-        const exists = this.establishments.some(e => e.id === establishment.id);
-        this.establishments = exists
-            ? this.establishments.map(e => (e.id === establishment.id ? establishment : e))
-            : [establishment, ...this.establishments];
-    }
-
-    remove(id: string): void {
-        this.establishments = this.establishments.filter(e => e.id !== id);
+    async remove(id: string): Promise<void> {
+        await establishmentApi.remove(id);
+        this.knownIds.delete(id);
     }
 }

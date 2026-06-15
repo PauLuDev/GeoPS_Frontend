@@ -4,6 +4,8 @@ import { Coupon } from "@/shared/types.ts";
 import { CouponCard } from "@/features/coupons/presentation/components/CouponCard.tsx";
 import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
 import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
+import { useRegisteredCoupons } from "@/features/campaigns/presentation/hooks/useRegisteredCoupons.ts";
+import { PromotionType, PROMOTION_TYPES, DEFAULT_PROMOTION_TYPE, promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
 import { CAMPAIGN_TYPES } from "@/features/campaigns/domain/value-objects/CampaignType.ts";
 import { PRESET_RESTRICTIONS } from "@/features/campaigns/domain/value-objects/CouponRestrictions.ts";
 import { calcDiscountPct, savings } from "@/features/campaigns/domain/value-objects/Discount.ts";
@@ -15,6 +17,7 @@ import { CouponDraftInput } from "@/features/campaigns/application/dtos/Campaign
 /* coupon draft (estado local del formulario) */
 interface CouponDraft {
     title: string;
+    promotionType: PromotionType;
     originalPrice: string;
     finalPrice: string;
     stock: string;
@@ -27,14 +30,14 @@ interface CouponDraft {
 }
 
 const EMPTY_DRAFT: CouponDraft = {
-    title: "", originalPrice: "", finalPrice: "", stock: "", description: "",
+    title: "", promotionType: DEFAULT_PROMOTION_TYPE, originalPrice: "", finalPrice: "", stock: "", description: "",
     imageUrl: "", presetRestrictions: new Set(), customRestriction: "",
     customList: [], terms: "",
 };
 
 /* mapea el estado del formulario al DTO de aplicacion (puro, fuera del componente) */
 const toCouponInput = (d: CouponDraft): CouponDraftInput => ({
-    title: d.title, originalPrice: d.originalPrice, finalPrice: d.finalPrice,
+    title: d.title, promotionType: d.promotionType, originalPrice: d.originalPrice, finalPrice: d.finalPrice,
     stock: d.stock, description: d.description, imageUrl: d.imageUrl,
     restrictions: [...PRESET_RESTRICTIONS.filter(p => d.presetRestrictions.has(p)), ...d.customList],
     terms: d.terms,
@@ -50,6 +53,9 @@ interface NewCampaignProps {
 export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
     const uid = useId();
     const fileRef = useRef<HTMLInputElement>(null);
+
+    /* catalogo de cupones ya registrados por el dueno */
+    const { coupons: registeredCoupons, loading: registeredLoading } = useRegisteredCoupons();
 
     /* campaign fields */
     const [name,        setName]        = useState("");
@@ -128,6 +134,10 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
     };
 
     const removeCoupon = (id: string) => setCoupons(prev => prev.filter(c => c.id !== id));
+
+    /* asocia un cupon ya registrado (catalogo) a la campana; hereda su vigencia */
+    const addFromCatalog = (rc: CampaignCoupon) =>
+        setCoupons(prev => prev.some(c => c.id === rc.id) ? prev : [...prev, { ...rc, expiresIn: expiresLabel }]);
 
     /* publicar (construccion delegada al use-case) */
     const handlePublish = () => {
@@ -257,10 +267,56 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
                             )}
                         </div>
                         <p className="nc-cupones-hint">
-                            Crea los cupones que verán los clientes en el mapa. Puedes agregar varios.
+                            Selecciona de tus cupones registrados o crea uno nuevo. Puedes agregar varios.
                         </p>
 
-                        {/* lista de cupones ya creados */}
+                        {/* mis cupones registrados (catalogo seleccionable) */}
+                        <div className="nc-catalog-head">
+                            <span className="nc-group-label">Mis cupones registrados</span>
+                        </div>
+                        <div className="nc-catalog">
+                            {registeredLoading && (
+                                <div className="nc-catalog-empty">Cargando tus cupones…</div>
+                            )}
+                            {!registeredLoading && registeredCoupons.length === 0 && (
+                                <div className="nc-catalog-empty">Aún no tienes cupones registrados. Crea uno nuevo abajo.</div>
+                            )}
+                            {registeredCoupons.map(rc => {
+                                const added = coupons.some(c => c.id === rc.id);
+                                return (
+                                    <div key={rc.id} className={"nc-coupon-item nc-catalog-item" + (added ? " added" : "")}>
+                                        <div className="nc-coupon-thumb"
+                                             style={rc.imageUrl ? { backgroundImage: `url(${rc.imageUrl})` } : undefined}>
+                                            {!rc.imageUrl && <span className="nc-coupon-thumb-disc">−{rc.discount}</span>}
+                                        </div>
+                                        <div className="nc-coupon-info">
+                                            <div className="nc-coupon-title">{rc.title}</div>
+                                            <div className="nc-coupon-meta">
+                                                <span className="nc-cat-tag">{promotionLabel(rc.promotionType)}</span>
+                                                <span className="nc-sep">·</span>
+                                                −{rc.discount}
+                                                <span className="nc-sep">·</span>
+                                                S/{rc.finalPrice}
+                                                <span className="nc-strike">S/{rc.originalPrice}</span>
+                                                <span className="nc-sep">·</span>
+                                                {rc.stock} uds.
+                                            </div>
+                                        </div>
+                                        {added ? (
+                                            <button type="button" className="btn btn-sm nc-catalog-btn added" disabled>
+                                                <Icon name="check" size={13}/> Agregado
+                                            </button>
+                                        ) : (
+                                            <button type="button" className="btn btn-brand btn-sm nc-catalog-btn" onClick={() => addFromCatalog(rc)}>
+                                                <Icon name="plus" size={13}/> Agregar
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* lista de cupones seleccionados/creados para la campana */}
                         {coupons.length > 0 && (
                             <div className="nc-coupon-list">
                                 {coupons.map(c => (
@@ -288,6 +344,8 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
                                 ))}
                             </div>
                         )}
+
+                        <div className="nc-catalog-divider"><span>o crea uno nuevo</span></div>
 
                         {/* formulario inline de nuevo cupon */}
                         {addingCoupon ? (
@@ -322,6 +380,16 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
                                            value={couponDraft.title}
                                            onChange={e => setCouponDraft(d => ({ ...d, title: e.target.value }))}/>
                                     {derr("title") && <ErrMsg>Obligatorio</ErrMsg>}
+                                </div>
+
+                                {/* b.2) tipo de promocion */}
+                                <div className="field nc-mb12">
+                                    <label htmlFor={`${uid}-c-promo`}>Tipo de cupón</label>
+                                    <select id={`${uid}-c-promo`} className="input"
+                                            value={couponDraft.promotionType}
+                                            onChange={e => setCouponDraft(d => ({ ...d, promotionType: e.target.value as PromotionType }))}>
+                                        {PROMOTION_TYPES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                                    </select>
                                 </div>
 
                                 {/* c) precios -> descuento auto */}
@@ -484,10 +552,9 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
                                         <CouponCard
                                             key={c.id}
                                             c={toCouponPreview(c)}
-                                            isFav={false}
                                             isReserved={false}
                                             isSelected={false}
-                                            onToggleFav={() => {}}
+                                            onToggleSaved={() => {}}
                                             onClick={() => {}}
                                         />
                                     ))}
@@ -524,7 +591,7 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
 /*
    convierte un CampaignCoupon en un Coupon
    para reusar la CouponCard real en el preview
-   Distancia/metros = 0 (dependen del cliente)
+   distancia/metros = 0 (dependen del cliente)
 */
 function toCouponPreview(c: CampaignCoupon): Coupon {
     return {

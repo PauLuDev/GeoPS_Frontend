@@ -1,12 +1,21 @@
 import { PromotionType } from "../../domain/value-objects/PromotionType.ts";
 
-/**
- * dTOs (marketing-service · coupons)
- */
+/* estado de una reserva de cupon */
+export type ReservationStatus = "RESERVED" | "REDEEMED" | "EXPIRED" | "CANCELLED";
+
+/* reserva de un cupon, lleva el codigo de canje */
+export interface CouponReservationResource {
+    id: string;
+    coupon: CouponResource;
+    status: ReservationStatus;
+    redemptionCode: string;
+    reservedAt?: string;
+    redeemedAt?: string;
+}
 
 export interface CouponResource {
-    id: string;                 // UUID
-    campaignId: string;         // UUID
+    id: string;                 
+    campaignId: string;         
     title: string;
     description?: string;
     imageUrl?: string;

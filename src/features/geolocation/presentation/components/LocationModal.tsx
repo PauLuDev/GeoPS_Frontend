@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from "react";
+import {useTranslation} from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import {UserLocation} from "@/shared/types.ts";
@@ -28,7 +29,7 @@ function parseNominatim(r: NominatimResult) {
     return { name, sub, lat: parseFloat(r.lat), lng: parseFloat(r.lon) };
 }
 
-/* resalta la coincidencia de la busqueda dentro del texto (puro) */
+/* resalta la coincidencia de la busqueda dentro del texto */
 function highlight(text: string, q: string) {
     if (!q) return <>{text}</>;
     const idx = text.toLowerCase().indexOf(q.toLowerCase());
@@ -37,6 +38,7 @@ function highlight(text: string, q: string) {
 }
 
 export function LocationModal({ onSelect, onClose, isFirst = false }: LocationModalProps) {
+    const { t } = useTranslation();
     const [query, setQuery] = useState("");
     const [osm, setOsm] = useState<ReturnType<typeof parseNominatim>[]>([]);
     const [loading, setLoading] = useState(false);
@@ -90,10 +92,10 @@ export function LocationModal({ onSelect, onClose, isFirst = false }: LocationMo
                             </div>
                             <div>
                                 <div className="lm-title">
-                                    ¿Dónde te encuentras?
+                                    {t("location.title")}
                                 </div>
                                 <div className="lm-subtitle">
-                                    GeoPS muestra cupones activos cerca de ti
+                                    {t("location.subtitle")}
                                 </div>
                             </div>
                         </div>
@@ -110,8 +112,8 @@ export function LocationModal({ onSelect, onClose, isFirst = false }: LocationMo
                             : <Icon name="search" size={17}/>}
                         <input ref={inputRef} value={query}
                                onChange={e => setQuery(e.target.value)}
-                               aria-label="Buscar ubicación"
-                               placeholder="Busca tu distrito, avenida o lugar…"
+                               aria-label={t("location.searchAria")}
+                               placeholder={t("location.searchPlaceholder")}
                                autoComplete="off"
                                className="lm-input"/>
                         {query && (
@@ -126,8 +128,8 @@ export function LocationModal({ onSelect, onClose, isFirst = false }: LocationMo
                     <div className="lm-list-head">
                         <span className="lm-list-label">
                             {isSearching
-                                ? loading ? "Buscando…" : `${osm.length} resultado${osm.length !== 1 ? "s" : ""}`
-                                : "Zonas populares"}
+                                ? loading ? t("location.searching") : t("location.results", { count: osm.length })
+                                : t("location.popular")}
                         </span>
                     </div>
 
@@ -161,9 +163,9 @@ export function LocationModal({ onSelect, onClose, isFirst = false }: LocationMo
                         <div className="lm-empty">
                             <Icon name="search" size={28}/>
                             <div className="lm-empty-text">
-                                Sin resultados para <strong className="lm-strong">«{query}»</strong>
+                                {t("location.noResults", { query })}
                                 <br/>
-                                <span className="lm-empty-hint">Intenta con el nombre del distrito o avenida</span>
+                                <span className="lm-empty-hint">{t("location.noResultsHint")}</span>
                             </div>
                         </div>
                     )}

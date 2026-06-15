@@ -1,41 +1,42 @@
 import {useState} from "react";
+import {useTranslation} from "react-i18next";
 import {Icon} from "@/shared/ui/components/Icon.tsx";
+import {Modal} from "@/shared/ui/components/Modal.tsx";
+import {LanguageSwitcher} from "@/shared/ui/components/LanguageSwitcher.tsx";
 import {Coupon} from "@/shared/types.ts";
+import {getCurrentUser} from "@/features/auth/application/session.ts";
 
 interface ProfileViewProps {
-    favCount: number;
     reservedCount: number;
     reservedCoupons?: Coupon[];
-    onOpenCoupon?: (c: Coupon) => void;
     theme?: string;
     onThemeChange?: (t: string) => void;
     onSignOut?: () => void;
 }
 
 const PREF_ITEMS = [
-    { key: "notifications" as const, label: "Alertas de cupones cercanos", icon: "bell",     desc: "Notificaciones cuando hay ofertas cerca" },
-    { key: "darkMode"      as const, label: "Modo oscuro",                  icon: "layers",   desc: "Cambia la apariencia de la app" },
-    { key: "shareLocation" as const, label: "Compartir ubicación con marcas",icon: "location",desc: "Mejora las recomendaciones" },
-    { key: "newsletter"    as const, label: "Boletín semanal por email",    icon: "food",     desc: "Resumen de las mejores ofertas" },
+    { key: "darkMode"      as const, labelKey: "pref.darkMode",      icon: "layers",   descKey: "pref.darkModeDesc" },
+    { key: "shareLocation" as const, labelKey: "pref.shareLocation", icon: "location", descKey: "pref.shareLocationDesc" },
 ] as const;
 
 /* referencia estable para el default y no romper el memo en cada render */
 const EMPTY_COUPONS: Coupon[] = [];
 
-export function ProfileView({ favCount, reservedCount, reservedCoupons = EMPTY_COUPONS, onOpenCoupon, theme = "light", onThemeChange, onSignOut }: ProfileViewProps) {
+export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, theme = "light", onThemeChange, onSignOut }: ProfileViewProps) {
+    const { t } = useTranslation();
     const [editMode, setEditMode] = useState(false);
+    const me = getCurrentUser();
     const [profile, setProfile] = useState({
-        name: "Daniela Gómez",
-        email: "daniela@email.com",
+        name: me?.username ?? "",
+        email: me?.email ?? "",
         phone: "",
         neighborhood: "",
     });
     const [draft, setDraft] = useState(profile);
     const isDarkMode = theme === "dark";
+    const [confirmOut, setConfirmOut] = useState(false);
     const [prefs, setPrefs] = useState({
-        notifications: true,
         shareLocation: false,
-        newsletter: false,
     });
 
     const saveProfile = () => { setProfile(draft); setEditMode(false); };
@@ -63,19 +64,19 @@ export function ProfileView({ favCount, reservedCount, reservedCoupons = EMPTY_C
                 <div className="pv-head-main">
                     {editMode ? (
                         <div className="field">
-                            <input className="input pv-name-input" aria-label="Nombre del perfil" value={draft.name} placeholder="Tu nombre"
+                            <input className="input pv-name-input" aria-label={t("profile.nameAria")} value={draft.name} placeholder={t("profile.namePlaceholder")}
                                    onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}/>
                         </div>
                     ) : (
                         <>
-                            <div className="eyebrow">Perfil de cliente</div>
+                            <div className="eyebrow">{t("profile.role")}</div>
                             <div className="pv-name">{profile.name}</div>
                             <div className="pv-contact">
                                 <span className="pv-contact-item">
-                                    <Icon name="user" size={11}/> {profile.email || "sin email"}
+                                    <Icon name="mail" size={11}/> {profile.email || t("profile.noEmail")}
                                 </span>
                                 <span className="pv-contact-item">
-                                    <Icon name="clock" size={11}/> Miembro desde may 2026
+                                    <Icon name="clock" size={11}/> {t("profile.memberSince")}
                                 </span>
                             </div>
                         </>
@@ -83,12 +84,12 @@ export function ProfileView({ favCount, reservedCount, reservedCoupons = EMPTY_C
                 </div>
                 {editMode ? (
                     <div className="pv-edit-actions">
-                        <button type="button" className="btn btn-sm btn-ghost" onClick={cancelEdit}>Cancelar</button>
-                        <button type="button" className="btn btn-sm btn-brand" onClick={saveProfile}><Icon name="check" size={13}/> Guardar</button>
+                        <button type="button" className="btn btn-sm btn-ghost" onClick={cancelEdit}>{t("common.cancel")}</button>
+                        <button type="button" className="btn btn-sm btn-brand" onClick={saveProfile}><Icon name="check" size={13}/> {t("common.save")}</button>
                     </div>
                 ) : (
                     <button type="button" className="btn btn-sm pv-noshrink" onClick={() => { setDraft(profile); setEditMode(true); }}>
-                        <Icon name="sliders" size={14}/> Editar
+                        <Icon name="edit" size={14}/> {t("common.edit")}
                     </button>
                 )}
             </div>
@@ -96,33 +97,33 @@ export function ProfileView({ favCount, reservedCount, reservedCoupons = EMPTY_C
             {editMode && (
                 <div className="pv-edit-grid">
                     <div className="field pv-field-full">
-                        <label htmlFor="pf-name">Nombre completo</label>
-                        <input id="pf-name" className="input" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="Tu nombre"/>
+                        <label htmlFor="pf-name">{t("profile.fullName")}</label>
+                        <input id="pf-name" className="input" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder={t("profile.namePlaceholder")}/>
                     </div>
                     <div className="field">
-                        <label htmlFor="pf-email">Email</label>
-                        <input id="pf-email" className="input" type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder="tu@email.com"/>
+                        <label htmlFor="pf-email">{t("profile.email")}</label>
+                        <input id="pf-email" className="input" type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder={t("profile.emailPlaceholder")}/>
                     </div>
                     <div className="field">
-                        <label htmlFor="pf-phone">Teléfono</label>
-                        <input id="pf-phone" className="input" type="tel" value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder="+51 999 000 000"/>
+                        <label htmlFor="pf-phone">{t("profile.phone")}</label>
+                        <input id="pf-phone" className="input" type="tel" value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder={t("profile.phonePlaceholder")}/>
                     </div>
                     <div className="field">
-                        <label htmlFor="pf-district">Distrito</label>
-                        <input id="pf-district" className="input" value={draft.neighborhood} onChange={e => setDraft(d => ({ ...d, neighborhood: e.target.value }))} placeholder="Miraflores"/>
+                        <label htmlFor="pf-district">{t("profile.district")}</label>
+                        <input id="pf-district" className="input" value={draft.neighborhood} onChange={e => setDraft(d => ({ ...d, neighborhood: e.target.value }))} placeholder={t("profile.districtPlaceholder")}/>
                     </div>
                 </div>
             )}
 
             {(() => {
                 const savings = reservedCoupons.reduce((s, c) => s + (c.originalPrice - c.finalPrice), 0);
+                const locales = new Set(reservedCoupons.map(c => c.brand)).size;
                 return (
                     <div className="profile-stats">
                         {[
-                            { label: "Cupones guardados", value: favCount, sub: favCount === 0 ? "Guarda desde el mapa" : `${favCount} activo${favCount > 1 ? "s" : ""}` },
-                            { label: "Reservas activas", value: reservedCount, sub: reservedCount === 0 ? "Reserva un cupón" : `${reservedCount} pendiente${reservedCount > 1 ? "s" : ""}` },
-                            { label: "Ahorro acumulado", value: `S/ ${savings}`, sub: savings === 0 ? "Empieza a canjear" : "¡Buen ahorro!", mono: true },
-                            { label: "Canjes realizados", value: reservedCoupons.length, sub: reservedCoupons.length === 0 ? "Sin historial aún" : `${reservedCoupons.length} ${reservedCoupons.length > 1 ? "cupones" : "cupón"}`, mono: true },
+                            { label: t("profile.statSaved"), value: reservedCount, sub: reservedCount === 0 ? t("profile.statSavedEmpty") : t("profile.statSavedCount", { count: reservedCount }) },
+                            { label: t("profile.statSavings"), value: `S/ ${savings}`, sub: savings === 0 ? t("profile.statSavingsEmpty") : t("profile.statSavingsOk"), mono: true },
+                            { label: t("profile.statSpots"), value: locales, sub: locales === 0 ? t("profile.statSpotsEmpty") : t("profile.statSpotsCount", { count: locales }), mono: true },
                         ].map((s) => (
                             <div key={s.label} className="ps-card">
                                 <div className="eyebrow">{s.label}</div>
@@ -137,59 +138,18 @@ export function ProfileView({ favCount, reservedCount, reservedCoupons = EMPTY_C
             })()}
 
             <div className="profile-section">
-                <div className="pv-section-head">
-                    <div className="eyebrow">Mis canjes</div>
-                    {reservedCoupons.length > 0 && (
-                        <span className="pv-section-count">{reservedCoupons.length} {reservedCoupons.length > 1 ? "cupones" : "cupón"}</span>
-                    )}
-                </div>
-                {reservedCoupons.length === 0 ? (
-                    <div className="pv-empty">
-                        <div className="pv-empty-icon">
-                            <Icon name="ticket" size={22}/>
-                        </div>
-                        <div className="pv-empty-title">Sin canjes todavía</div>
-                        <div className="pv-empty-sub">
-                            Reserva un cupón desde el mapa y aparecerá aquí.
-                        </div>
-                    </div>
-                ) : (
-                    <div className="pv-reserved-list">
-                        {reservedCoupons.map((c) => (
-                            <button type="button" key={c.id} className="pv-reserved-item" onClick={() => onOpenCoupon?.(c)}>
-                                <div className="pv-thumb">
-                                    {c.imageUrl
-                                        ? <img className="pv-thumb-img" src={c.imageUrl} alt=""/>
-                                        : <Icon name="ticket" size={20}/>}
-                                </div>
-                                <div className="pv-item-main">
-                                    <div className="pv-item-brand">{c.brand}</div>
-                                    <div className="pv-item-title">{c.title}</div>
-                                    <div className="pv-item-meta">
-                                        <span className="pv-discount-chip">
-                                            −{c.discount}
-                                        </span>
-                                        <span className="pv-code">
-                                            GEOPS · {c.id.toUpperCase()} · 7K3X
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="pv-item-side">
-                                    <div className="pv-reserved-badge">
-                                        Reservado
-                                    </div>
-                                    <Icon name="chevron" size={13}/>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            <div className="profile-section">
-                <div className="eyebrow pv-mb4">Preferencias</div>
-                <div className="pv-pref-sub">Los cambios se aplican de inmediato</div>
+                <div className="eyebrow pv-mb4">{t("profile.preferences")}</div>
                 <div className="pref-grid">
+                    <div className="pref-row pv-lang-row">
+                        <div className="pv-pref-icon">
+                            <Icon name="globe" size={15}/>
+                        </div>
+                        <div className="pv-pref-main">
+                            <div className="pv-pref-label">{t("lang.label")}</div>
+                            <div className="pv-pref-desc">{t("lang.sub")}</div>
+                        </div>
+                        <LanguageSwitcher/>
+                    </div>
                     {PREF_ITEMS.map(p => (
                         <button type="button" key={p.key} className="pref-row pv-pref-btn"
                                 onClick={() => togglePref(p.key)}>
@@ -197,8 +157,8 @@ export function ProfileView({ favCount, reservedCount, reservedCoupons = EMPTY_C
                                 <Icon name={p.icon} size={15}/>
                             </div>
                             <div className="pv-pref-main">
-                                <div className="pv-pref-label">{p.label}</div>
-                                <div className="pv-pref-desc">{p.desc}</div>
+                                <div className="pv-pref-label">{t(p.labelKey)}</div>
+                                <div className="pv-pref-desc">{t(p.descKey)}</div>
                             </div>
                             <div className={"toggle pv-noshrink" + (isPrefOn(p.key) ? " on" : "")}>
                                 <span className="toggle-knob"/>
@@ -208,9 +168,23 @@ export function ProfileView({ favCount, reservedCount, reservedCoupons = EMPTY_C
                 </div>
             </div>
 
-            <button type="button" className="signout-btn" onClick={onSignOut}>
-                <Icon name="arrowLeft" size={14}/> Cerrar sesión
+            <button type="button" className="signout-btn" onClick={() => setConfirmOut(true)}>
+                <Icon name="arrowLeft" size={14}/> {t("profile.signOut")}
             </button>
+
+            {confirmOut && (
+                <Modal onClose={() => setConfirmOut(false)} ariaLabel={t("profile.signOutConfirmTitle")} className="est-modal">
+                    <div className="est-modal-body">
+                        <div className="est-modal-icon"><Icon name="arrowLeft" size={20}/></div>
+                        <h3 className="est-modal-title">{t("profile.signOutConfirmTitle")}</h3>
+                        <p className="est-modal-text">{t("profile.signOutConfirmText")}</p>
+                        <div className="est-modal-actions">
+                            <button type="button" className="btn est-modal-btn" onClick={() => setConfirmOut(false)}>{t("common.cancel")}</button>
+                            <button type="button" className="btn est-del-confirm est-modal-btn" onClick={onSignOut}>{t("profile.signOutConfirm")}</button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 }

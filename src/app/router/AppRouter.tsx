@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { CustomerLayout } from "@/app/layouts/CustomerLayout.tsx";
 import { BusinessLayout } from "@/app/layouts/BusinessLayout.tsx";
-import { AuthScreen } from "@/features/iam/presentation/views/AuthScreen.tsx";
+import { AuthScreen } from "@/features/auth/presentation/views/AuthScreen.tsx";
 import { RegisterBusiness } from "@/features/establishments/presentation/views/RegisterBusiness.tsx";
 
 interface AppRouterProps {
@@ -59,6 +59,7 @@ function AppRoutes({ theme, onThemeChange }: AppRouterProps) {
                 <BusinessLayout
                     onSwitchRole={() => navigate('/customer')}
                     theme={theme}
+                    onThemeChange={onThemeChange}
                 />
             }/>
             <Route path="*" element={<Navigate to="/" replace />} />

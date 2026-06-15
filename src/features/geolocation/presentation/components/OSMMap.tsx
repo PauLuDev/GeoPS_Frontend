@@ -103,6 +103,10 @@ export const OSMMap: FC<OSMMapProps> = ({
         mapRef.current.remove();
         mapRef.current = null;
       }
+      
+      markersRef.current = {};
+      userMarkerRef.current = null;
+      tileLayerRef.current = null;
     };
   }, []);
 
@@ -138,6 +142,14 @@ export const OSMMap: FC<OSMMapProps> = ({
     userMarkerRef.current = L.marker([userCoord.lat, userCoord.lng], { icon, interactive: false }).addTo(mapRef.current);
     mapRef.current.flyTo([userCoord.lat, userCoord.lng], mapRef.current.getZoom(), { animate: true, duration: 1.2 });
   }, [userCoord.lat, userCoord.lng, showRadar, mapReady]);
+
+  /* avisa a leaflet cuando el contenedor cambia de tamaño, por ejemplo al contraer el panel */
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !ref.current) return;
+    const ro = new ResizeObserver(() => mapRef.current?.invalidateSize());
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, [mapReady]);
 
   const prevZoomRef = useRef<number | null>(null);
   useEffect(() => {

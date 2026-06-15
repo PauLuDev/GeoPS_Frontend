@@ -22,7 +22,8 @@ export function isCouponValid(errors: CouponErrors): boolean {
 }
 
 /**
- * construye el cupon. `expiresIn` se hereda de la vigencia de la campana
+ * construye el cupon
+ * `expiresIn` se hereda de la vigencia de la campana
  * asume que el draft ya fue validado
  */
 export function buildCoupon(draft: CouponDraftInput, expiresIn: string): CampaignCoupon {
@@ -32,6 +33,7 @@ export function buildCoupon(draft: CouponDraftInput, expiresIn: string): Campaig
     return {
         id:            `cc-${Date.now()}`,
         title:         draft.title.trim(),
+        promotionType: draft.promotionType,
         discount:      discountLabel(pct),
         originalPrice: orig,
         finalPrice:    final,
@@ -41,5 +43,6 @@ export function buildCoupon(draft: CouponDraftInput, expiresIn: string): Campaig
         imageUrl:      draft.imageUrl || undefined,
         restrictions:  draft.restrictions,
         terms:         draft.terms.trim() || undefined,
+        views: 0, reserved: 0, redeemed: 0,   // cupon recien creado, sin metricas aun
     };
 }

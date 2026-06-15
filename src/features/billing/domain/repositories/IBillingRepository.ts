@@ -13,4 +13,6 @@ export interface IBillingRepository {
     /* devuelve el clientSecret de Stripe para confirmar el pago */
     createPaymentIntent(planId: string): Promise<string>;
     getMySubscriptions(userId: string): Promise<Subscription[]>;
+    /* cancela la renovacion automatica; la suscripcion sigue activa hasta fin de periodo */
+    cancelRenewal(subscriptionId: string): Promise<void>;
 }

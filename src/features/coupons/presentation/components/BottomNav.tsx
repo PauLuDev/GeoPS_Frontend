@@ -1,17 +1,19 @@
 import {Icon} from "@/shared/ui/components/Icon.tsx";
+import {useTranslation} from "react-i18next";
 
 interface BottomNavProps {
     tab: string;
     setTab: (t: string) => void;
-    favCount: number;
+    savedCount: number;
 }
 
-export function BottomNav({ tab, setTab, favCount }: BottomNavProps) {
+export function BottomNav({ tab, setTab, savedCount }: BottomNavProps) {
+    const { t } = useTranslation();
     const items = [
-        { id: "map", label: "Mapa", icon: "map" },
-        { id: "categories", label: "Categorías", icon: "grid" },
-        { id: "saved", label: "Guardados", icon: "bookmark", badge: favCount },
-        { id: "profile", label: "Perfil", icon: "user" },
+        { id: "map", label: t("nav.map"), icon: "map" },
+        { id: "categories", label: t("nav.categories"), icon: "grid" },
+        { id: "saved", label: t("nav.coupons"), icon: "ticket", badge: savedCount },
+        { id: "profile", label: t("nav.profile"), icon: "user" },
     ];
     return (
         <nav className="bottom-nav">

@@ -3,13 +3,13 @@ import { createPortal } from "react-dom";
 
 interface ModalProps {
     onClose: () => void;
-    /** etiqueta accesible (si no hay un título referenciable por id) */
+    /* etiqueta accesible si no hay un titulo referenciable por id */
     ariaLabel?: string;
-    /** id del título dentro del modal (preferido sobre ariaLabel) */
+    /* id del titulo dentro del modal, preferido sobre ariaLabel */
     labelledBy?: string;
-    /** clases extra para la caja del diálogo (tamaño/posición por caso) */
+    /* clases extra para la caja del dialogo (tamaño/posicion por caso) */
     className?: string;
-    /** si false, Esc y click en el backdrop no cierran (ej. paso obligatorio) */
+    /* si es false, esc y click en el fondo no cierran, util en un paso obligatorio */
     dismissable?: boolean;
     children: React.ReactNode;
 }

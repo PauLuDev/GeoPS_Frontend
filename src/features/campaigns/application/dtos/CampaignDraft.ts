@@ -1,8 +1,10 @@
 import { CampaignCoupon } from "../../domain/entities/CampaignCoupon.ts";
+import { PromotionType } from "../../domain/value-objects/PromotionType.ts";
 
 /* datos crudos del formulario de un cupon (antes de validar/construir) */
 export interface CouponDraftInput {
     title: string;
+    promotionType: PromotionType;
     originalPrice: string;
     finalPrice: string;
     stock: string;

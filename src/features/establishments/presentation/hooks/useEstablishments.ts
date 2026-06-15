@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Business } from "@/shared/types.ts";
 import { IEstablishmentRepository } from "../../domain/repositories/IEstablishmentRepository.ts";
 import { HttpEstablishmentRepository } from "../../infrastructure/repositories/HttpEstablishmentRepository.ts";
@@ -12,17 +12,33 @@ import { deleteEstablishment } from "../../application/use-cases/DeleteEstablish
  */
 export function useEstablishments(repository?: IEstablishmentRepository) {
     const repoRef = useRef<IEstablishmentRepository>(repository ?? new HttpEstablishmentRepository());
-    const [establishments, setEstablishments] = useState<Business[]>(() => listEstablishments(repoRef.current));
+    const [establishments, setEstablishments] = useState<Business[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const save = (establishment: Business) => {
-        saveEstablishment(repoRef.current, establishment);
-        setEstablishments(listEstablishments(repoRef.current));
+    const reload = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            setEstablishments(await listEstablishments(repoRef.current));
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "no se pudieron cargar los establecimientos");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { void reload(); }, [reload]);
+
+    const save = async (establishment: Business) => {
+        await saveEstablishment(repoRef.current, establishment);
+        await reload();
     };
 
-    const remove = (id: string) => {
-        deleteEstablishment(repoRef.current, id);
-        setEstablishments(listEstablishments(repoRef.current));
+    const remove = async (id: string) => {
+        await deleteEstablishment(repoRef.current, id);
+        await reload();
     };
 
-    return { establishments, save, remove };
+    return { establishments, loading, error, save, remove };
 }

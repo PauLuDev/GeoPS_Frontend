@@ -4,9 +4,10 @@
 @import './components.css';
 
 /* bounded contexts */
-@import '../features/iam/presentation/iam.css';
+@import '../features/auth/presentation/auth.css';
 @import '../features/establishments/presentation/establishments.css';
 @import '../features/geolocation/presentation/geolocation.css';
 @import '../features/coupons/presentation/coupons.css';
 @import '../features/campaigns/presentation/campaigns.css';
 @import '../features/analytics/presentation/analytics.css';
+@import '../features/billing/presentation/billing.css';

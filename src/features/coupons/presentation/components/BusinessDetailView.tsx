@@ -1,14 +1,16 @@
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Business, Coupon } from "@/shared/types.ts";
 import { CATEGORIES } from "@/shared/constants.ts";
 import { CouponCard } from "@/features/coupons/presentation/components/CouponCard.tsx";
+import { ReviewsSection } from "@/features/comments/presentation/components/ReviewsSection.tsx";
 
 interface BusinessDetailViewProps {
     business: Business;
     coupons: Coupon[];
-    favorites: Set<string>;
     reserved: Set<string>;
-    onToggleFav: (id: string) => void;
+    onToggleSaved: (id: string) => void;
     onBack: () => void;
     onViewCoupon?: (c: Coupon) => void;
     realDist?: (c: Coupon) => number;
@@ -22,11 +24,12 @@ function timeToMinutes(t: string): number {
 
 function jsToOurIdx(jsDay: number) { return jsDay === 0 ? 6 : jsDay - 1; }
 
-export function BusinessDetailView({ business, coupons, favorites, reserved, onToggleFav, onBack, onViewCoupon, realDist, realWalk }: BusinessDetailViewProps) {
+export function BusinessDetailView({ business, coupons, reserved, onToggleSaved, onBack, onViewCoupon, realDist, realWalk }: BusinessDetailViewProps) {
+    const { t } = useTranslation();
     const now      = new Date();
     const todayIdx = jsToOurIdx(now.getDay());
 
-    // calculo barato, no necesita useMemo (depende de la hora actual)
+    // calculo 
     const isOpenNow = (() => {
         const today = business.hours[todayIdx];
         if (!today || today.closed) return false;
@@ -37,8 +40,21 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
         return cur >= open && cur < close;
     })();
 
-    const catLabel = CATEGORIES.find(c => c.id === business.category)?.label ?? business.category;
+    const catLabel = t(`cat.${business.category}`);
     const catIcon  = CATEGORIES.find(c => c.id === business.category)?.icon  ?? "store";
+
+    /* fotos del establecimiento (las que sube el dueño) para el carrusel */
+    const photos = business.photos && business.photos.length > 0
+        ? business.photos
+        : (business.imageUrl ? [business.imageUrl] : []);
+    const [slide, setSlide] = useState(0);
+
+    /* carrusel automatico cuando hay mas de una foto */
+    useEffect(() => {
+        if (photos.length <= 1) return;
+        const id = setInterval(() => setSlide(s => (s + 1) % photos.length), 3500);
+        return () => clearInterval(id);
+    }, [photos.length]);
 
     const handleRoute = () => {
         window.open(
@@ -56,18 +72,31 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
 
             {/* header */}
             <div className="biz-detail-head">
-                <button type="button" className="btn btn-icon btn-sm" onClick={onBack} title="Volver" aria-label="Volver">
+                <button type="button" className="btn btn-icon btn-sm" onClick={onBack} title={t("common.back")} aria-label={t("common.back")}>
                     <Icon name="arrowLeft" size={16}/>
                 </button>
-                <span className="biz-detail-head-title">Establecimiento</span>
+                <span className="biz-detail-head-title">{t("business.title")}</span>
             </div>
 
             {/* scrollable body */}
             <div className="biz-detail-body">
 
-                {/* hero */}
+                {/* hero -> carrusel automatico de fotos del establecimiento */}
                 <div className="biz-hero">
-                    {business.imageUrl && <img className="biz-hero-img" src={business.imageUrl} alt={business.name}/>}
+                    {photos.map((src, i) => (
+                        <img key={i} className={"biz-hero-img biz-hero-slide" + (i === slide ? " active" : "")}
+                             src={src} alt={`${business.name} ${i + 1}`}/>
+                    ))}
+                    {photos.length > 1 && (
+                        <div className="biz-hero-dots">
+                            {photos.map((_, i) => (
+                                <button type="button" key={i}
+                                        className={"biz-hero-dot" + (i === slide ? " active" : "")}
+                                        aria-label={`Foto ${i + 1}`} aria-current={i === slide}
+                                        onClick={() => setSlide(i)}/>
+                            ))}
+                        </div>
+                    )}
                     <div className="biz-hero-scrim"/>
                     <div className="biz-hero-content">
                         <div className="biz-hero-tags">
@@ -77,14 +106,14 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                             <span className="biz-dot-sep">·</span>
                             <span className={`biz-status ${isOpenNow ? "biz-open" : "biz-closed"}`}>
                                 <span className="biz-status-dot"/>
-                                {isOpenNow ? "Abierto" : "Cerrado"}
+                                {isOpenNow ? t("business.open") : t("business.closed")}
                             </span>
                         </div>
                         <div className="biz-name">{business.name}</div>
                         <div className="biz-rating">
                             <Icon name="star" size={11} filled/>
                             <span className="biz-rating-text">
-                                {business.rating} <span className="biz-rating-reviews">({business.totalReviews} reseñas)</span>
+                                {business.rating} <span className="biz-rating-reviews">({t("business.reviewsCount", { count: business.totalReviews })})</span>
                             </span>
                         </div>
                     </div>
@@ -92,18 +121,18 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
 
                 {/* datos del establecimiento */}
                 <div className="biz-section biz-section-top">
-                    <div className="eyebrow biz-mb12">Datos del establecimiento</div>
+                    <div className="eyebrow biz-mb12">{t("business.data")}</div>
                     <div className="biz-info-list">
 
                         {/* RUC */}
                         <div className="biz-info-row">
                             <div className="biz-info-icon"><Icon name="shield" size={15}/></div>
                             <div className="biz-info-main">
-                                <div className="eyebrow biz-info-eyebrow">RUC</div>
+                                <div className="eyebrow biz-info-eyebrow">{t("business.ruc")}</div>
                                 <div className="biz-info-ruc">{business.ruc}</div>
                             </div>
                             {business.ruc !== "No disponible" && (
-                                <span className="biz-verified">Verificado</span>
+                                <span className="biz-verified">{t("business.verified")}</span>
                             )}
                         </div>
 
@@ -111,7 +140,7 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                         <div className="biz-info-row">
                             <div className="biz-info-icon"><Icon name="location" size={15}/></div>
                             <div className="biz-info-main">
-                                <div className="eyebrow biz-info-eyebrow">Dirección</div>
+                                <div className="eyebrow biz-info-eyebrow">{t("business.address")}</div>
                                 <div className="biz-info-value">{business.address}</div>
                                 <div className="biz-info-sub">{business.district} · Lima</div>
                             </div>
@@ -122,11 +151,11 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                             <div className="biz-info-row">
                                 <div className="biz-info-icon"><Icon name="phone" size={15}/></div>
                                 <div className="biz-info-main">
-                                    <div className="eyebrow biz-info-eyebrow">Teléfono</div>
+                                    <div className="eyebrow biz-info-eyebrow">{t("business.phone")}</div>
                                     <div className="biz-info-value">{business.phone}</div>
                                 </div>
                                 <button type="button" className="btn btn-sm biz-noshrink" onClick={handleCall}>
-                                    Llamar
+                                    {t("business.call")}
                                 </button>
                             </div>
                         )}
@@ -136,7 +165,7 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                             <div className="biz-info-row">
                                 <div className="biz-info-icon"><Icon name="mail" size={15}/></div>
                                 <div className="biz-info-main">
-                                    <div className="eyebrow biz-info-eyebrow">Correo</div>
+                                    <div className="eyebrow biz-info-eyebrow">{t("business.email")}</div>
                                     <div className="biz-info-value biz-ellipsis">{business.email}</div>
                                 </div>
                             </div>
@@ -147,7 +176,7 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                             <div className="biz-info-row">
                                 <div className="biz-info-icon"><Icon name="globe" size={15}/></div>
                                 <div className="biz-info-main">
-                                    <div className="eyebrow biz-info-eyebrow">Sitio web</div>
+                                    <div className="eyebrow biz-info-eyebrow">{t("business.website")}</div>
                                     <a href={`https://${business.website}`} target="_blank" rel="noreferrer" className="biz-web-link">
                                         {business.website} <Icon name="arrow_up_right" size={11}/>
                                     </a>
@@ -160,7 +189,7 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                             <div className="biz-info-row">
                                 <div className="biz-info-icon"><Icon name="flag" size={15}/></div>
                                 <div className="biz-info-main">
-                                    <div className="eyebrow biz-info-eyebrow">Sobre el local</div>
+                                    <div className="eyebrow biz-info-eyebrow">{t("business.about")}</div>
                                     <p className="biz-about">{business.description}</p>
                                 </div>
                             </div>
@@ -170,7 +199,7 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
 
                 {/* horario de atencion */}
                 <div className="biz-section biz-section-divided">
-                    <div className="eyebrow biz-mb14">Horario de atención</div>
+                    <div className="eyebrow biz-mb14">{t("business.hours")}</div>
                     <table className="biz-hours-table">
                         <tbody>
                             {business.hours.map((h, i) => (
@@ -178,7 +207,7 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                                     <td className="biz-hours-day">{h.day}</td>
                                     <td>
                                         {h.closed ? (
-                                            <span className="biz-hours-chip biz-closed-chip">Cerrado</span>
+                                            <span className="biz-hours-chip biz-closed-chip">{t("business.closed")}</span>
                                         ) : (
                                             <span className="biz-hours-time">{h.open} – {h.close}</span>
                                         )}
@@ -186,7 +215,7 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                                     {i === todayIdx && (
                                         <td className="biz-hours-now">
                                             <span className={`biz-hours-chip ${isOpenNow ? "biz-open-chip" : "biz-closed-chip"}`}>
-                                                {isOpenNow ? "Abierto ahora" : "Cerrado ahora"}
+                                                {isOpenNow ? t("business.openNow") : t("business.closedNow")}
                                             </span>
                                         </td>
                                     )}
@@ -200,18 +229,17 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                 {coupons.length > 0 && (
                     <div className="biz-section biz-section-divided">
                         <div className="biz-offers-head">
-                            <div className="eyebrow">Ofertas activas</div>
-                            <span className="biz-offers-count">{coupons.length} {coupons.length !== 1 ? "cupones" : "cupón"}</span>
+                            <div className="eyebrow">{t("business.activeOffers")}</div>
+                            <span className="biz-offers-count">{t("business.couponsCount", { count: coupons.length })}</span>
                         </div>
                         <div className="biz-offers-list">
                             {coupons.map(c => (
                                 <CouponCard
                                     key={c.id}
                                     c={c}
-                                    isFav={favorites.has(c.id)}
                                     isReserved={reserved.has(c.id)}
                                     isSelected={false}
-                                    onToggleFav={() => onToggleFav(c.id)}
+                                    onToggleSaved={() => onToggleSaved(c.id)}
                                     onClick={() => onViewCoupon?.(c)}
                                     hideBrand
                                     realDist={realDist?.(c)}
@@ -222,6 +250,16 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
                     </div>
                 )}
 
+                {/* reseñas del establecimiento */}
+                <div className="biz-section biz-section-divided">
+                    <ReviewsSection
+                        targetId={business.id}
+                        targetType="business"
+                        fallbackRating={business.rating}
+                        fallbackCount={business.totalReviews}
+                    />
+                </div>
+
                 <div className="biz-bottom-space"/>
             </div>
 
@@ -229,11 +267,11 @@ export function BusinessDetailView({ business, coupons, favorites, reserved, onT
             <div className="biz-footer">
                 {business.phone && (
                     <button type="button" className="btn btn-lg biz-call-btn" onClick={handleCall}>
-                        <Icon name="phone" size={16}/> Llamar
+                        <Icon name="phone" size={16}/> {t("business.call")}
                     </button>
                 )}
                 <button type="button" className="btn btn-brand btn-lg biz-route-btn" onClick={handleRoute}>
-                    <Icon name="map" size={16}/> Ver en Google Maps
+                    <Icon name="location" size={16}/> {t("business.viewOnMaps")}
                 </button>
             </div>
         </div>

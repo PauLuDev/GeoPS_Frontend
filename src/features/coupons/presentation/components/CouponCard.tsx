@@ -1,11 +1,11 @@
+import {useTranslation} from "react-i18next";
 import {Icon} from "@/shared/ui/components/Icon.tsx";
 import {Coupon} from "@/shared/types.ts";
 
 interface CouponCardProps {
     c: Coupon;
-    isFav: boolean;
     isReserved: boolean;
-    onToggleFav: () => void;
+    onToggleSaved: () => void;
     onClick: () => void;
     isSelected: boolean;
     hideBrand?: boolean;
@@ -13,18 +13,19 @@ interface CouponCardProps {
     realWalk?: number;
 }
 
-export function CouponCard({ c, isFav, isReserved, onToggleFav, onClick, isSelected, hideBrand = false, realDist, realWalk }: CouponCardProps) {
+export function CouponCard({ c, isReserved, onToggleSaved, onClick, isSelected, hideBrand = false, realDist, realWalk }: CouponCardProps) {
+    const { t } = useTranslation();
     const dist = realDist ?? c.distance;
     const walk = realWalk ?? c.walking;
     const distLabel = dist >= 1000 ? `${(dist/1000).toFixed(1)}km` : `${dist}m`;
     return (
         <div className="coupon-card-wrap">
             <button type="button" className={"coupon-card" + (isSelected ? " selected" : "")} onClick={onClick}
-                    aria-label={`Ver cupón ${c.title}`}>
+                    aria-label={t("coupon.viewAria", { title: c.title })}>
                 <div className={"cc-thumb" + (c.imageUrl ? " has-img" : "") + (c.featured ? " featured" : "")}
                      style={c.imageUrl ? { backgroundImage: `url(${c.imageUrl})` } : undefined}>
                     <span className="cc-discount">−{c.discount}</span>
-                    {c.featured && <span className="cc-feat"><Icon name="flame" size={10}/> Top</span>}
+                    {c.featured && <span className="cc-feat"><Icon name="flame" size={10}/> {t("coupon.top")}</span>}
                 </div>
                 <div className="cc-body">
                     <div className="cc-head">
@@ -40,20 +41,22 @@ export function CouponCard({ c, isFav, isReserved, onToggleFav, onClick, isSelec
                         <span className="cc-meta-item mono">
                             <Icon name="clock" size={11}/> {c.expiresIn}
                         </span>
-                        {isReserved && <span className="badge badge-ink cc-reserved"><Icon name="check" size={9}/> Reservado</span>}
+                        {isReserved && <span className="badge badge-ink cc-reserved"><Icon name="check" size={9}/> {t("coupon.reserved")}</span>}
                     </div>
                     <div className="stock-bar">
                         <div className="stock-fill" style={{ width: `${(c.stock / c.totalStock) * 100}%` }}/>
                     </div>
                     <div className="cc-stock-text">
-                        {c.stock} / {c.totalStock} disponibles
+                        {t("coupon.stockAvailable", { stock: c.stock, total: c.totalStock })}
                     </div>
                 </div>
             </button>
-            <button type="button" className="cc-fav" aria-pressed={isFav} aria-label="Guardar cupón"
-                    onClick={onToggleFav}>
-                <Icon name="bookmark" size={16} filled={isFav}/>
-            </button>
+            {isReserved && (
+                <button type="button" className="cc-fav" aria-pressed={true} aria-label={t("coupon.removeSaved")}
+                        onClick={onToggleSaved}>
+                    <Icon name="bookmark" size={16} filled={true}/>
+                </button>
+            )}
         </div>
     );
 }
