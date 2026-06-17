@@ -8,6 +8,8 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^6.6.0",
+    "@stripe/stripe-js": "^9.8.0",
     "firebase": "^12.14.0",
     "i18next": "^26.3.1",
     "jspdf": "^4.2.1",

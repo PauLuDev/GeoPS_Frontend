@@ -1,10 +1,10 @@
 import { Coupon } from "../../domain/entities/Coupon.ts";
-import { ICouponRepository, NewCoupon } from "../../domain/repositories/ICouponRepository.ts";
-import { toCoupon, toCreateCouponResource } from "../../application/mappers/CouponMapper.ts";
+import { CouponReservation } from "../../domain/entities/CouponReservation.ts";
+import { ICouponRepository, NewCoupon, EditCoupon } from "../../domain/repositories/ICouponRepository.ts";
+import { toCoupon, toCreateCouponResource, toUpdateCouponResource, toCouponReservation } from "../../application/mappers/CouponMapper.ts";
 import { couponApi } from "../api/couponApi.ts";
-import { ApiError } from "@/shared/api/apiClient.ts";
 
-/* repositorio de cupones -> crear, listar por campana, reservar y ver mis reservas */
+/* repositorio de cupones -> crear, editar, eliminar, reservar y ver mis reservas */
 export class HttpCouponRepository implements ICouponRepository {
 
     async create(data: NewCoupon): Promise<Coupon> {
@@ -12,18 +12,9 @@ export class HttpCouponRepository implements ICouponRepository {
         return toCoupon(resource);
     }
 
-    async getByCampaign(campaignId: string): Promise<Coupon[]> {
-        const list = await couponApi.listByCampaign(campaignId);
-        return list.map(toCoupon);
-    }
-
-    async getById(id: string): Promise<Coupon | null> {
-        try {
-            return toCoupon(await couponApi.getById(id));
-        } catch (e) {
-            if (e instanceof ApiError && e.status === 404) return null;
-            throw e;
-        }
+    async update(couponId: string, data: EditCoupon): Promise<Coupon> {
+        const resource = await couponApi.update(couponId, toUpdateCouponResource(data));
+        return toCoupon(resource);
     }
 
     async reserve(couponId: string, userId: string): Promise<Coupon> {
@@ -32,8 +23,12 @@ export class HttpCouponRepository implements ICouponRepository {
         return toCoupon(resource);
     }
 
-    async getReservedByUser(userId: string): Promise<Coupon[]> {
+    async getReservations(userId: string): Promise<CouponReservation[]> {
         const reservations = await couponApi.reservedByUser(userId);
-        return reservations.map(r => toCoupon(r.coupon));
+        return reservations.map(toCouponReservation);
+    }
+
+    async remove(couponId: string): Promise<void> {
+        await couponApi.remove(couponId);
     }
 }

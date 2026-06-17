@@ -7,6 +7,7 @@ import {
 } from "../../application/mappers/EstablishmentMapper.ts";
 import { establishmentApi } from "../api/establishmentApi.ts";
 import { ApiError } from "@/shared/api/apiClient.ts";
+import { getCurrentUser } from "@/features/auth/application/session.ts";
 
 /*
  repositorio de establecimientos del dueno -> listar, crear, editar y borrar
@@ -17,8 +18,10 @@ export class HttpEstablishmentRepository implements IEstablishmentRepository {
     private knownIds = new Set<string>();
 
     async getAll(): Promise<Business[]> {
+        const me = getCurrentUser();
+        if (!me?.id) return [];
         try {
-            const list = (await establishmentApi.mine()).map(toBusiness);
+            const list = (await establishmentApi.byOwner(me.id)).map(toBusiness);
             this.knownIds = new Set(list.map(b => b.id));
             return list;
         } catch (e) {

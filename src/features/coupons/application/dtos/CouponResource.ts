@@ -26,20 +26,36 @@ export interface CouponResource {
     buyQuantity?: number | null;
     getQuantity?: number | null;
     minPurchaseAmount?: number | null;
+    startDate?: string;         // yyyy-MM-dd
+    endDate?: string;           // yyyy-MM-dd
+    status?: string;
     createdAt?: string;
     updatedAt?: string;
 }
 
-/* body de creacion */
+/* body de edicion -> sin stock; las fechas son opcionales */
+export interface UpdateCouponResource {
+    title: string;
+    description?: string;
+    imageUrl?: string;
+    promotionType: PromotionType;
+    discountValue: number;
+    minPurchaseAmount?: number | null;
+    startDate?: string;   // yyyy-MM-dd
+    endDate?: string;     // yyyy-MM-dd
+}
+
+/* body de creacion -> campaignId null = cupon suelto (ahi startDate y endDate son obligatorios) */
 export interface CreateCouponResource {
-    campaignId: string;
+    establishmentId: string;
+    campaignId?: string | null;
     title: string;
     description?: string;
     imageUrl?: string;
     stock: number;
     promotionType: PromotionType;
     discountValue: number;
-    buyQuantity?: number | null;
-    getQuantity?: number | null;
     minPurchaseAmount?: number | null;
+    startDate?: string;   // yyyy-MM-dd
+    endDate?: string;     // yyyy-MM-dd
 }

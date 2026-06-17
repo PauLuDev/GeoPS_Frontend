@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Plan } from "../../domain/entities/Plan.ts";
 import { Subscription } from "../../domain/entities/Subscription.ts";
+import { CurrentSubscription } from "../../domain/entities/CurrentSubscription.ts";
 import { IBillingRepository } from "../../domain/repositories/IBillingRepository.ts";
 import { HttpBillingRepository } from "../../infrastructure/repositories/HttpBillingRepository.ts";
 import { getPlans } from "../../application/use-cases/GetPlans.ts";
@@ -36,6 +37,8 @@ export function useBilling(repository?: IBillingRepository) {
         /* devuelve el clientSecret de Stripe para confirmar el pago */
         subscribe:        (planId: string): Promise<string | null> => run(() => subscribeToPlan(repoRef.current, planId)),
         mySubscriptions:  (userId: string): Promise<Subscription[] | null> => run(() => getMySubscriptions(repoRef.current, userId)),
+        /* suscripcion activa con sus limites reales */
+        currentSubscription: (): Promise<CurrentSubscription | null> => run(() => repoRef.current.getCurrentSubscription()),
         /* cancela la renovacion automatica del plan */
         cancelRenewal:    (subscriptionId: string): Promise<void | null> => run(() => cancelRenewal(repoRef.current, subscriptionId)),
     };

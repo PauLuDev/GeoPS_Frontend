@@ -22,6 +22,7 @@ export function toBusiness(r: EstablishmentResource): Business {
         address: r.address,
         district: "",
         category: r.categories[0]?.name ?? "",
+        categoryId: r.categories[0]?.id,
         description: "",
         rating: 0,
         totalReviews: 0,
@@ -31,8 +32,13 @@ export function toBusiness(r: EstablishmentResource): Business {
     };
 }
 
+/* el id de categoria elegido en el form, o vacio si no hay */
+function categoryIdsOf(b: Business): number[] {
+    return b.categoryId != null ? [b.categoryId] : [];
+}
+
 /* entidad -> body de creacion */
-export function toCreateEstablishmentResource(b: Business, categoryIds: number[] = []): CreateEstablishmentResource {
+export function toCreateEstablishmentResource(b: Business): CreateEstablishmentResource {
     const { openingTime, closingTime } = firstOpenHours(b.hours);
     return {
         name: b.name,
@@ -42,12 +48,12 @@ export function toCreateEstablishmentResource(b: Business, categoryIds: number[]
         closingTime,
         latitude: b.lat,
         longitude: b.lng,
-        categoryIds,
+        categoryIds: categoryIdsOf(b),
     };
 }
 
 /* entidad -> body de edicion (sin ruc) */
-export function toUpdateEstablishmentResource(b: Business, categoryIds: number[] = []): UpdateEstablishmentResource {
+export function toUpdateEstablishmentResource(b: Business): UpdateEstablishmentResource {
     const { openingTime, closingTime } = firstOpenHours(b.hours);
     return {
         name: b.name,
@@ -56,7 +62,7 @@ export function toUpdateEstablishmentResource(b: Business, categoryIds: number[]
         closingTime,
         latitude: b.lat,
         longitude: b.lng,
-        categoryIds,
+        categoryIds: categoryIdsOf(b),
     };
 }
 

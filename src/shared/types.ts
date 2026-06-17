@@ -53,7 +53,8 @@ export interface Business {
     phone?: string;
     email?: string;
     website?: string;
-    category: string;
+    category: string;       // nombre de la categoria (para mostrar)
+    categoryId?: number;    // id real de la categoria (para crear/editar)
     description: string;
     rating: number;
     totalReviews: number;

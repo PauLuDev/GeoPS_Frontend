@@ -19,6 +19,12 @@ export interface CampaignCoupon {
     restrictions: string[];
     terms?: string;
 
+    /* valores reales del back, para editar el cupon */
+    discountValue?: number;
+    minPurchaseAmount?: number | null;
+    startDate?: string;
+    endDate?: string;
+
     /* metricas de rendimiento del cupon dentro de la campana */
     views: number;
     reserved: number;

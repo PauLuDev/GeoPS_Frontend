@@ -1,6 +1,6 @@
 import { apiClient } from "@/shared/api/apiClient.ts";
 import {
-    CouponResource, CreateCouponResource,
+    CouponResource, CreateCouponResource, UpdateCouponResource,
     CouponReservationResource, ReservationStatus,
 } from "../../application/dtos/CouponResource.ts";
 
@@ -12,13 +12,17 @@ export const couponApi = {
     create: (body: CreateCouponResource) =>
         apiClient.post<CouponResource>(`${BASE}/coupons`, body),
 
-    /* cupon por id */
-    getById: (couponId: string) =>
-        apiClient.get<CouponResource>(`${BASE}/coupons/${couponId}`),
+    /* edita un cupon (no incluye stock) */
+    update: (couponId: string, body: UpdateCouponResource) =>
+        apiClient.put<CouponResource>(`${BASE}/coupons/${couponId}`, body),
 
     /* cupones de una campana */
     listByCampaign: (campaignId: string) =>
         apiClient.get<CouponResource[]>(`${BASE}/campaigns/${campaignId}/coupons`),
+
+    /* cupones de un establecimiento (incluye los independientes) */
+    listByEstablishment: (establishmentId: string) =>
+        apiClient.get<CouponResource[]>(`${BASE}/coupons/establishment/${establishmentId}`),
 
     /* reserva un cupon, devuelve el cupon con el stock actualizado */
     reserve: (couponId: string) =>
@@ -27,10 +31,6 @@ export const couponApi = {
     /* reservas de un usuario, cada una con su codigo de canje */
     reservedByUser: (userId: string) =>
         apiClient.get<CouponReservationResource[]>(`${BASE}/users/${userId}/coupons`),
-
-    /* ids de usuarios que reservaron un cupon */
-    usersWhoReserved: (couponId: string) =>
-        apiClient.get<string[]>(`${BASE}/coupons/${couponId}/reservations`),
 
     /* elimina un cupon */
     remove: (couponId: string) =>

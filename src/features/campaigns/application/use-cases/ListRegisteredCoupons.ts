@@ -1,28 +1,35 @@
 import { CampaignCoupon } from "../../domain/entities/CampaignCoupon.ts";
-import { campaignApi } from "../../infrastructure/api/campaignApi.ts";
 import { couponApi } from "@/features/coupons/infrastructure/api/couponApi.ts";
+import { CouponResource } from "@/features/coupons/application/dtos/CouponResource.ts";
+import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
+import { getCurrentUser } from "@/features/auth/application/session.ts";
 import { ApiError } from "@/shared/api/apiClient.ts";
 import { toCampaignCoupon } from "../mappers/RegisteredCouponMapper.ts";
 
 /*
  lista los cupones ya registrados por el dueno -> el catalogo de "mis cupones"
- no hay una lista directa -> se juntan los cupones de todas sus campanas
- si todavia no se pueden traer las campanas del dueno, devuelve vacio
+ no hay una lista directa -> se traen los establecimientos del dueno y se juntan los cupones de cada uno
+ si todavia no se puede traer, devuelve vacio
 */
 export async function listRegisteredCoupons(): Promise<CampaignCoupon[]> {
-    let campaigns;
+    const me = getCurrentUser();
+    if (!me?.id) return [];
+
+    let establishments;
     try {
-        campaigns = await campaignApi.listMine();
+        establishments = await establishmentApi.byOwner(me.id);
     } catch (e) {
         if (e instanceof ApiError && (e.status === 404 || e.status === 501)) return [];
         throw e;
     }
 
     const lists = await Promise.all(
-        campaigns.map(c => couponApi.listByCampaign(c.id).catch(() => [])),
+        establishments.map(e =>
+            couponApi.listByEstablishment(e.id).catch((): CouponResource[] => []),
+        ),
     );
 
-    /* saca repetidos por id -> un cupon puede estar en varias campanas */
+    /* saca repetidos por id -> un cupon puede aparecer mas de una vez */
     const byId = new Map<string, CampaignCoupon>();
     lists.flat().forEach(c => byId.set(c.id, toCampaignCoupon(c)));
     return [...byId.values()];

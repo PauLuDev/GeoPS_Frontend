@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Coupon } from "@/shared/types.ts";
-import { reservationCode } from "@/shared/utils/reservationCode.ts";
 
 function fmt(val: string, type: "card" | "expiry" | "cvv") {
   const d = val.replace(/\D/g, "");
@@ -316,9 +315,7 @@ export function PaymentModal({ coupon, onSuccess, onClose }: PaymentModalProps) 
             </div>
             <div className="pay-code-box">
               <div className="pay-code-label">{t("payment.codeLabel")}</div>
-              <div className="pay-code-value">
-                GEOPS-{coupon.id.toUpperCase()}-{reservationCode(coupon.id)}
-              </div>
+              <div className="pay-code-value">{t("payment.codeInCoupon")}</div>
             </div>
             <div className="pay-closing">{t("payment.closing")}</div>
           </div>

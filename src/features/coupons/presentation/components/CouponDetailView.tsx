@@ -2,7 +2,6 @@ import {useState} from "react";
 import {useTranslation} from "react-i18next";
 import {Icon} from "@/shared/ui/components/Icon.tsx";
 import {Coupon} from "@/shared/types.ts";
-import {reservationCode} from "@/shared/utils/reservationCode.ts";
 import {PaymentModal} from "@/features/coupons/presentation/components/PaymentModal.tsx";
 import {ReviewsSection} from "@/features/comments/presentation/components/ReviewsSection.tsx";
 
@@ -14,9 +13,10 @@ interface CouponDetailViewProps {
     onViewBusiness?: () => void;
     realDist?: number;
     realWalk?: number;
+    redemptionCode?: string;   // codigo de canje real (cuando ya esta reservado)
 }
 
-export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusiness, realDist, realWalk }: CouponDetailViewProps) {
+export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusiness, realDist, realWalk, redemptionCode }: CouponDetailViewProps) {
     const { t } = useTranslation();
     const dist     = realDist ?? c.distance;
     const walk     = realWalk ?? c.walking;
@@ -146,7 +146,7 @@ export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusin
                             </div>
                             <div className="cd-code">
                                 <div className="cd-code-pattern">
-                                    <div className="cd-code-id mono">GEOPS · {c.id.toUpperCase()} · {reservationCode(c.id)}</div>
+                                    <div className="cd-code-id mono">{redemptionCode ?? "—"}</div>
                                 </div>
                             </div>
                         </div>

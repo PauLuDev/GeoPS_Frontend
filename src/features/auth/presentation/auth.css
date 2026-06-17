@@ -22,11 +22,6 @@
   display: flex; flex-direction: column; gap: 22px;
   border: 1px solid color-mix(in oklab, var(--brand) 30%, transparent);
 }
-.geops-app .auth-discount-badge {
-  background: var(--brand-ink); color: var(--brand);
-  border-radius: 8px; padding: 6px 12px;
-  font-family: var(--font-mono); font-weight: 700; font-size: 15px; flex-shrink: 0;
-}
 .geops-app .auth-tagline {
   position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
   color: var(--ink-3); font-size: 11px; font-family: var(--font-mono);
@@ -44,7 +39,6 @@
 .geops-app .auth-subtitle { margin: 0 0 24px; color: var(--ink-2); font-size: 14px; }
 .geops-app .auth-fullbtn { width: 100%; justify-content: center; padding: 12px; }
 .geops-app .auth-submit { margin-top: 6px; }
-.geops-app .auth-divider { margin: 20px 0; }
 .geops-app .auth-form { display: flex; flex-direction: column; gap: 12px; }
 .geops-app .auth-error { font-size: 12px; color: var(--danger); display: flex; align-items: center; gap: 6px; }
 .geops-app .auth-switch-row { margin-top: 20px; text-align: center; font-size: 13px; color: var(--ink-2); }

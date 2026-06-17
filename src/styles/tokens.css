@@ -91,11 +91,6 @@
   --shadow: 0 8px 30px -10px #000c, 0 3px 8px -2px #0008;
   --shadow-lg: 0 30px 80px -20px #000d, 0 10px 24px -8px #000a;
 }
-.geops-app[data-theme="dark"] .badge-warn {
-  background: oklch(0.32 0.08 70);
-  color: oklch(0.92 0.14 75);
-}
-
 /* scrollbar */
 .geops-app ::-webkit-scrollbar { width: 14px; height: 14px; }
 .geops-app ::-webkit-scrollbar-track { background: transparent; }

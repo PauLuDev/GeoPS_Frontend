@@ -1,23 +1,24 @@
 import {useMemo} from "react";
 import {useTranslation} from "react-i18next";
 import {Coupon} from "@/shared/types.ts";
-import { CATEGORIES } from "@/shared/constants";
+import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 import { Icon } from "@/shared/ui/components/Icon";
 
 interface CategoriesViewProps {
     coupons: Coupon[];
-    onPick: (catId: string) => void;
+    categories: CategoryResource[];
+    onPick: (catName: string) => void;
     onOpenCoupon?: (c: Coupon) => void;
 }
 
-export function CategoriesView({ coupons, onPick, onOpenCoupon }: CategoriesViewProps) {
+export function CategoriesView({ coupons, categories, onPick, onOpenCoupon }: CategoriesViewProps) {
     const { t } = useTranslation();
     const counts = useMemo(() => {
         const m: Record<string, number> = {};
         coupons.forEach(c => { m[c.category] = (m[c.category] || 0) + 1; });
         return m;
     }, [coupons]);
-    const cats = CATEGORIES.filter(c => c.id !== "all");
+    const cats = categories;
     const totalDiscount = coupons.reduce((s, c) => s + (c.originalPrice - c.finalPrice), 0);
     const trending = [...coupons].sort((a, b) => b.reviews - a.reviews).slice(0, 3);
 
@@ -47,16 +48,17 @@ export function CategoriesView({ coupons, onPick, onOpenCoupon }: CategoriesView
 
             <div className="cat-grid stagger">
                 {cats.map(cat => {
-                    const n = counts[cat.id] || 0;
-                    const sample = coupons.find(c => c.category === cat.id);
+                    const n = counts[cat.name] || 0;
+                    const sample = coupons.find(c => c.category === cat.name);
+                    const seed = cat.name.charCodeAt(0) || 65;
                     return (
-                        <button type="button" key={cat.id} className="cat-card" onClick={() => onPick(cat.id)} disabled={n === 0}>
+                        <button type="button" key={cat.id} className="cat-card" onClick={() => onPick(cat.name)} disabled={n === 0}>
                             <div className="cat-card-bg" style={{
-                                background: `linear-gradient(135deg, color-mix(in oklab, var(--brand) ${20 + (cat.id.charCodeAt(0) % 30)}%, var(--bg-elev)) 0%, color-mix(in oklab, var(--accent-2) ${10 + (cat.id.charCodeAt(0) % 20)}%, var(--bg-elev)) 100%)`
+                                background: `linear-gradient(135deg, color-mix(in oklab, var(--brand) ${20 + (seed % 30)}%, var(--bg-elev)) 0%, color-mix(in oklab, var(--accent-2) ${10 + (seed % 20)}%, var(--bg-elev)) 100%)`
                             }}/>
-                            <div className="cat-card-icon"><Icon name={cat.icon} size={28} stroke={1.4}/></div>
+                            <div className="cat-card-icon"><Icon name="store" size={28} stroke={1.4}/></div>
                             <div className="cat-card-body">
-                                <div className="cat-card-title">{t(`cat.${cat.id}`)}</div>
+                                <div className="cat-card-title">{cat.name}</div>
                                 <div className="cat-card-sub">
                                     {n === 0 ? t("categories.noOffers") : t("categories.available", { count: n })}
                                 </div>

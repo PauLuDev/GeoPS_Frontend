@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Business, Coupon } from "@/shared/types.ts";
-import { CATEGORIES } from "@/shared/constants.ts";
 import { CouponCard } from "@/features/coupons/presentation/components/CouponCard.tsx";
 import { ReviewsSection } from "@/features/comments/presentation/components/ReviewsSection.tsx";
 
@@ -40,8 +39,8 @@ export function BusinessDetailView({ business, coupons, reserved, onToggleSaved,
         return cur >= open && cur < close;
     })();
 
-    const catLabel = t(`cat.${business.category}`);
-    const catIcon  = CATEGORIES.find(c => c.id === business.category)?.icon  ?? "store";
+    const catLabel = business.category || t("business.title");
+    const catIcon  = "store";
 
     /* fotos del establecimiento (las que sube el dueño) para el carrusel */
     const photos = business.photos && business.photos.length > 0

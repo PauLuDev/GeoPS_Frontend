@@ -14,7 +14,7 @@ import { authApi } from "../api/authApi.ts";
 export class HttpAuthRepository implements IAuthRepository {
 
     async signUp(data: SignUpData): Promise<User> {
-        if (!isFirebaseConfigured()) return this.devUser(data.username, data.roles);
+        if (!isFirebaseConfigured()) return this.devUser(data.username, data.roles, data.email);
 
         /* 1) crear la cuenta en firebase */
         const session = await firebaseSignUp(data.email, data.password);
@@ -35,7 +35,7 @@ export class HttpAuthRepository implements IAuthRepository {
     }
 
     async signIn(data: SignInData): Promise<User> {
-        if (!isFirebaseConfigured()) return this.devUser(data.email.split("@")[0], data.roles);
+        if (!isFirebaseConfigured()) return this.devUser(data.email.split("@")[0], data.roles, data.email);
 
         /* firebase valida las credenciales y entrega el id token */
         const session = await firebaseSignIn(data.email, data.password);
@@ -52,10 +52,11 @@ export class HttpAuthRepository implements IAuthRepository {
     }
 
     /* modo dev -> si no hay firebase, crea un usuario local falso para entrar y trabajar la ui sin backend */
-    private devUser(username: string, roles: Role[]): User {
+    private devUser(username: string, roles: Role[], email?: string): User {
         const user: User = { id: `dev-${Date.now()}`, username, roles };
         TokenStorage.setToken("dev-token");
-        TokenStorage.setUser(JSON.stringify(user));
+        /* guardamos tambien el email para que perfil/topbar lo muestren en modo dev */
+        TokenStorage.setUser(JSON.stringify({ ...user, email }));
         return user;
     }
 

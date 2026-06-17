@@ -20,9 +20,8 @@ export type RedeemOutcome =
     | { kind: "notfound" }
     | { kind: "error"; message: string };
 
-/* limpia adornos del codigo (prefijo GEOPS, puntos, guiones, espacios) */
-const cleanCode = (s: string): string =>
-    s.replace(/geops/ig, "").replace(/[^a-z0-9]/ig, "").trim();
+/* el codigo va tal cual lo muestra el cliente, solo sin espacios de mas */
+const cleanCode = (s: string): string => s.trim();
 
 /* canjea el cupon cuyo codigo de reserva coincide con lo ingresado */
 export async function redeemByCode(input: string): Promise<RedeemOutcome> {

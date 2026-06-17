@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Campaign } from "../../domain/entities/Campaign.ts";
-import { ICampaignRepository } from "../../domain/repositories/ICampaignRepository.ts";
+import { ICampaignRepository, EditCampaign } from "../../domain/repositories/ICampaignRepository.ts";
 import { HttpCampaignRepository } from "../../infrastructure/repositories/HttpCampaignRepository.ts";
 
 /**
@@ -31,10 +31,15 @@ export function useCampaigns(repository?: ICampaignRepository) {
         await reload();
     };
 
+    const updateCampaign = async (id: number, data: EditCampaign) => {
+        await repoRef.current.update(id, data);
+        await reload();
+    };
+
     const removeCampaign = async (id: number) => {
         await repoRef.current.remove(id);
         await reload();
     };
 
-    return { campaigns, loading, error, addCampaign, removeCampaign };
+    return { campaigns, loading, error, addCampaign, updateCampaign, removeCampaign };
 }

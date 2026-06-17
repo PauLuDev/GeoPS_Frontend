@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon";
 
 interface SidebarProps {
@@ -5,16 +6,18 @@ interface SidebarProps {
     setView: (v: string) => void;
     onSwitchRole: () => void;
     onSignOut: () => void;
+    campaignCount?: number;
 }
 
 const SIDEBAR_ITEMS = [
-    { id: "dashboard", label: "Resumen", icon: "home" },
-    { id: "campaigns", label: "Campañas", icon: "tag", badge: 4 },
-    { id: "new", label: "Nueva campaña", icon: "plus" },
-    { id: "redeem", label: "Canjear cupón", icon: "redeem" },
-];
+    { id: "dashboard", labelKey: "merchant.navDashboard", icon: "home" },
+    { id: "campaigns", labelKey: "merchant.navCampaigns", icon: "tag" },
+    { id: "new", labelKey: "merchant.navNewCampaign", icon: "plus" },
+    { id: "redeem", labelKey: "merchant.navRedeem", icon: "redeem" },
+] as const;
 
-export function MerchantSidebar({ view, setView, onSwitchRole, onSignOut }: SidebarProps) {
+export function MerchantSidebar({ view, setView, onSwitchRole, onSignOut, campaignCount = 0 }: SidebarProps) {
+    const { t } = useTranslation();
     return (
         <aside className="msb">
             <div className="msb-head">
@@ -36,40 +39,42 @@ export function MerchantSidebar({ view, setView, onSwitchRole, onSignOut }: Side
                             className={"msb-item" + (view === item.id ? " active" : "")}
                             onClick={() => setView(item.id)}>
                         <Icon name={item.icon} size={16}/>
-                        <span>{item.label}</span>
-                        {item.badge && <span className="msb-badge">{item.badge}</span>}
+                        <span>{t(item.labelKey)}</span>
+                        {item.id === "campaigns" && campaignCount > 0 && (
+                            <span className="msb-badge">{campaignCount}</span>
+                        )}
                     </button>
                 ))}
 
-                <div className="msb-section msb-section-gap">Mi negocio</div>
+                <div className="msb-section msb-section-gap">{t("merchant.navMyBusiness")}</div>
                 <button type="button"
                         className={"msb-item" + (view === "establishments" ? " active" : "")}
                         onClick={() => setView("establishments")}>
-                    <Icon name="store" size={16}/><span>Establecimientos</span>
+                    <Icon name="store" size={16}/><span>{t("merchant.navEstablishments")}</span>
                 </button>
                 <button type="button"
                         className={"msb-item" + (view === "coupons" ? " active" : "")}
                         onClick={() => setView("coupons")}>
-                    <Icon name="ticket" size={16}/><span>Cupones</span>
+                    <Icon name="ticket" size={16}/><span>{t("merchant.navCoupons")}</span>
                 </button>
                 <button type="button"
                         className={"msb-item" + (view === "subscription" ? " active" : "")}
                         onClick={() => setView("subscription")}>
-                    <Icon name="card" size={16}/><span>Suscripción</span>
+                    <Icon name="card" size={16}/><span>{t("merchant.navSubscription")}</span>
                 </button>
                 <button type="button"
                         className={"msb-item" + (view === "account" ? " active" : "")}
                         onClick={() => setView("account")}>
-                    <Icon name="user" size={16}/><span>Mi cuenta</span>
+                    <Icon name="user" size={16}/><span>{t("merchant.navAccount")}</span>
                 </button>
             </nav>
 
             <div className="msb-foot">
                 <button type="button" className="btn btn-ghost btn-sm msb-switch-btn" onClick={onSwitchRole}>
-                    <Icon name="arrow_up_right" size={14}/> Vista cliente
+                    <Icon name="arrow_up_right" size={14}/> {t("merchant.customerView")}
                 </button>
                 <button type="button" className="msb-signout" onClick={onSignOut}>
-                    <Icon name="arrowLeft" size={14}/> Cerrar sesión
+                    <Icon name="arrowLeft" size={14}/> {t("merchant.signOut")}
                 </button>
             </div>
         </aside>

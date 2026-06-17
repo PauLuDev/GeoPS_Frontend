@@ -1,7 +1,8 @@
-import { useState, useRef, useId } from "react";
+import { useEffect, useState, useRef, useId } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Business, BusinessHours } from "@/shared/types.ts";
-import { CATEGORIES } from "@/shared/constants.ts";
+import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
+import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -27,7 +28,13 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
     const [photos,      setPhotos]      = useState<string[]>(initial?.photos ?? (initial?.imageUrl ? [initial.imageUrl] : []));
     const [name,        setName]        = useState(initial?.name ?? "");
     const [description, setDescription] = useState(initial?.description ?? "");
-    const [category,    setCategory]    = useState(initial?.category ?? "");
+    const [categoryId,  setCategoryId]  = useState<number | null>(initial?.categoryId ?? null);
+    const [categories,  setCategories]  = useState<CategoryResource[]>([]);
+
+    /* categorias reales del back para elegir la del establecimiento */
+    useEffect(() => {
+        establishmentApi.listCategories().then(setCategories).catch(() => setCategories([]));
+    }, []);
     const [ruc,         setRuc]         = useState(initial?.ruc && initial.ruc !== "No disponible" ? initial.ruc : "");
     const [address,     setAddress]     = useState(initial?.address ?? "");
     const [district,    setDistrict]    = useState(initial?.district ?? "");
@@ -44,7 +51,7 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
 
     const errors = {
         name:        !name.trim(),
-        category:    !category,
+        category:    categories.length > 0 && categoryId == null,
         description: !description.trim(),
         address:     !address.trim(),
         district:    !district.trim(),
@@ -82,7 +89,8 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
             phone: phone.trim() || undefined,
             email: email.trim() || undefined,
             website: website.trim() || undefined,
-            category,
+            category: categories.find(c => c.id === categoryId)?.name ?? initial?.category ?? "",
+            categoryId: categoryId ?? undefined,
             description: description.trim(),
             rating: initial?.rating ?? 0,
             totalReviews: initial?.totalReviews ?? 0,
@@ -134,11 +142,13 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                             <div className="field">
                                 <span className="bf-group-label">Categoría <Req/></span>
                                 <div className="bf-chips">
-                                    {CATEGORIES.slice(1).map(c => (
+                                    {categories.length === 0 ? (
+                                        <span className="bf-hint">Cargando categorías…</span>
+                                    ) : categories.map(c => (
                                         <button type="button" key={c.id}
-                                                className={"chip " + (category === c.id ? "active" : "")}
-                                                onClick={() => setCategory(c.id)}>
-                                            <Icon name={c.icon} size={13}/> {c.label}
+                                                className={"chip " + (categoryId === c.id ? "active" : "")}
+                                                onClick={() => setCategoryId(c.id)}>
+                                            <Icon name="store" size={13}/> {c.name}
                                         </button>
                                     ))}
                                 </div>

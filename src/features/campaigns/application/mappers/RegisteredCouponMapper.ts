@@ -23,5 +23,9 @@ export function toCampaignCoupon(c: CouponResource): CampaignCoupon {
         views: 0,
         reserved: 0,
         redeemed: 0,
+        discountValue: c.discountValue,
+        minPurchaseAmount: c.minPurchaseAmount,
+        startDate: c.startDate,
+        endDate: c.endDate,
     };
 }

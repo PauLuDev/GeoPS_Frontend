@@ -4,6 +4,9 @@ import { CustomerLayout } from "@/app/layouts/CustomerLayout.tsx";
 import { BusinessLayout } from "@/app/layouts/BusinessLayout.tsx";
 import { AuthScreen } from "@/features/auth/presentation/views/AuthScreen.tsx";
 import { RegisterBusiness } from "@/features/establishments/presentation/views/RegisterBusiness.tsx";
+import { ChoosePlanView } from "@/features/billing/presentation/views/ChoosePlanView.tsx";
+import { useEstablishments } from "@/features/establishments/presentation/hooks/useEstablishments.ts";
+import { Business } from "@/shared/types.ts";
 
 interface AppRouterProps {
     theme?: string;
@@ -33,12 +36,21 @@ function AuthView() {
 /* registro de negocio */
 function RegisterBusinessView() {
     const navigate = useNavigate();
+    const { save } = useEstablishments();
+    /* guarda el establecimiento nuevo y luego pasa a elegir plan */
+    const handleDone = (b: Business) => { void save(b).finally(() => navigate('/business/plan')); };
     return (
         <RegisterBusiness
-            onDone={() => navigate('/business')}
+            onDone={handleDone}
             onBack={() => navigate('/')}
         />
     );
+}
+
+/* paso de plan tras el registro -> al elegir entra al panel */
+function ChoosePlanRouteView() {
+    const navigate = useNavigate();
+    return <ChoosePlanView onDone={() => navigate('/business')} />;
 }
 
 function AppRoutes({ theme, onThemeChange }: AppRouterProps) {
@@ -47,6 +59,7 @@ function AppRoutes({ theme, onThemeChange }: AppRouterProps) {
         <Routes>
             <Route path="/" element={<AuthView />} />
             <Route path="/business/register" element={<RegisterBusinessView />} />
+            <Route path="/business/plan" element={<ChoosePlanRouteView />} />
 
             <Route path="/customer/*" element={
                 <CustomerLayout

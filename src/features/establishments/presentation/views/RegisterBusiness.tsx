@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { BrandMark } from "@/shared/ui/components/BrandMark.tsx";
 import { Business, BusinessHours } from "@/shared/types.ts";
-import { CATEGORIES } from "@/shared/constants.ts";
+import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
+import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 
 interface RegisterBusinessProps {
     onDone: (business: Business) => void;
@@ -34,7 +35,8 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
     const [photos,      setPhotos]      = useState<string[]>([]);
     const [name,        setName]        = useState("");
     const [description, setDescription] = useState("");
-    const [category,    setCategory]    = useState("");
+    const [categoryId,  setCategoryId]  = useState<number | null>(null);
+    const [categories,  setCategories]  = useState<CategoryResource[]>([]);
     const [ruc,         setRuc]         = useState("");
     const [address,     setAddress]     = useState("");
     const [district,    setDistrict]    = useState("");
@@ -42,6 +44,11 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
     const [email,       setEmail]       = useState("");
     const [website,     setWebsite]     = useState("");
     const [hours,       setHours]       = useState<BusinessHours[]>(blankHours());
+
+    /* categorias reales del back para elegir la del negocio */
+    useEffect(() => {
+        establishmentApi.listCategories().then(setCategories).catch(() => setCategories([]));
+    }, []);
 
     /* carrusel del panel derecho */
     const [slide, setSlide] = useState(0);
@@ -52,7 +59,7 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
     }, [photos.length]);
 
     const stepErrors: Record<number, boolean> = {
-        0: !name.trim() || !description.trim() || !category,
+        0: !name.trim() || !description.trim() || (categories.length > 0 && categoryId == null),
         1: !address.trim() || !district.trim(),
         2: false,
         3: false,
@@ -93,7 +100,8 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
             phone: phone.trim() || undefined,
             email: email.trim() || undefined,
             website: website.trim() || undefined,
-            category,
+            category: categories.find(c => c.id === categoryId)?.name ?? "",
+            categoryId: categoryId ?? undefined,
             description: description.trim(),
             rating: 0,
             totalReviews: 0,
@@ -106,7 +114,7 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
         });
     };
 
-    const cat = CATEGORIES.find(c => c.id === category);
+    const cat = categories.find(c => c.id === categoryId);
 
     return (
         <div className="rw">
@@ -145,11 +153,13 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
                             <div className="field">
                                 <span className="bf-group-label">Categoría <Req/></span>
                                 <div className="bf-chips">
-                                    {CATEGORIES.slice(1).map(c => (
+                                    {categories.length === 0 ? (
+                                        <span className="bf-hint">Cargando categorías…</span>
+                                    ) : categories.map(c => (
                                         <button type="button" key={c.id}
-                                                className={"chip " + (category === c.id ? "active" : "")}
-                                                onClick={() => setCategory(c.id)}>
-                                            <Icon name={c.icon} size={13}/> {c.label}
+                                                className={"chip " + (categoryId === c.id ? "active" : "")}
+                                                onClick={() => setCategoryId(c.id)}>
+                                            <Icon name="store" size={13}/> {c.name}
                                         </button>
                                     ))}
                                 </div>
@@ -291,7 +301,7 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
                             <div>
                                 <div className="rw-right-name">{name || "Tu negocio"}</div>
                                 <div className="rw-right-meta">
-                                    {cat && <><Icon name={cat.icon} size={11}/> {cat.label}</>}
+                                    {cat && <><Icon name="store" size={11}/> {cat.name}</>}
                                     {district && <> · {district}</>}
                                 </div>
                             </div>

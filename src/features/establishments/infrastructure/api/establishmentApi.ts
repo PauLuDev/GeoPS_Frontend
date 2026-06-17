@@ -16,9 +16,9 @@ export const establishmentApi = {
             `${BASE}/establishments/nearby?latitude=${latitude}&longitude=${longitude}&radiusMeters=${radiusMeters}`,
         ),
 
-    /* establecimientos del dueno logueado */
-    mine: () =>
-        apiClient.get<EstablishmentResource[]>(`${BASE}/establishments/mine`),
+    /* establecimientos de un dueno por su id */
+    byOwner: (userId: string) =>
+        apiClient.get<EstablishmentResource[]>(`${BASE}/establishments/user/${userId}`),
 
     /* crea un establecimiento */
     create: (body: CreateEstablishmentResource) =>

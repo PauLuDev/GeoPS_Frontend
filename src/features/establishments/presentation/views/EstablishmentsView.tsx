@@ -66,9 +66,11 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
                         {establishments.length} {establishments.length === 1 ? "local registrado" : "locales registrados"}
                     </p>
                 </div>
-                <button type="button" className="btn btn-brand" onClick={() => setMode({ kind: "create" })}>
-                    <Icon name="plus" size={14}/> Nuevo establecimiento
-                </button>
+                {establishments.length > 0 && (
+                    <button type="button" className="btn btn-brand" onClick={() => setMode({ kind: "create" })}>
+                        <Icon name="plus" size={14}/> Nuevo establecimiento
+                    </button>
+                )}
             </header>
 
             {establishments.length === 0 ? (

@@ -1,5 +1,7 @@
 import { useState, useId, useRef } from "react";
 import { Icon } from "@/shared/ui/components/Icon";
+import { Select } from "@/shared/ui/components/Select.tsx";
+import { DatePicker } from "@/shared/ui/components/DatePicker.tsx";
 import { Coupon } from "@/shared/types.ts";
 import { CouponCard } from "@/features/coupons/presentation/components/CouponCard.tsx";
 import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
@@ -47,10 +49,9 @@ const fieldCls = (bad: boolean) => "input" + (bad ? " input-error" : "");
 
 interface NewCampaignProps {
     onDone: (campaign: Campaign) => void;
-    onCancel: () => void;
 }
 
-export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
+export function NewCampaign({ onDone }: NewCampaignProps) {
     const uid = useId();
     const fileRef = useRef<HTMLInputElement>(null);
 
@@ -155,12 +156,13 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
         <div className="md nc-page">
             <header className="md-head">
                 <div>
-                    <h1 className="page-title nc-page-title">Nueva campaña</h1>
+                    <h1 className="page-title">Nueva campaña</h1>
                     <p className="page-subtitle">Completa los datos y agrega al menos un cupón para publicar.</p>
                 </div>
                 <div className="btn-row">
-                    <button type="button" className="btn" onClick={onCancel}>Cancelar</button>
-                    <button type="button" className="btn btn-brand" onClick={handlePublish}>
+                    <button type="button" className="btn btn-brand" onClick={handlePublish}
+                            disabled={coupons.length === 0}
+                            title={coupons.length === 0 ? "Agrega al menos un cupón para publicar" : undefined}>
                         Publicar campaña <Icon name="arrowRight" size={14}/>
                     </button>
                 </div>
@@ -237,14 +239,12 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
                         <div className="nc-row2">
                             <div className="field">
                                 <label htmlFor={`${uid}-start`}>Fecha de inicio <Req/></label>
-                                <input id={`${uid}-start`} className={fieldCls(cerr("start"))} type="datetime-local"
-                                       value={startDate} onChange={e => setStartDate(e.target.value)}/>
+                                <DatePicker id={`${uid}-start`} value={startDate} onChange={setStartDate} error={cerr("start")}/>
                                 {cerr("start") && <ErrMsg>Obligatorio</ErrMsg>}
                             </div>
                             <div className="field">
                                 <label htmlFor={`${uid}-end`}>Fecha de fin <Req/></label>
-                                <input id={`${uid}-end`} className={fieldCls(cerr("end"))} type="datetime-local"
-                                       value={endDate} onChange={e => setEndDate(e.target.value)}/>
+                                <DatePicker id={`${uid}-end`} value={endDate} onChange={setEndDate} min={startDate || undefined} error={cerr("end")}/>
                                 {cerr("end") && <ErrMsg>{endInvalid ? "Debe ser posterior al inicio" : "Obligatorio"}</ErrMsg>}
                             </div>
                         </div>
@@ -385,11 +385,10 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
                                 {/* b.2) tipo de promocion */}
                                 <div className="field nc-mb12">
                                     <label htmlFor={`${uid}-c-promo`}>Tipo de cupón</label>
-                                    <select id={`${uid}-c-promo`} className="input"
+                                    <Select id={`${uid}-c-promo`}
                                             value={couponDraft.promotionType}
-                                            onChange={e => setCouponDraft(d => ({ ...d, promotionType: e.target.value as PromotionType }))}>
-                                        {PROMOTION_TYPES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                                    </select>
+                                            options={PROMOTION_TYPES.map(p => ({ value: p.id, label: p.label }))}
+                                            onChange={v => setCouponDraft(d => ({ ...d, promotionType: v as PromotionType }))}/>
                                 </div>
 
                                 {/* c) precios -> descuento auto */}
@@ -411,10 +410,16 @@ export function NewCampaign({ onDone, onCancel }: NewCampaignProps) {
                                     <div className="field">
                                         <span className="nc-group-label">Descuento</span>
                                         <div className={"nc-discount-box" + (discountPct ? " active" : "")}>
-                                            {discountPct !== null ? `−${discountPct}%` : "—"}
+                                            {couponDraft.promotionType === "FIXED_AMOUNT"
+                                                ? (savings(origNum, finalNum) > 0 ? `−S/${savings(origNum, finalNum)}` : "—")
+                                                : (discountPct !== null ? `−${discountPct}%` : "—")}
                                         </div>
                                         {discountPct !== null && (
-                                            <span className="nc-discount-save">Ahorro S/{savings(origNum, finalNum)}</span>
+                                            <span className="nc-discount-save">
+                                                {couponDraft.promotionType === "FIXED_AMOUNT"
+                                                    ? `Equivale a ${discountPct}%`
+                                                    : `Ahorro S/${savings(origNum, finalNum)}`}
+                                            </span>
                                         )}
                                     </div>
                                 </div>

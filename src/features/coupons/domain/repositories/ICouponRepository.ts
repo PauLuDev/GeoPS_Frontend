@@ -1,17 +1,31 @@
 import { Coupon } from "../entities/Coupon.ts";
+import { CouponReservation } from "../entities/CouponReservation.ts";
 
-/* datos para crear un cupon */
+/* datos para crear un cupon -> sin campaignId es un cupon suelto y necesita fechas */
 export interface NewCoupon {
-    campaignId: string;
+    establishmentId: string;
+    campaignId?: string | null;
     title: string;
     description?: string;
     imageUrl?: string;
     stock: number;
     promotionType: Coupon["promotionType"];
     discountValue: number;
-    buyQuantity?: number | null;
-    getQuantity?: number | null;
     minPurchaseAmount?: number | null;
+    startDate?: string;   // yyyy-MM-dd, obligatorio si no hay campana
+    endDate?: string;
+}
+
+/* datos para editar un cupon -> sin stock; las fechas son opcionales */
+export interface EditCoupon {
+    title: string;
+    description?: string;
+    imageUrl?: string;
+    promotionType: Coupon["promotionType"];
+    discountValue: number;
+    minPurchaseAmount?: number | null;
+    startDate?: string;
+    endDate?: string;
 }
 
 /**
@@ -20,8 +34,8 @@ export interface NewCoupon {
  */
 export interface ICouponRepository {
     create(data: NewCoupon): Promise<Coupon>;
-    getByCampaign(campaignId: string): Promise<Coupon[]>;
-    getById(id: string): Promise<Coupon | null>;
+    update(couponId: string, data: EditCoupon): Promise<Coupon>;
     reserve(couponId: string, userId: string): Promise<Coupon>;
-    getReservedByUser(userId: string): Promise<Coupon[]>;
+    getReservations(userId: string): Promise<CouponReservation[]>;
+    remove(couponId: string): Promise<void>;
 }

@@ -46,11 +46,11 @@ export function RedeemView() {
                     <form onSubmit={onSubmit}>
                         <label htmlFor="rd-code" className="rd-label">Código de reserva</label>
                         <input id="rd-code" className="input rd-input mono"
-                               placeholder="GEOPS · C1 · K7P9"
+                               placeholder="Pega el código del cliente"
                                value={code} autoComplete="off" autoFocus
                                onChange={e => { setCode(e.target.value); if (result) setResult(null); }}/>
                         <p className="rd-hint">
-                            <Icon name="qr" size={12}/> Puedes escribirlo con o sin "GEOPS" (ej. <strong>C1 K7P9</strong>).
+                            <Icon name="qr" size={12}/> Ingresa el código de canje que muestra el cliente en su cupón reservado.
                         </p>
                         <button type="submit" className="btn btn-brand rd-submit" disabled={!code.trim() || loading}>
                             <Icon name="check" size={15}/> {loading ? "Validando…" : "Validar y canjear"}

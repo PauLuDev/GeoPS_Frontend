@@ -12,7 +12,7 @@ interface MerchantProfileViewProps {
 }
 
 const PREF_ITEMS = [
-    { key: "darkMode" as const, label: "Modo oscuro", icon: "layers", desc: "Cambia la apariencia de la aplicación" },
+    { key: "darkMode" as const, labelKey: "pref.darkMode", descKey: "pref.darkModeDesc", icon: "layers" },
 ] as const;
 
 export function MerchantProfileView({ theme = "light", onThemeChange, onSignOut }: MerchantProfileViewProps) {
@@ -49,19 +49,16 @@ export function MerchantProfileView({ theme = "light", onThemeChange, onSignOut 
                 <div className="pv-head-main">
                     {editMode ? (
                         <div className="field">
-                            <input className="input pv-name-input" aria-label="Nombre" value={draft.name} placeholder="Tu nombre"
+                            <input className="input pv-name-input" aria-label={t("profile.nameAria")} value={draft.name} placeholder={t("profile.namePlaceholder")}
                                    onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}/>
                         </div>
                     ) : (
                         <>
-                            <div className="eyebrow">Perfil dueño de negocio</div>
+                            <div className="eyebrow">{t("profile.roleOwner")}</div>
                             <div className="pv-name">{profile.name}</div>
                             <div className="pv-contact">
                                 <span className="pv-contact-item">
                                     <Icon name="mail" size={11}/> {profile.email}
-                                </span>
-                                <span className="pv-contact-item">
-                                    <Icon name="clock" size={11}/> Miembro desde 2026
                                 </span>
                             </div>
                         </>
@@ -82,20 +79,20 @@ export function MerchantProfileView({ theme = "light", onThemeChange, onSignOut 
             {editMode && (
                 <div className="pv-edit-grid">
                     <div className="field pv-field-full">
-                        <label htmlFor="mp-name">Nombre completo</label>
-                        <input id="mp-name" className="input" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="Tu nombre"/>
+                        <label htmlFor="mp-name">{t("profile.fullName")}</label>
+                        <input id="mp-name" className="input" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder={t("profile.namePlaceholder")}/>
                     </div>
                     <div className="field">
-                        <label htmlFor="mp-email">Correo electrónico</label>
-                        <input id="mp-email" className="input" type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder="correo@ejemplo.com"/>
+                        <label htmlFor="mp-email">{t("profile.email")}</label>
+                        <input id="mp-email" className="input" type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder={t("profile.emailPlaceholder")}/>
                     </div>
                     <div className="field">
-                        <label htmlFor="mp-phone">Teléfono</label>
-                        <input id="mp-phone" className="input" type="tel" value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder="+51 999 999 999"/>
+                        <label htmlFor="mp-phone">{t("profile.phone")}</label>
+                        <input id="mp-phone" className="input" type="tel" value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder={t("profile.phonePlaceholder")}/>
                     </div>
                     <div className="field">
-                        <label htmlFor="mp-district">Distrito</label>
-                        <input id="mp-district" className="input" value={draft.district} onChange={e => setDraft(d => ({ ...d, district: e.target.value }))} placeholder="Miraflores"/>
+                        <label htmlFor="mp-district">{t("profile.district")}</label>
+                        <input id="mp-district" className="input" value={draft.district} onChange={e => setDraft(d => ({ ...d, district: e.target.value }))} placeholder={t("profile.districtPlaceholder")}/>
                     </div>
                 </div>
             )}
@@ -120,8 +117,8 @@ export function MerchantProfileView({ theme = "light", onThemeChange, onSignOut 
                                 <Icon name={p.icon} size={15}/>
                             </div>
                             <div className="pv-pref-main">
-                                <div className="pv-pref-label">{p.label}</div>
-                                <div className="pv-pref-desc">{p.desc}</div>
+                                <div className="pv-pref-label">{t(p.labelKey)}</div>
+                                <div className="pv-pref-desc">{t(p.descKey)}</div>
                             </div>
                             <div className={"toggle pv-noshrink" + (isPrefOn(p.key) ? " on" : "")}>
                                 <span className="toggle-knob"/>

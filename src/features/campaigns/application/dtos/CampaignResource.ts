@@ -18,7 +18,15 @@ export interface CampaignResource {
 
 /* body de creacion */
 export interface CreateCampaignResource {
+    establishmentId: string;
     name: string;
-    startDate: string;
-    endDate: string;
+    startDate: string;   // yyyy-MM-dd
+    endDate: string;     // yyyy-MM-dd
+}
+
+/* body de edicion */
+export interface UpdateCampaignResource {
+    name: string;
+    startDate: string;   // yyyy-MM-dd
+    endDate: string;     // yyyy-MM-dd
 }

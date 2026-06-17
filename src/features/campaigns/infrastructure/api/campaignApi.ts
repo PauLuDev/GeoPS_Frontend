@@ -2,6 +2,7 @@ import { apiClient } from "@/shared/api/apiClient.ts";
 import {
     CampaignResource,
     CreateCampaignResource,
+    UpdateCampaignResource,
     BackendCampaignStatus,
 } from "../../application/dtos/CampaignResource.ts";
 
@@ -13,17 +14,13 @@ export const campaignApi = {
     create: (body: CreateCampaignResource) =>
         apiClient.post<CampaignResource>(`${BASE}/campaigns`, body),
 
-    /* campana por id */
-    getById: (id: string) =>
-        apiClient.get<CampaignResource>(`${BASE}/campaigns/${id}`),
+    /* edita una campana (nombre y fechas) */
+    update: (id: string, body: UpdateCampaignResource) =>
+        apiClient.put<CampaignResource>(`${BASE}/campaigns/${id}`, body),
 
     /* campanas de un establecimiento */
     listByEstablishment: (establishmentId: string) =>
         apiClient.get<CampaignResource[]>(`${BASE}/campaigns?establishmentId=${establishmentId}`),
-
-    /* campanas del dueno logueado */
-    listMine: () =>
-        apiClient.get<CampaignResource[]>(`${BASE}/campaigns/mine`),
 
     /* cambia el estado (SCHEDULED / ACTIVE / PAUSED / EXPIRED) */
     changeStatus: (id: string, status: BackendCampaignStatus) =>

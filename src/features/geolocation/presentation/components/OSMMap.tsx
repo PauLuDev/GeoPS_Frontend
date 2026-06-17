@@ -215,7 +215,7 @@ export const OSMMap: FC<OSMMapProps> = ({
     if (p) mapRef.current.panTo([p.lat, p.lng], { animate: true, duration: 0.6 });
   }, [activePin]);
 
-  return <div ref={ref} style={{ width: "100%", height: "100%", background: "var(--map-bg)" }}/>;
+  return <div ref={ref} className="osm-canvas"/>;
 };
 
 interface GeoMapProps extends OSMMapProps {

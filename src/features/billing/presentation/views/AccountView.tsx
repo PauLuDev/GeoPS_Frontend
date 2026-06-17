@@ -3,57 +3,67 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Plan } from "@/features/billing/domain/entities/Plan.ts";
+import { CurrentSubscription } from "@/features/billing/domain/entities/CurrentSubscription.ts";
 import { SubscriptionStatus } from "@/features/billing/domain/value-objects/SubscriptionStatus.ts";
 import { formatMoney } from "@/features/billing/domain/value-objects/Money.ts";
 import { useBilling } from "@/features/billing/presentation/hooks/useBilling.ts";
+import { StripeCheckout } from "@/features/billing/presentation/components/StripeCheckout.tsx";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
 
 interface AccountViewProps {
     /* numero de establecimientos del dueno (el plan los cubre a todos) */
     establishmentCount?: number;
-    /* plan actual, lo maneja el layout para sincronizar el sidebar */
-    currentPlanId: string;
-    onPlanChange: (plan: { id: string; name: string }) => void;
 }
 
-/* features destacadas por plan (claves i18n) */
+/* features destacadas por plan (claves i18n), por nombre de plan */
 const PLAN_FEATURES: Record<string, string[]> = {
-    "plan-freemium": ["plans.featBasicSupport", "plans.featBasicStats"],
-    "plan-premium":  ["plans.featPrioritySupport", "plans.featAdvancedAnalytics", "plans.featNoBranding"],
+    "Freemium":     ["plans.featBasicSupport", "plans.featBasicStats"],
+    "Premium":      ["plans.featPrioritySupport", "plans.featAdvancedAnalytics", "plans.featNoBranding"],
+    "Premium Plus": ["plans.featPrioritySupport", "plans.featAdvancedAnalytics", "plans.featNoBranding"],
 };
 
-export function AccountView({ establishmentCount = 0, currentPlanId, onPlanChange }: AccountViewProps) {
+const KNOWN_STATUS: SubscriptionStatus[] = ["ACTIVE", "PENDING", "CANCELLED", "EXPIRED"];
+
+export function AccountView({ establishmentCount = 0 }: AccountViewProps) {
     const { t, i18n } = useTranslation();
     const dateLocale = i18n.language.startsWith("en") ? "en-US" : "es-PE";
     const me = getCurrentUser();
-    const { listPlans, subscribe, cancelRenewal, mySubscriptions, loading } = useBilling();
+    const { listPlans, subscribe, cancelRenewal, mySubscriptions, currentSubscription, loading } = useBilling();
     const [plans, setPlans] = useState<Plan[]>([]);
-    const [subStatus, setSubStatus] = useState<SubscriptionStatus>("ACTIVE");  // estado de la suscripcion del dueno
-    const [subscriptionId, setSubscriptionId] = useState<string | null>(null); // id real de la suscripcion activa
+    const [sub, setSub] = useState<CurrentSubscription | null>(null);   // suscripcion activa real
+    const [subscriptionId, setSubscriptionId] = useState<string | null>(null); // id real para cancelar
     const [subscribingId, setSubscribingId] = useState<string | null>(null);
+    /* plan en pago -> con su clientSecret del back */
+    const [checkout, setCheckout] = useState<{ plan: Plan; clientSecret: string } | null>(null);
     const [success, setSuccess] = useState("");
-    const [autoRenew, setAutoRenew]       = useState(true);   // renovacion automatica del plan actual
+    const [autoRenew, setAutoRenew]       = useState(true);
     const [confirmCancel, setConfirmCancel] = useState(false);
+
+    const loadSub = () => { currentSubscription().then(s => { if (s) setSub(s); }); };
 
     useEffect(() => {
         let alive = true;
         listPlans().then(p => { if (alive && p) setPlans(p); });
+        currentSubscription().then(s => { if (alive && s) setSub(s); });
         if (me?.id) mySubscriptions(me.id).then(subs => {
-            if (alive && subs && subs[0]) { setSubStatus(subs[0].status); setSubscriptionId(subs[0].id); }
+            if (alive && subs && subs[0]) setSubscriptionId(subs[0].id);
         });
         return () => { alive = false; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const current = plans.find(p => p.id === currentPlanId);
+    /* el plan actual es el de la suscripcion real (por nombre) */
+    const current = plans.find(p => p.name === sub?.planName);
     const isPaid = !!current && current.price.amount > 0;
 
-    /* estado efectivo -> si el dueno cancelo la renovacion de un plan de pago sigue activo pero se ve como "renovacion cancelada" */
-    const effectiveStatus: SubscriptionStatus = isPaid && !autoRenew ? "CANCELLED" : subStatus;
+    const rawStatus = sub?.status ?? "ACTIVE";
+    const baseStatus: SubscriptionStatus = KNOWN_STATUS.includes(rawStatus as SubscriptionStatus)
+        ? (rawStatus as SubscriptionStatus) : "ACTIVE";
+    /* si el dueno cancelo la renovacion de un plan de pago sigue activo pero se ve como cancelada */
+    const effectiveStatus: SubscriptionStatus = isPaid && !autoRenew ? "CANCELLED" : baseStatus;
     const statusKey = {
         ACTIVE: "Active", PENDING: "Pending", CANCELLED: "Cancelled", EXPIRED: "Expired",
     }[effectiveStatus];
-    /* los cupones se promocionan mientras la suscripcion siga vigente */
     const couponsLive = effectiveStatus === "ACTIVE" || effectiveStatus === "CANCELLED";
 
     /* fin de periodo estimado -> hoy mas la duracion del plan (la suscripcion no expone la fecha) */
@@ -61,21 +71,33 @@ export function AccountView({ establishmentCount = 0, currentPlanId, onPlanChang
         .toLocaleDateString(dateLocale, { day: "2-digit", month: "long", year: "numeric" });
 
     const handleChoose = async (plan: Plan) => {
-        setSubscribingId(plan.id);
-        const secret = await subscribe(plan.id);   // clientSecret para confirmar el pago
-        setSubscribingId(null);
-        if (secret) {
-            onPlanChange({ id: plan.id, name: plan.name });
-            setAutoRenew(true);                     // un plan nuevo se renueva por defecto
+        /* freemium -> no hay cobro ni endpoint de baja de plan -> solo refleja el cambio */
+        if (plan.price.amount === 0) {
+            setAutoRenew(true);
             setSuccess(t("plans.upgraded", { plan: plan.name }));
             setTimeout(() => setSuccess(""), 4000);
+            return;
         }
+        setSubscribingId(plan.id);
+        const clientSecret = await subscribe(plan.id);   // crea la suscripcion PENDING + intent en el back
+        setSubscribingId(null);
+        if (clientSecret !== null) setCheckout({ plan, clientSecret });   // abre el pago
+    };
+
+    /* pago confirmado -> el plan real cambia cuando el webhook del back lo activa */
+    const handlePaid = (plan: Plan) => {
+        setCheckout(null);
+        setAutoRenew(true);
+        setSuccess(t("plans.upgraded", { plan: plan.name }));
+        setTimeout(() => setSuccess(""), 4000);
+        loadSub();
     };
 
     const handleCancelRenewal = async () => {
-        if (subscriptionId) await cancelRenewal(subscriptionId);
-        setAutoRenew(false);
         setConfirmCancel(false);
+        if (!subscriptionId) return;
+        const res = await cancelRenewal(subscriptionId);
+        if (res !== null) setAutoRenew(false);   // solo se marca cancelada si el back lo acepto
     };
 
     const handleReactivate = () => {
@@ -84,11 +106,12 @@ export function AccountView({ establishmentCount = 0, currentPlanId, onPlanChang
         setTimeout(() => setSuccess(""), 3000);
     };
 
+    /* -1 = ilimitado */
     const limitLabel = (plan: Plan) =>
-        plan.couponLimit === 0 ? t("plans.unlimited") : t("plans.couponLimit", { count: plan.couponLimit });
+        plan.couponLimit < 0 ? t("plans.unlimited") : t("plans.couponLimit", { count: plan.couponLimit });
 
     const campaignLimitLabel = (plan: Plan) =>
-        plan.campaignLimit === 0 ? t("plans.campaignsUnlimited") : t("plans.campaignLimit", { count: plan.campaignLimit });
+        plan.campaignLimit < 0 ? t("plans.campaignsUnlimited") : t("plans.campaignLimit", { count: plan.campaignLimit });
 
     const priceLabel = (plan: Plan) =>
         plan.price.amount === 0 ? t("plans.free") : `${formatMoney(plan.price)}${plan.durationDays ? t("plans.perMonth") : ""}`;
@@ -118,7 +141,7 @@ export function AccountView({ establishmentCount = 0, currentPlanId, onPlanChang
                     <div className="sub-status-title">
                         {t(`plans.status${statusKey}`)}
                         <span className={"sub-status-pill" + (couponsLive ? " on" : "")}>
-                            <span className="sub-status-dot"/> {current?.name ?? "—"}
+                            <span className="sub-status-dot"/> {sub?.planName ?? "—"}
                         </span>
                     </div>
                     <div className="sub-status-sub">{t(`plans.status${statusKey}Sub`)}</div>
@@ -149,7 +172,7 @@ export function AccountView({ establishmentCount = 0, currentPlanId, onPlanChang
 
             <div className="plans-grid">
                 {plans.map(plan => {
-                    const isCurrent = plan.id === currentPlanId;
+                    const isCurrent = plan.name === sub?.planName;
                     const isUpgrade = !!current && plan.price.amount > current.price.amount;
                     const busy = subscribingId === plan.id;
                     return (
@@ -166,7 +189,7 @@ export function AccountView({ establishmentCount = 0, currentPlanId, onPlanChang
                             </div>
 
                             <ul className="plan-feats">
-                                {(PLAN_FEATURES[plan.id] ?? []).map(k => (
+                                {(PLAN_FEATURES[plan.name] ?? []).map(k => (
                                     <li key={k}><Icon name="check" size={13}/> {t(k)}</li>
                                 ))}
                             </ul>
@@ -198,6 +221,15 @@ export function AccountView({ establishmentCount = 0, currentPlanId, onPlanChang
                         </div>
                     </div>
                 </Modal>
+            )}
+
+            {checkout && (
+                <StripeCheckout
+                    plan={checkout.plan}
+                    clientSecret={checkout.clientSecret}
+                    onCancel={() => setCheckout(null)}
+                    onSuccess={() => handlePaid(checkout.plan)}
+                />
             )}
         </div>
     );

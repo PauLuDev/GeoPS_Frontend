@@ -1,11 +1,12 @@
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 import { BottomNav } from "../components/BottomNav.tsx"
 import { Coupon, UserLocation } from "@/shared/types.ts";
 import { DEFAULT_LOCATION } from "@/features/geolocation/domain/value-objects/defaultLocation.ts";
 import { RADIUS_OPTIONS, SORT_OPTIONS } from "@/features/coupons/domain/value-objects/filterConfig.ts";
 import { haversine, parseDiscount, parseExpiry, radiusToZoom } from "@/shared/utils/mapUtils.ts";
-import {CATEGORIES} from "@/shared/constants.ts";
+import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
+import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 import { CustomerTopbar } from "../components/CustomerTopbar.tsx";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import {CouponCard} from "@/features/coupons/presentation/components/CouponCard.tsx";
@@ -18,6 +19,8 @@ import {BusinessDetailView} from "@/features/coupons/presentation/components/Bus
 import {GeoMap} from "@/features/geolocation/presentation/components/OSMMap.tsx";
 import { Business } from "@/shared/types.ts";
 import { useNearbyCoupons } from "@/features/coupons/presentation/hooks/useNearbyCoupons.ts";
+import { useReservations } from "@/features/coupons/presentation/hooks/useReservations.ts";
+import { getCurrentUser } from "@/features/auth/application/session.ts";
 
 /* local de respaldo cuando el cupon no trae su establecimiento resuelto */
 function stubBusiness(c: Coupon): Business {
@@ -43,7 +46,14 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     const [detailCoupon, setDetailCoupon] = useState<Coupon | null>(null);
     const [detailBusiness, setDetailBusiness] = useState<Business | null>(null);
     const [activePinId, setActivePinId] = useState<string | undefined>(undefined);
-    const [reserved, setReserved] = useState(new Set<string>());
+    const me = getCurrentUser();
+    const { reservedIds, reserve, codeFor } = useReservations(me?.id ?? "");
+
+    /* categorias reales para los chips de filtro (se filtra por nombre de categoria) */
+    const [categories, setCategories] = useState<CategoryResource[]>([]);
+    useEffect(() => {
+        establishmentApi.listCategories().then(setCategories).catch(() => setCategories([]));
+    }, []);
     const [search, setSearch] = useState("");
     const [userLocation, setUserLocation] = useState<UserLocation>(() => {
         try { const raw = localStorage.getItem("geops_location"); return raw ? JSON.parse(raw) as UserLocation : DEFAULT_LOCATION; }
@@ -80,7 +90,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
         const list = coupons.filter(c => {
             if (activeCategory !== "all" && c.category !== activeCategory) return false;
             if (search && !`${c.brand} ${c.title}`.toLowerCase().includes(search.toLowerCase())) return false;
-            if (showSaved && !reserved.has(c.id)) return false;
+            if (showSaved && !reservedIds.has(c.id)) return false;
             if (r !== Infinity && haversine(userLocation.lat, userLocation.lng, c.lat, c.lng) > r) return false;
             if (showFilter === "top" && !c.featured) return false;        // solo destacados
             if (showFilter === "popular" && c.reviews < 100) return false; // solo los mas reseñados
@@ -93,21 +103,20 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
             return haversine(userLocation.lat, userLocation.lng, a.lat, a.lng)
                 - haversine(userLocation.lat, userLocation.lng, b.lat, b.lng);
         });
-    }, [coupons, activeCategory, search, showSaved, reserved, userLocation, radius, sortBy, showFilter]);
+    }, [coupons, activeCategory, search, showSaved, reservedIds, userLocation, radius, sortBy, showFilter]);
 
     const countWithoutRadius = useMemo(() => coupons.filter(c => {
         if (activeCategory !== "all" && c.category !== activeCategory) return false;
         if (search && !`${c.brand} ${c.title}`.toLowerCase().includes(search.toLowerCase())) return false;
-        if (showSaved && !reserved.has(c.id)) return false;
+        if (showSaved && !reservedIds.has(c.id)) return false;
         return true;
-    }).length, [coupons, activeCategory, search, showSaved, reserved]);
+    }).length, [coupons, activeCategory, search, showSaved, reservedIds]);
 
     const emptyByRadius = filtered.length === 0 && countWithoutRadius > 0;
 
     /* reservar = guardar: alterna el cupon en la seccion Guardados */
-    const toggleSaved = (id: string) => {
-        setReserved(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-    };
+    /* reservar = llamar al back; la reserva no se puede deshacer desde el cliente */
+    const handleReserve = (id: string) => { void reserve(id); };
 
     const handleSelectLocation = (loc: UserLocation) => {
         setUserLocation(loc);
@@ -154,16 +163,21 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     )}
                                 </div>
                                 <div className="cat-row">
-                                    {CATEGORIES.map(cat => {
-                                        const count = cat.id === "all"
-                                            ? coupons.length
-                                            : coupons.filter(c => c.category === cat.id).length;
+                                    <button type="button"
+                                            className={"chip " + (activeCategory === "all" ? "active" : "")}
+                                            onClick={() => setActiveCategory("all")}>
+                                        <Icon name="grid" size={14}/>
+                                        {t("cat.all")}
+                                        <span className="mono chip-count">{coupons.length}</span>
+                                    </button>
+                                    {categories.map(cat => {
+                                        const count = coupons.filter(c => c.category === cat.name).length;
                                         return (
                                             <button type="button" key={cat.id}
-                                                    className={"chip " + (activeCategory === cat.id ? "active" : "")}
-                                                    onClick={() => setActiveCategory(cat.id)}>
-                                                <Icon name={cat.icon} size={14}/>
-                                                {t(`cat.${cat.id}`)}
+                                                    className={"chip " + (activeCategory === cat.name ? "active" : "")}
+                                                    onClick={() => setActiveCategory(cat.name)}>
+                                                <Icon name="store" size={14}/>
+                                                {cat.name}
                                                 <span className="mono chip-count">{count}</span>
                                             </button>
                                         );
@@ -199,8 +213,8 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                 <BusinessDetailView
                                     business={detailBusiness}
                                     coupons={coupons.filter(c => c.brand === detailBusiness.name)}
-                                    reserved={reserved}
-                                    onToggleSaved={toggleSaved}
+                                    reserved={reservedIds}
+                                    onToggleSaved={() => {}}
                                     onBack={() => setDetailBusiness(null)}
                                     onViewCoupon={(c) => { setDetailCoupon(c); setDetailBusiness(null); }}
                                     realDist={realDist}
@@ -209,8 +223,9 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                             ) : detailCoupon ? (
                                 <CouponDetailView
                                     c={detailCoupon}
-                                    isReserved={reserved.has(detailCoupon.id)}
-                                    onReserve={() => toggleSaved(detailCoupon.id)}
+                                    isReserved={reservedIds.has(detailCoupon.id)}
+                                    onReserve={() => handleReserve(detailCoupon.id)}
+                                    redemptionCode={codeFor(detailCoupon.id)}
                                     onBack={() => setDetailCoupon(null)}
                                     onViewBusiness={() => setDetailBusiness(openBusiness(detailCoupon))}
                                     realDist={realDist(detailCoupon)}
@@ -267,7 +282,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     {couponsLoading ? (
                                         <div className="rp-empty">
                                             <div className="rp-empty-icon"><Icon name="location" size={24}/></div>
-                                            <div className="rp-empty-title">Cargando cupones…</div>
+                                            <div className="rp-empty-title">{t("map.loadingCoupons")}</div>
                                         </div>
                                     ) : filtered.length === 0 ? (
                                         <div className="rp-empty">
@@ -323,8 +338,8 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     ) : (
                                         filtered.map(c => (
                                             <CouponCard key={c.id} c={c}
-                                                        isReserved={reserved.has(c.id)}
-                                                        onToggleSaved={() => toggleSaved(c.id)}
+                                                        isReserved={reservedIds.has(c.id)}
+                                                        onToggleSaved={() => {}}
                                                         onClick={() => { setDetailCoupon(c); setActivePinId(c.id); setDetailBusiness(null); }}
                                                         isSelected={activePinId === c.id}
                                                         realDist={realDist(c)}
@@ -348,15 +363,16 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 {tab === "categories" && (
                     <CategoriesView
                         coupons={coupons}
-                        onPick={catId => { setActiveCategory(catId); setTab("map"); }}
+                        categories={categories}
+                        onPick={catName => { setActiveCategory(catName); setTab("map"); }}
                         onOpenCoupon={c => { setDetailCoupon(c); setTab("map"); }}
                     />
                 )}
 
                 {tab === "profile" && (
                     <ProfileView
-                        reservedCount={reserved.size}
-                        reservedCoupons={coupons.filter(c => reserved.has(c.id))}
+                        reservedCount={reservedIds.size}
+                        reservedCoupons={coupons.filter(c => reservedIds.has(c.id))}
                         theme={theme}
                         onThemeChange={onThemeChange}
                         onSignOut={onSignOut}
@@ -364,7 +380,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 )}
             </div>
 
-            <BottomNav tab={tab} setTab={selectTab} savedCount={reserved.size}/>
+            <BottomNav tab={tab} setTab={selectTab} savedCount={reservedIds.size}/>
 
             {showLocationModal && (
                 <LocationModal

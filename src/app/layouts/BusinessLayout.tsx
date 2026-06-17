@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { MerchantSidebar } from "@/features/campaigns/presentation/components/MerchantSidebar.tsx";
@@ -15,7 +15,8 @@ import { EstablishmentsView } from "@/features/establishments/presentation/views
 import { useEstablishments } from "@/features/establishments/presentation/hooks/useEstablishments.ts";
 import { AccountView } from "@/features/billing/presentation/views/AccountView.tsx";
 import { MerchantProfileView } from "@/features/billing/presentation/views/MerchantProfileView.tsx";
-import { canCreateCampaign, campaignLimitFor } from "@/features/billing/domain/value-objects/PlanLimits.ts";
+import { useBilling } from "@/features/billing/presentation/hooks/useBilling.ts";
+import { CurrentSubscription, withinLimit } from "@/features/billing/domain/entities/CurrentSubscription.ts";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 
@@ -30,17 +31,25 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const navigate = useNavigate();
     const { t } = useTranslation();
     const [view, setView] = useState("dashboard");
-    const [currentPlan, setCurrentPlan] = useState({ id: "plan-freemium", name: "Freemium" });
     const [limitReached, setLimitReached] = useState(false);
     const [confirmSignOut, setConfirmSignOut] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-    const { campaigns, addCampaign, removeCampaign } = useCampaigns();
+    const { campaigns, addCampaign, updateCampaign, removeCampaign } = useCampaigns();
     const { establishments, save: saveEstablishment, remove: removeEstablishment } = useEstablishments();
 
-    /* restriccion del plan -> campanas activas (no finalizadas) */
+    /* suscripcion activa con sus limites reales */
+    const { currentSubscription } = useBilling();
+    const [sub, setSub] = useState<CurrentSubscription | null>(null);
+    useEffect(() => {
+        currentSubscription().then(s => { if (s) setSub(s); });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    /* restriccion del plan -> campanas activas (no finalizadas) vs el limite real */
     const activeCampaigns = campaigns.filter(c => c.status !== "ended").length;
-    const planLimit = campaignLimitFor(currentPlan.id);
-    const allowNewCampaign = canCreateCampaign(currentPlan.id, activeCampaigns);
+    const planLimit = sub?.limits.maxActiveCampaigns ?? 0;
+    const planName = sub?.planName ?? "Freemium";
+    const allowNewCampaign = withinLimit(planLimit, activeCampaigns);
 
     /* intento de crear campana -> respeta el limite del plan */
     const handleNew = () => {
@@ -49,7 +58,10 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     };
 
     const handleDone = (campaign: Campaign) => {
-        void addCampaign(campaign);
+        /* la campana necesita un establecimiento; si el dueno no tiene, lo mandamos a crear uno */
+        const establishmentId = establishments[0]?.id;
+        if (!establishmentId) { setView("establishments"); return; }
+        void addCampaign({ ...campaign, establishmentId });
         setView("campaigns");
     };
 
@@ -60,7 +72,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
 
     return (
         <div className="merchant-app">
-            <MerchantSidebar view={view} setView={setView} onSwitchRole={onSwitchRole} onSignOut={() => setConfirmSignOut(true)}/>
+            <MerchantSidebar view={view} setView={setView} onSwitchRole={onSwitchRole} onSignOut={() => setConfirmSignOut(true)} campaignCount={campaigns.length}/>
             <main className="merchant-main">
                 <MerchantTopbar
                     onAccount={() => setView("account")}
@@ -81,6 +93,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                         onOpen={(c) => { setSelectedCampaign(c); setView("campaign-detail"); }}
                         onDeactivate={handleDeactivate}
                         onDelete={removeCampaign}
+                        onEdit={(id, data) => void updateCampaign(id, data)}
                     />
                 )}
                 {view === "campaign-detail" && selectedCampaign && (
@@ -90,7 +103,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                     />
                 )}
                 {view === "new" && (
-                    <NewCampaign onDone={handleDone} onCancel={() => setView("campaigns")}/>
+                    <NewCampaign onDone={handleDone}/>
                 )}
                 {view === "establishments" && (
                     <EstablishmentsView
@@ -106,11 +119,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                     <RedeemView/>
                 )}
                 {view === "subscription" && (
-                    <AccountView
-                        establishmentCount={establishments.length}
-                        currentPlanId={currentPlan.id}
-                        onPlanChange={setCurrentPlan}
-                    />
+                    <AccountView establishmentCount={establishments.length}/>
                 )}
                 {view === "account" && (
                     <MerchantProfileView
@@ -141,11 +150,11 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                 <Modal onClose={() => setLimitReached(false)} ariaLabel="Límite del plan alcanzado" className="est-modal">
                     <div className="est-modal-body">
                         <div className="est-modal-icon"><Icon name="flag" size={20}/></div>
-                        <h3 className="est-modal-title">Límite del plan {currentPlan.name}</h3>
+                        <h3 className="est-modal-title">Límite del plan {planName}</h3>
                         <p className="est-modal-text">
-                            Tu plan <strong>{currentPlan.name}</strong> permite hasta <strong>{planLimit}</strong> campañas
-                            activas a la vez y ya tienes <strong>{activeCampaigns}</strong>. Mejora a <strong>Premium</strong> para
-                            crear campañas ilimitadas, o finaliza/elimina una campaña activa.
+                            Tu plan <strong>{planName}</strong> permite hasta <strong>{planLimit}</strong> campañas
+                            activas a la vez y ya tienes <strong>{activeCampaigns}</strong>. Mejora tu plan para
+                            crear más campañas, o finaliza/elimina una campaña activa.
                         </p>
                         <div className="est-modal-actions">
                             <button type="button" className="btn est-modal-btn" onClick={() => setLimitReached(false)}>

@@ -28,7 +28,6 @@
 }
 
 .geops-app .fade-up  { animation: geops-fade-up  480ms cubic-bezier(.2,.8,.2,1) both; }
-.geops-app .fade-in  { animation: geops-fade-in  320ms ease both; }
 .geops-app .scale-in { animation: geops-scale-in 320ms cubic-bezier(.2,.8,.2,1) both; }
 
 .geops-app .stagger > * { animation: geops-fade-up 520ms cubic-bezier(.2,.8,.2,1) both; }

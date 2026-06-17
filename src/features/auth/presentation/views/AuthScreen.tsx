@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { BackgroundGrid } from "@/shared/ui/components/BackgroundGrid.tsx";
 import { BrandMark } from "@/shared/ui/components/BrandMark.tsx";
@@ -13,15 +14,16 @@ interface AuthScreenProps {
 }
 
 const FEATURES = [
-    { icon: "location", text: "Alcance hiperlocal en tu radio" },
-    { icon: "chart",    text: "Estadísticas de reservas en vivo" },
-    { icon: "check",    text: "Sin comisiones por canje" },
-    { icon: "bell",     text: "Notificaciones a clientes cercanos" },
-];
+    { icon: "location", key: "auth.featReach" },
+    { icon: "chart",    key: "auth.featStats" },
+    { icon: "check",    key: "auth.featNoFee" },
+    { icon: "bell",     key: "auth.featNotif" },
+] as const;
 
 const BG_PINS = [[150, 140], [800, 180], [120, 520], [880, 560], [920, 300]];
 
 export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
+    const { t } = useTranslation();
     const { signIn, signUp, loading, error } = useAuth();
     const [name, setName]         = useState("");
     const [email, setEmail]       = useState("");
@@ -61,27 +63,25 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                     </div>
 
                     <h2 className="auth-title">
-                        {isSignup ? "Crea tu cuenta" : "Bienvenido de vuelta"}
+                        {isSignup ? t("auth.titleSignup") : t("auth.titleSignin")}
                     </h2>
                     <p className="auth-subtitle">
-                        {isSignup
-                            ? "Empieza a descubrir cupones a tu alrededor en menos de un minuto."
-                            : "Tus cupones cercanos te están esperando."}
+                        {isSignup ? t("auth.subtitleSignup") : t("auth.subtitleSignin")}
                     </p>
 
                     <form onSubmit={submit} className="auth-form">
                         {isSignup && (
                             <div className="field">
-                                <label htmlFor="auth-name">Nombre</label>
-                                <input id="auth-name" className="input" placeholder="Tu nombre" value={name} onChange={e => setName(e.target.value)}/>
+                                <label htmlFor="auth-name">{t("auth.name")}</label>
+                                <input id="auth-name" className="input" placeholder={t("auth.namePlaceholder")} value={name} onChange={e => setName(e.target.value)}/>
                             </div>
                         )}
                         <div className="field">
-                            <label htmlFor="auth-email">Correo</label>
-                            <input id="auth-email" className="input" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com"/>
+                            <label htmlFor="auth-email">{t("auth.email")}</label>
+                            <input id="auth-email" className="input" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder={t("auth.emailPlaceholder")}/>
                         </div>
                         <div className="field">
-                            <label htmlFor="auth-password">Contraseña</label>
+                            <label htmlFor="auth-password">{t("auth.password")}</label>
                             <input id="auth-password" className="input" type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"/>
                         </div>
 
@@ -90,8 +90,8 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                                 onClick={() => setIsOwner(v => !v)}>
                             <div className="auth-role-icon"><Icon name="store" size={14}/></div>
                             <div className="auth-role-text">
-                                <div className="auth-role-title">Soy dueño de un negocio</div>
-                                <div className="auth-role-sub">Publica campañas y administra tus establecimientos</div>
+                                <div className="auth-role-title">{t("auth.ownerTitle")}</div>
+                                <div className="auth-role-sub">{t("auth.ownerSub")}</div>
                             </div>
                             <div className="auth-role-track"><div className="auth-role-thumb"/></div>
                         </button>
@@ -101,16 +101,16 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                         )}
 
                         <button type="submit" className="btn btn-brand auth-fullbtn auth-submit" disabled={loading}>
-                            {loading ? "Conectando..." : (isSignup ? "Crear cuenta" : "Iniciar sesión")}
+                            {loading ? t("auth.connecting") : (isSignup ? t("auth.createAccount") : t("auth.signIn"))}
                             {!loading && <Icon name="arrowRight" size={16}/>}
                         </button>
                     </form>
 
                     <div className="auth-switch-row">
-                        {isSignup ? "¿Ya tienes cuenta?" : "¿Nuevo en GeoPS?"}{" "}
+                        {isSignup ? t("auth.haveAccount") : t("auth.newHere")}{" "}
                         <button type="button" className="auth-switch-btn"
                                 onClick={() => setMode(isSignup ? "signin" : "signup")}>
-                            {isSignup ? "Inicia sesión" : "Regístrate"}
+                            {isSignup ? t("auth.doSignIn") : t("auth.doSignUp")}
                         </button>
                     </div>
                 </div>
@@ -118,34 +118,34 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                 {/* panel promocional */}
                 <div className="scale-in auth-promo-panel auth-promo-delay">
                     <div>
-                        <div className="eyebrow auth-promo-eyebrow">GeoPS Business</div>
+                        <div className="eyebrow auth-promo-eyebrow">{t("auth.promoEyebrow")}</div>
                         <h3 className="auth-promo-title">
-                            ¿Tienes un local?<br/>Llega a clientes a <em className="auth-promo-em">500 m</em> de tu puerta.
+                            {t("auth.promoTitlePre")}<br/>{t("auth.promoTitleMid")}<em className="auth-promo-em">{t("auth.promoTitleEm")}</em>{t("auth.promoTitlePost")}
                         </h3>
                         <p className="auth-promo-text">
-                            Activa <strong>"Soy dueño de un negocio"</strong> al registrarte para publicar campañas geolocalizadas y medir reservas en tiempo real.
+                            {t("auth.promoTextPre")}<strong>"{t("auth.ownerTitle")}"</strong>{t("auth.promoTextPost")}
                         </p>
                     </div>
 
                     <div className="auth-promo-features">
                         {FEATURES.map(f => (
-                            <div key={f.text} className="auth-feature">
+                            <div key={f.key} className="auth-feature">
                                 <div className="auth-feature-icon"><Icon name={f.icon} size={13}/></div>
-                                {f.text}
+                                {t(f.key)}
                             </div>
                         ))}
                     </div>
 
                     <button type="button" className="btn btn-light btn-sm auth-promo-cta"
                             onClick={() => { setMode("signup"); setIsOwner(true); }}>
-                        Registrarme como negocio <Icon name="arrowRight" size={13}/>
+                        {t("auth.ctaRegisterBusiness")} <Icon name="arrowRight" size={13}/>
                     </button>
 
-                    <div className="auth-promo-foot">BETA GRATUITA · SIN TARJETA · LIMA, PERÚ</div>
+                    <div className="auth-promo-foot">{t("auth.promoFoot")}</div>
                 </div>
             </div>
 
-            <div className="auth-tagline">ENCRYPTED · GEOLOCATION-AWARE · NO TRACKING</div>
+            <div className="auth-tagline">{t("auth.tagline")}</div>
         </div>
     );
 }

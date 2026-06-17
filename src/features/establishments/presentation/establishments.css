@@ -1,27 +1,5 @@
-/* registro de establecimiento */
-.geops-app .rb-root {
-  min-height: 100vh; background: var(--bg-sunken);
-  display: flex; flex-direction: column;
-}
-.geops-app .rb-head {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 24px; background: var(--bg-elev);
-  border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5;
-}
-.geops-app .rb-head .brand { flex: 1; }
-.geops-app .rb-body {
-  width: min(1120px, 100%); margin: 0 auto; padding: 32px 24px 0; flex: 1;
-}
-@media (max-width: 560px) {
-  .geops-app .rb-body { padding: 20px 14px 0; }
-}
 
-/* intro del registro */
-.geops-app .rb-intro { margin-bottom: 24px; }
-.geops-app .rb-intro-eyebrow { margin-bottom: 6px; }
-.geops-app .rb-intro-title { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
-.geops-app .rb-intro-text { margin: 6px 0 0; color: var(--ink-2); font-size: 14px; }
-.geops-app .rb-bottom-space { height: 40px; }
+
 
 /* formulario de negocio: layout de 2 columnas */
 .geops-app .bf-grid {
@@ -135,12 +113,11 @@
 
 /* pagina / header del listado y form */
 .geops-app .est-page { max-width: 1400px; }
-.geops-app .est-form-back { margin-bottom: 8px; }
 .geops-app .est-form-title { margin: 0; }
 
 /* estado vacio */
-.geops-app .est-empty { padding: 48px 24px; text-align: center; }
-.geops-app .est-empty-icon { opacity: 0.25; margin: 0 auto 12px; display: block; }
+.geops-app .est-empty { padding: 48px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.geops-app .est-empty-icon { opacity: 0.25; margin-bottom: 12px; }
 .geops-app .est-empty-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
 .geops-app .est-empty-sub { font-size: 13px; color: var(--ink-3); margin-bottom: 16px; }
 
@@ -172,6 +149,8 @@
   width: 44px; height: 44px; border-radius: 12px; background: #fef2f2; color: #dc2626;
   display: grid; place-items: center; margin-bottom: 14px;
 }
+/* variante neutra (ej. desactivar/reactivar campana, no es accion destructiva) */
+.geops-app .est-modal-icon-neutral { background: var(--bg-sunken); color: var(--ink-2); }
 .geops-app .est-modal-title { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
 .geops-app .est-modal-text { margin: 0 0 20px; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
 .geops-app .est-modal-actions { display: flex; gap: 10px; }

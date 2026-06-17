@@ -24,7 +24,6 @@
 /* merchant Sidebar */
 .geops-app .msb { background: var(--bg-elev); border-right: 1px solid var(--line); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 @media (max-width: 880px) { .geops-app .msb { position: relative; height: auto; } }
-.geops-app .msb-store { margin: 0 14px 6px; padding: 10px; border-radius: 12px; background: var(--bg-sunken); display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--ink-2); }
 .geops-app .msb-nav     { padding: 14px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .geops-app .msb-section { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); padding: 8px 10px 4px; }
 .geops-app .msb-item {
@@ -36,8 +35,7 @@
 .geops-app .msb-item:hover                    { background: var(--bg-sunken); color: var(--ink); }
 .geops-app .msb-item.active                   { background: var(--ink); color: var(--bg); }
 .geops-app .msb-item.active .msb-badge        { background: var(--brand); color: var(--brand-ink); }
-.geops-app .msb-item.primary                  { background: var(--brand-soft); color: var(--brand-ink); }
-.geops-app .msb-item.primary:hover            { background: color-mix(in oklab, var(--brand) 25%, var(--bg-elev)); }
+
 .geops-app .msb-item span                     { flex: 1; }
 .geops-app .msb-badge { font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; background: var(--bg-sunken); border-radius: 999px; color: var(--ink-2); flex: 0 !important; }
 .geops-app .msb-foot  { padding: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
@@ -47,8 +45,6 @@
   padding: 8px 10px; border-radius: 8px; font-size: 13px; font-family: var(--font-sans); color: var(--ink-3);
 }
 .geops-app .msb-signout:hover { background: var(--bg-sunken); color: var(--danger); }
-.geops-app .msb-card  { padding: 14px; background: var(--bg-sunken); border: 1px dashed var(--line-strong); border-radius: 12px; }
-
 /* merchant Dashboard */
 .geops-app .md { padding: 28px; max-width: 1400px; margin: 0 auto; }
 .geops-app .md-head  { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
@@ -58,7 +54,6 @@
 @media (max-width: 1100px) { .geops-app .md-grid { grid-template-columns: 1fr; } }
 .geops-app .md-chart  { padding: 22px; min-height: 360px; }
 .geops-app .md-funnel { padding: 22px; }
-.geops-app .md-heatmap { padding: 0; overflow: hidden; }
 .geops-app .md-chart-legend { display: flex; align-items: center; gap: 18px; margin-top: 14px; font-size: 12px; color: var(--ink-2); }
 .geops-app .md-chart-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 .geops-app .funnel-row { margin-bottom: 14px; }
@@ -68,13 +63,9 @@
 
 /* sidebar merchant: detalles migrados de inline */
 .geops-app .msb-head { padding: 18px 18px 12px; }
-.geops-app .msb-store-info { min-width: 0; }
-.geops-app .msb-store-name { font-size: 13px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-.geops-app .msb-store-plan { font-size: 11px; color: var(--ink-3); }
+
 .geops-app .msb-section-gap { margin-top: 18px; }
-.geops-app .msb-card-title { font-size: 14px; font-weight: 600; margin-top: 6px; }
-.geops-app .msb-card-sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
-.geops-app .msb-card-btn { margin-top: 10px; width: 100%; justify-content: center; }
+
 .geops-app .msb-switch-btn { width: 100%; justify-content: flex-start; margin-top: 8px; }
 
 /* listado de campanas (CampaignsList) */
@@ -85,23 +76,13 @@
 .geops-app .cl-spacer { flex: 1; }
 .geops-app .cl-search { padding: 6px 10px; box-shadow: none; max-width: 220px; }
 .geops-app .cl-search-input { font-size: 13px; }
-.geops-app .cl-empty { padding: 48px 24px; text-align: center; color: var(--ink-3); }
-.geops-app .cl-empty-icon { opacity: 0.25; margin: 0 auto 12px; display: block; }
+.geops-app .cl-empty { padding: 48px 24px; text-align: center; color: var(--ink-3); display: flex; flex-direction: column; align-items: center; }
+.geops-app .cl-empty-icon { opacity: 0.25; margin-bottom: 12px; }
 .geops-app .cl-empty-title { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-bottom: 4px; }
 .geops-app .cl-empty-cta { margin-top: 12px; }
-
-/* fila de la tabla de campanas */
-.geops-app .ct-name-cell { display: flex; gap: 12px; align-items: center; min-width: 0; }
 .geops-app .ct-avatar { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; background: var(--bg-sunken); border: 1px solid var(--line); }
 .geops-app .ct-avatar.live { background: linear-gradient(135deg, var(--brand) 0%, var(--accent-2) 100%); }
-.geops-app .ct-name-wrap { min-width: 0; }
-.geops-app .ct-name { font-size: 14px; font-weight: 500; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-.geops-app .ct-id { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); }
-.geops-app .ct-stock-cell { display: flex; flex-direction: column; gap: 4px; }
-.geops-app .ct-stock-num { font-size: 12px; }
-.geops-app .ct-stock-bar { height: 3px; }
-.geops-app .ct-stock-bar .stock-fill.empty { background: var(--line-strong); }
-.geops-app .ct-time { font-size: 12px; color: var(--ink-2); }
+
 .geops-app .ct-actions { text-align: right; }
 
 /* new Campaign */
@@ -110,10 +91,11 @@
 
 /* layout y secciones del formulario */
 .geops-app .nc-page { max-width: 1400px; }
-.geops-app .nc-page-title { margin: 0; }
 .geops-app .nc-col { display: flex; flex-direction: column; gap: 14px; }
 .geops-app .nc-card { padding: 22px; }
 .geops-app .nc-eyebrow { margin-bottom: 14px; }
+.geops-app .cl-new-coupon { margin-bottom: 16px; }
+.geops-app .nc-optional { color: var(--ink-3); font-weight: 400; font-size: 11px; }
 .geops-app .nc-fields { display: flex; flex-direction: column; gap: 14px; }
 .geops-app .nc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .geops-app .nc-row2-sm { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
@@ -246,37 +228,14 @@
 .geops-app .nc-summary-label { font-size: 12px; color: var(--ink-3); }
 .geops-app .nc-summary-value { font-size: 12px; font-weight: 500; color: var(--ink); max-width: 160px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* campaigns Table */
-.geops-app .campaigns-table { display: flex; flex-direction: column; }
-.geops-app .ct-head,
-.geops-app .ct-row {
-  display: grid; grid-template-columns: 2.4fr 1.2fr 0.9fr 0.9fr 0.9fr 0.9fr 1.1fr 0.9fr 0.4fr;
-  gap: 14px; padding: 14px 18px; align-items: center;
-}
-.geops-app .ct-row-link { cursor: pointer; }
-.geops-app .ct-rate { color: var(--brand-strong); font-weight: 600; }
 .geops-app .ct-best-badge {
   display: inline-flex; align-items: center; gap: 3px; margin-left: 8px;
   font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
   background: color-mix(in oklab, var(--brand) 16%, transparent); color: var(--brand-strong);
   vertical-align: middle;
 }
-.geops-app .ct-head { background: var(--bg-sunken); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-3); }
-.geops-app .ct-row  { border-bottom: 1px solid var(--line); font-size: 13px; transition: background 160ms ease; }
-.geops-app .ct-row:hover      { background: var(--bg-sunken); }
-.geops-app .ct-row:last-child { border-bottom: 0; }
-@media (max-width: 1100px) {
-  .geops-app .ct-head { display: none; }
-  .geops-app .ct-row  { grid-template-columns: 1fr; gap: 6px; padding: 14px; }
-}@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-.geops-app .msb-store-avatar {
-  width: 38px; height: 38px; border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--accent-2) 100%);
-  color: var(--brand-ink); display: grid; place-items: center;
-  font-weight: 600; font-size: 14px; flex-shrink: 0;
-}
-
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 /* campaign row action menu */
 .geops-app .ct-actions-menu { position: relative; }
 .geops-app .ct-menu {
@@ -316,7 +275,6 @@
 .geops-app .cm-meta { font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
 .geops-app .cm-discount { color: var(--brand-strong); font-weight: 600; }
 .geops-app .cm-cat-tag { background: var(--bg-sunken); color: var(--ink-2); font-weight: 600; padding: 1px 8px; border-radius: 999px; }
-.geops-app .cm-orig { text-decoration: line-through; opacity: 0.6; }
 .geops-app .cm-sep { opacity: 0.3; }
 .geops-app .cm-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
@@ -325,7 +283,6 @@
 .geops-app .cm-edit-body { padding: 24px; }
 .geops-app .cm-edit-title { margin: 0 0 18px; font-size: 18px; font-weight: 600; }
 .geops-app .cm-edit-fields { display: flex; flex-direction: column; gap: 14px; }
-.geops-app .cm-edit-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .geops-app .cm-edit-actions { display: flex; gap: 10px; margin-top: 20px; }
 .geops-app .cm-edit-actions .btn { flex: 1; justify-content: center; }
 
@@ -378,9 +335,6 @@
   .geops-app .cg-coupon { flex-direction: column; align-items: flex-start; gap: 6px; }
   .geops-app .cg-coupon-metrics { gap: 10px; }
 }
-
-/* ─────────── detalle de campaña (rendimiento + desglose por cupon) ─────────── */
-.geops-app .cd-back { margin-bottom: 12px; }
 .geops-app .cd-detail-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 .geops-app .cd-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }

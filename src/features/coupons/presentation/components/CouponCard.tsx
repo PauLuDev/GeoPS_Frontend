@@ -5,7 +5,7 @@ import {Coupon} from "@/shared/types.ts";
 interface CouponCardProps {
     c: Coupon;
     isReserved: boolean;
-    onToggleSaved: () => void;
+    onToggleSaved?: () => void;
     onClick: () => void;
     isSelected: boolean;
     hideBrand?: boolean;
@@ -13,7 +13,7 @@ interface CouponCardProps {
     realWalk?: number;
 }
 
-export function CouponCard({ c, isReserved, onToggleSaved, onClick, isSelected, hideBrand = false, realDist, realWalk }: CouponCardProps) {
+export function CouponCard({ c, isReserved, onClick, isSelected, hideBrand = false, realDist, realWalk }: CouponCardProps) {
     const { t } = useTranslation();
     const dist = realDist ?? c.distance;
     const walk = realWalk ?? c.walking;
@@ -51,12 +51,6 @@ export function CouponCard({ c, isReserved, onToggleSaved, onClick, isSelected, 
                     </div>
                 </div>
             </button>
-            {isReserved && (
-                <button type="button" className="cc-fav" aria-pressed={true} aria-label={t("coupon.removeSaved")}
-                        onClick={onToggleSaved}>
-                    <Icon name="bookmark" size={16} filled={true}/>
-                </button>
-            )}
         </div>
     );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
+import { EditCampaign } from "@/features/campaigns/domain/repositories/ICampaignRepository.ts";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/features/campaigns/domain/value-objects/CampaignStatus.ts";
 import { bestCampaignId, bestCouponId, ratePct, redemptionRate } from "@/features/campaigns/domain/value-objects/Performance.ts";
 import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
@@ -21,14 +22,31 @@ interface CampaignsListProps {
     onOpen?: (c: Campaign) => void;
     onDeactivate?: (id: number) => void;
     onDelete?: (id: number) => void;
+    onEdit?: (id: number, data: EditCampaign) => void;
 }
 
-export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete }: CampaignsListProps) {
+export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete, onEdit }: CampaignsListProps) {
     const [filter, setFilter] = useState<StatusFilter>("all");
     const [search, setSearch] = useState("");
     const [menuOpen, setMenuOpen] = useState<number | null>(null);
     const [toDelete, setToDelete] = useState<Campaign | null>(null);
     const [toDeactivate, setToDeactivate] = useState<Campaign | null>(null);
+    const [toEdit, setToEdit] = useState<Campaign | null>(null);
+    const [editName, setEditName]   = useState("");
+    const [editStart, setEditStart] = useState("");
+    const [editEnd, setEditEnd]     = useState("");
+
+    const openEdit = (c: Campaign) => {
+        setToEdit(c);
+        setEditName(c.name);
+        setEditStart((c.startDate || "").slice(0, 10));
+        setEditEnd((c.endDate || "").slice(0, 10));
+    };
+    const saveEdit = () => {
+        if (!toEdit || !onEdit) return;
+        onEdit(toEdit.id, { name: editName.trim(), startDate: editStart, endDate: editEnd });
+        setToEdit(null);
+    };
 
     const visible = filterCampaigns(campaigns, filter, search);
     const bestId = bestCampaignId(campaigns);   // mejor campana por tasa de canje
@@ -46,9 +64,11 @@ export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete
                         {live} activa{live !== 1 ? "s" : ""} · {draft} borrador{draft !== 1 ? "es" : ""} · {scheduled} programada{scheduled !== 1 ? "s" : ""}
                     </p>
                 </div>
-                <button type="button" className="btn btn-brand" onClick={onNew}>
-                    <Icon name="plus" size={14}/> Nueva campaña
-                </button>
+                {campaigns.length > 0 && (
+                    <button type="button" className="btn btn-brand" onClick={onNew}>
+                        <Icon name="plus" size={14}/> Nueva campaña
+                    </button>
+                )}
             </header>
 
             <div className="card cl-card">
@@ -132,6 +152,10 @@ export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete
                                             </button>
                                             {menuOpen === c.id && (
                                                 <div className="ct-menu">
+                                                    <button type="button" className="ct-menu-item"
+                                                            onClick={() => { setMenuOpen(null); openEdit(c); }}>
+                                                        <Icon name="edit" size={13}/> Editar
+                                                    </button>
                                                     {c.status === "live" && (
                                                         <button type="button" className="ct-menu-item"
                                                                 onClick={() => { setMenuOpen(null); setToDeactivate(c); }}>
@@ -180,11 +204,42 @@ export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete
                 )}
             </div>
 
+            {/* modal de editar campana (nombre y fechas) */}
+            {toEdit && (
+                <Modal onClose={() => setToEdit(null)} ariaLabel="Editar campaña" className="est-modal">
+                    <div className="est-modal-body">
+                        <h3 className="est-modal-title">Editar campaña</h3>
+                        <div className="field">
+                            <label htmlFor="ce-name">Nombre</label>
+                            <input id="ce-name" className="input" value={editName} onChange={e => setEditName(e.target.value)}/>
+                        </div>
+                        <div className="nc-row2">
+                            <div className="field">
+                                <label htmlFor="ce-start">Inicio</label>
+                                <input id="ce-start" className="input" type="date" value={editStart} onChange={e => setEditStart(e.target.value)}/>
+                            </div>
+                            <div className="field">
+                                <label htmlFor="ce-end">Fin</label>
+                                <input id="ce-end" className="input" type="date" value={editEnd} onChange={e => setEditEnd(e.target.value)}/>
+                            </div>
+                        </div>
+                        <div className="est-modal-actions">
+                            <button type="button" className="btn est-modal-btn" onClick={() => setToEdit(null)}>Cancelar</button>
+                            <button type="button" className="btn btn-brand est-modal-btn"
+                                    disabled={!editName.trim() || !editStart || !editEnd || editEnd < editStart}
+                                    onClick={saveEdit}>
+                                <Icon name="check" size={14}/> Guardar
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
             {/* modal desactivar/reactivar campana */}
             {toDeactivate && (
                 <Modal onClose={() => setToDeactivate(null)} ariaLabel="Desactivar campaña" className="est-modal">
                     <div className="est-modal-body">
-                        <div className="est-modal-icon" style={{ background: "var(--bg-sunken)", color: "var(--ink-2)" }}>
+                        <div className="est-modal-icon est-modal-icon-neutral">
                             <Icon name={toDeactivate.status === "live" ? "close" : "check"} size={20}/>
                         </div>
                         <h3 className="est-modal-title">
