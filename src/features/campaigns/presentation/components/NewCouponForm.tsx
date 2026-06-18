@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Select } from "@/shared/ui/components/Select.tsx";
 import { DatePicker } from "@/shared/ui/components/DatePicker.tsx";
@@ -17,6 +17,16 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
     const { create, loading, error } = useCoupons();
 
     const [establishmentId, setEstablishmentId] = useState(establishments[0]?.id ?? "");
+
+    /* los establecimientos cargan async: si el id quedo vacio en el primer render
+       (cuando aun no habian llegado), lo completamos al primero disponible. sin
+       esto, con un unico establecimiento el select esta oculto y no hay forma de
+       setearlo -> el form se queda en "completa los campos obligatorios" */
+    useEffect(() => {
+        if (!establishmentId && establishments.length > 0) {
+            setEstablishmentId(establishments[0].id);
+        }
+    }, [establishments, establishmentId]);
     const [title, setTitle]               = useState("");
     const [promotionType, setPromotionType] = useState<PromotionType>("PERCENTAGE");
     const [discountValue, setDiscountValue] = useState("");

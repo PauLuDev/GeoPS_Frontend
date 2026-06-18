@@ -1,8 +1,6 @@
 import { Coupon as UICoupon, Business } from "@/shared/types.ts";
 import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
 import { toBusiness } from "@/features/establishments/application/mappers/EstablishmentMapper.ts";
-import { campaignApi } from "@/features/campaigns/infrastructure/api/campaignApi.ts";
-import { CampaignResource } from "@/features/campaigns/application/dtos/CampaignResource.ts";
 import { HttpCommentRepository } from "@/features/comments/infrastructure/repositories/HttpCommentRepository.ts";
 import { couponApi } from "../../infrastructure/api/couponApi.ts";
 import { toUICoupon } from "../mappers/DiscoverCouponMapper.ts";
@@ -18,7 +16,7 @@ const LIMA_RADIUS = 100000;
 
 /*
  descubre los cupones cerca del usuario juntando varias fuentes
- locales cercanos -> campanas activas de cada uno -> cupones de cada campana, mas el rating real del local
+ locales cercanos -> todos los cupones de cada local (sueltos + de campana), mas el rating real del local
  no hay una fuente unica de "cupones cerca de mi" -> por eso se arma aca en el front
 */
 export async function discoverNearbyCoupons(lat: number, lng: number, radiusMeters: number): Promise<Discovery> {
@@ -36,24 +34,15 @@ export async function discoverNearbyCoupons(lat: number, lng: number, radiusMete
             business.totalReviews = stats.totalReviews;
         } catch { /* sin reseñas todavia */ }
 
-        /* campanas activas del local */
-        let campaigns: CampaignResource[] = [];
+        /* todos los cupones del local: sueltos y de campana (no solo los de campanas activas).
+           la vigencia se toma de la propia fecha de fin del cupon */
+        let coupons: UICoupon[] = [];
         try {
-            campaigns = await campaignApi.listByEstablishment(er.id);
-        } catch { /* el local aun no tiene campanas */ }
-        const active = campaigns.filter(c => c.status === "ACTIVE");
+            const cs = await couponApi.listByEstablishment(er.id);
+            coupons = cs.map(c => toUICoupon(c, business, c.endDate));
+        } catch { /* el local aun no tiene cupones */ }
 
-        /* cupones de cada campana activa */
-        const couponLists = await Promise.all(active.map(async camp => {
-            try {
-                const cs = await couponApi.listByCampaign(camp.id);
-                return cs.map(c => toUICoupon(c, business, camp.endDate));
-            } catch {
-                return [];
-            }
-        }));
-
-        return { business, coupons: couponLists.flat() };
+        return { business, coupons };
     }));
 
     const coupons = perEstablishment.flatMap(p => p.coupons);

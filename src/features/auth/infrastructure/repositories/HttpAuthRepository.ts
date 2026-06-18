@@ -3,7 +3,7 @@ import { Role } from "../../domain/value-objects/Role.ts";
 import { SignUpData, SignInData, IAuthRepository } from "../../domain/repositories/IAuthRepository.ts";
 import { toUser } from "../../application/mappers/UserMapper.ts";
 import { TokenStorage } from "../TokenStorage.ts";
-import { firebaseSignUp, firebaseSignIn, firebaseSignOut, isFirebaseConfigured } from "../firebaseAuth.ts";
+import { firebaseSignUp, firebaseSignIn, firebaseSignOut, firebaseRefreshToken, isFirebaseConfigured } from "../firebaseAuth.ts";
 import { authApi } from "../api/authApi.ts";
 
 /*
@@ -29,6 +29,12 @@ export class HttpAuthRepository implements IAuthRepository {
             lastname: data.lastname,
         });
 
+        /* 3) refrescar el token: ahora el IAM ya seteo los custom claims
+           (userId + roles), pero el token actual es anterior y no los trae.
+           sin esto, crear establecimiento/campana/cupon falla hasta re-login */
+        const refreshed = await firebaseRefreshToken();
+        if (refreshed) TokenStorage.setToken(refreshed);
+
         const user = toUser(resource);
         TokenStorage.setUser(JSON.stringify(user));
         return user;
@@ -41,11 +47,13 @@ export class HttpAuthRepository implements IAuthRepository {
         const session = await firebaseSignIn(data.email, data.password);
         TokenStorage.setToken(session.idToken);
 
-        /* por ahora el usuario se arma desde firebase */
+        /* el usuario se arma desde los custom claims del token: userId es el UUID
+           del IAM (el mismo con que se guardan establecimientos/campanas), no el
+           uid de firebase. los roles tambien salen del claim */
         const user: User = {
-            id: session.uid,
+            id: session.userId,
             username: (session.email ?? data.email).split("@")[0],
-            roles: data.roles as Role[],
+            roles: (session.roles.length ? session.roles : data.roles) as Role[],
         };
         TokenStorage.setUser(JSON.stringify(user));
         return user;
