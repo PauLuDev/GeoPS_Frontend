@@ -47,7 +47,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     const [detailBusiness, setDetailBusiness] = useState<Business | null>(null);
     const [activePinId, setActivePinId] = useState<string | undefined>(undefined);
     const me = getCurrentUser();
-    const { reservedIds, reserve, codeFor } = useReservations(me?.id ?? "");
+    const { reservedIds, reserve, codeFor, reservations } = useReservations(me?.id ?? "");
 
     /* categorias reales para los chips de filtro (se filtra por nombre de categoria) */
     const [categories, setCategories] = useState<CategoryResource[]>([]);
@@ -116,7 +116,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
 
     /* reservar = guardar: alterna el cupon en la seccion Guardados */
     /* reservar = llamar al back; la reserva no se puede deshacer desde el cliente */
-    const handleReserve = (id: string) => { void reserve(id); };
+    const handleReserve = async (id: string) => { await reserve(id); };
 
     const handleSelectLocation = (loc: UserLocation) => {
         setUserLocation(loc);
@@ -371,7 +371,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
 
                 {tab === "profile" && (
                     <ProfileView
-                        reservedCount={reservedIds.size}
+                        reservedCount={reservations.length}
                         reservedCoupons={coupons.filter(c => reservedIds.has(c.id))}
                         theme={theme}
                         onThemeChange={onThemeChange}
@@ -380,7 +380,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 )}
             </div>
 
-            <BottomNav tab={tab} setTab={selectTab} savedCount={reservedIds.size}/>
+            <BottomNav tab={tab} setTab={selectTab} savedCount={reservations.length}/>
 
             {showLocationModal && (
                 <LocationModal

@@ -26,9 +26,15 @@ export function useCampaigns(repository?: ICampaignRepository) {
 
     useEffect(() => { void reload(); }, [reload]);
 
-    const addCampaign = async (campaign: Campaign) => {
-        await repoRef.current.add(campaign);
-        await reload();
+    const addCampaign = async (campaign: Campaign): Promise<boolean> => {
+        try {
+            await repoRef.current.add(campaign);
+            await reload();
+            return true;
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "no se pudo crear la campaña");
+            return false;
+        }
     };
 
     const updateCampaign = async (id: number, data: EditCampaign) => {
