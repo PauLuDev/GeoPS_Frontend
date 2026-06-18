@@ -39,8 +39,6 @@ export function AccountView({ establishmentCount = 0 }: AccountViewProps) {
     const [autoRenew, setAutoRenew]       = useState(true);
     const [confirmCancel, setConfirmCancel] = useState(false);
 
-    const loadSub = () => { currentSubscription().then(s => { if (s) setSub(s); }); };
-
     useEffect(() => {
         let alive = true;
         listPlans().then(p => { if (alive && p) setPlans(p); });
@@ -84,13 +82,26 @@ export function AccountView({ establishmentCount = 0 }: AccountViewProps) {
         if (clientSecret !== null) setCheckout({ plan, clientSecret });   // abre el pago
     };
 
-    /* pago confirmado -> el plan real cambia cuando el webhook del back lo activa */
+    /* pago confirmado -> el plan real cambia cuando el webhook del back lo activa.
+       el webhook es asincrono (Stripe -> back), tarda 1-2s; por eso reintentamos
+       leer /user/current hasta que figure el plan pagado, sin recargar la pagina */
+    const pollForActivation = async (plan: Plan) => {
+        for (let i = 0; i < 10; i++) {
+            const s = await currentSubscription();
+            if (s) {
+                setSub(s);
+                if (s.planName === plan.name && (s.status ?? "ACTIVE") === "ACTIVE") return;
+            }
+            await new Promise(r => setTimeout(r, 1500));
+        }
+    };
+
     const handlePaid = (plan: Plan) => {
         setCheckout(null);
         setAutoRenew(true);
         setSuccess(t("plans.upgraded", { plan: plan.name }));
         setTimeout(() => setSuccess(""), 4000);
-        loadSub();
+        void pollForActivation(plan);
     };
 
     const handleCancelRenewal = async () => {
