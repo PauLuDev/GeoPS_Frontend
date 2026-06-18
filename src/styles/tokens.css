@@ -1,0 +1,109 @@
+.geops-app {
+  /* brand */
+  --brand-h: 130;
+  --brand: oklch(0.78 0.18 var(--brand-h));
+  --brand-strong: oklch(0.62 0.20 var(--brand-h));
+  --brand-soft: oklch(0.94 0.08 var(--brand-h));
+  --brand-ink: oklch(0.22 0.06 var(--brand-h));
+
+  /* secondary accent (violet) */
+  --accent-2: oklch(0.55 0.18 295);
+  --accent-2-soft: oklch(0.94 0.04 295);
+
+  /* warning / urgency */
+  --warn: oklch(0.72 0.17 55);
+  --danger: oklch(0.62 0.22 25);
+
+  /* light theme */
+  --bg: oklch(0.985 0.004 95);
+  --bg-elev: #ffffff;
+  --bg-sunken: oklch(0.96 0.005 95);
+  --ink: oklch(0.18 0.01 260);
+  --ink-2: oklch(0.40 0.01 260);
+  --ink-3: oklch(0.58 0.01 260);
+  --line: oklch(0.92 0.004 95);
+  --line-strong: oklch(0.86 0.005 95);
+  --map-bg: oklch(0.96 0.01 95);
+  --map-streets: oklch(0.91 0.008 95);
+  --map-park: oklch(0.93 0.04 130);
+  --map-water: oklch(0.92 0.05 230);
+
+  /* spacing */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --space-10: 40px; --space-12: 48px;
+
+  /* radius */
+  --g-radius-sm: 8px;
+  --g-radius: 12px;
+  --g-radius-lg: 18px;
+  --g-radius-xl: 24px;
+  --g-radius-pill: 999px;
+
+  /* shadows */
+  --shadow-sm: 0 1px 2px oklch(0.2 0.02 260 / 0.06), 0 1px 1px oklch(0.2 0.02 260 / 0.04);
+  --shadow: 0 6px 24px -8px oklch(0.2 0.02 260 / 0.18), 0 2px 6px -2px oklch(0.2 0.02 260 / 0.08);
+  --shadow-lg: 0 24px 60px -20px oklch(0.2 0.02 260 / 0.30), 0 8px 20px -8px oklch(0.2 0.02 260 / 0.12);
+
+  /* fonts */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--bg);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+}
+
+/* density variants */
+.geops-app[data-density="compact"] {
+  --space-3: 8px; --space-4: 12px; --space-5: 14px;
+  --space-6: 18px; --space-8: 22px;
+  --g-radius: 10px; --g-radius-lg: 14px;
+}
+.geops-app[data-density="cozy"] {
+  --space-3: 14px; --space-4: 18px; --space-5: 22px;
+  --space-6: 28px; --space-8: 38px;
+  --g-radius: 14px; --g-radius-lg: 22px;
+}
+
+/* dark theme */
+.geops-app[data-theme="dark"] {
+  --bg: oklch(0.16 0.01 250);
+  --bg-elev: oklch(0.20 0.012 250);
+  --bg-sunken: oklch(0.13 0.01 250);
+  --ink: oklch(0.97 0.005 95);
+  --ink-2: oklch(0.78 0.01 250);
+  --ink-3: oklch(0.58 0.01 250);
+  --line: oklch(0.26 0.012 250);
+  --line-strong: oklch(0.32 0.014 250);
+  --map-bg: oklch(0.18 0.012 250);
+  --map-streets: oklch(0.24 0.012 250);
+  --map-park: oklch(0.26 0.05 140);
+  --map-water: oklch(0.26 0.05 230);
+  --brand-soft: oklch(0.30 0.10 var(--brand-h));
+  --brand-ink: oklch(0.92 0.10 var(--brand-h));
+  --accent-2-soft: oklch(0.30 0.08 295);
+  --shadow-sm: 0 1px 2px #000a, 0 1px 1px #0006;
+  --shadow: 0 8px 30px -10px #000c, 0 3px 8px -2px #0008;
+  --shadow-lg: 0 30px 80px -20px #000d, 0 10px 24px -8px #000a;
+}
+/* scrollbar */
+.geops-app ::-webkit-scrollbar { width: 14px; height: 14px; }
+.geops-app ::-webkit-scrollbar-track { background: transparent; }
+.geops-app ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 4px solid transparent; background-clip: padding-box; }
+.geops-app ::-webkit-scrollbar-thumb:hover { background: var(--ink-3); background-clip: padding-box; border: 4px solid transparent; }
+
+/* selection */
+.geops-app ::selection { background: var(--brand); color: var(--brand-ink); }
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .geops-app *, .geops-app *::before, .geops-app *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
