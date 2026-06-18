@@ -2,13 +2,12 @@ import {useState} from "react";
 import {useTranslation} from "react-i18next";
 import {Icon} from "@/shared/ui/components/Icon.tsx";
 import {Coupon} from "@/shared/types.ts";
-import {PaymentModal} from "@/features/coupons/presentation/components/PaymentModal.tsx";
 import {ReviewsSection} from "@/features/comments/presentation/components/ReviewsSection.tsx";
 
 interface CouponDetailViewProps {
     c: Coupon;
     isReserved: boolean;
-    onReserve: () => void;
+    onReserve: () => Promise<void> | void;
     onBack: () => void;
     onViewBusiness?: () => void;
     realDist?: number;
@@ -21,7 +20,7 @@ export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusin
     const dist     = realDist ?? c.distance;
     const walk     = realWalk ?? c.walking;
     const distLabel = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${dist} m`;
-    const [showPayment, setShowPayment] = useState(false);
+    const [reserving, setReserving] = useState(false);
     const [copied, setCopied]    = useState(false);
     const [tcOpen, setTcOpen]    = useState(false);
 
@@ -195,16 +194,14 @@ export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusin
                         {t("couponDetail.done")} <Icon name="walking" size={16}/>
                     </button>
                 ) : (
-                    <button type="button" className="btn btn-brand btn-lg cd-footer-btn" onClick={() => setShowPayment(true)}>
-                        {c.finalPrice === 0 ? t("couponDetail.reserveFree") : t("couponDetail.reserve", { price: c.finalPrice })}
+                    <button type="button" className="btn btn-brand btn-lg cd-footer-btn" disabled={reserving}
+                            onClick={async () => { setReserving(true); await onReserve(); setReserving(false); }}>
+                        {reserving ? "Reservando…" : c.finalPrice === 0 ? t("couponDetail.reserveFree") : t("couponDetail.reserve", { price: c.finalPrice })}
                         <Icon name="arrowRight" size={16}/>
                     </button>
                 )}
             </div>
 
-            {showPayment && (
-                <PaymentModal coupon={c} onSuccess={onReserve} onClose={() => setShowPayment(false)}/>
-            )}
         </div>
     );
 }

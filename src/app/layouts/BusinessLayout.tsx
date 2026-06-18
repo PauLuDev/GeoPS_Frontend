@@ -32,6 +32,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const { t } = useTranslation();
     const [view, setView] = useState("dashboard");
     const [limitReached, setLimitReached] = useState(false);
+    const [campaignError, setCampaignError] = useState(false);
     const [confirmSignOut, setConfirmSignOut] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
     const { campaigns, addCampaign, updateCampaign, removeCampaign } = useCampaigns();
@@ -57,12 +58,12 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
         else setLimitReached(true);
     };
 
-    const handleDone = (campaign: Campaign) => {
-        /* la campana necesita un establecimiento; si el dueno no tiene, lo mandamos a crear uno */
+    const handleDone = async (campaign: Campaign) => {
         const establishmentId = establishments[0]?.id;
         if (!establishmentId) { setView("establishments"); return; }
-        void addCampaign({ ...campaign, establishmentId });
-        setView("campaigns");
+        const ok = await addCampaign({ ...campaign, establishmentId });
+        if (ok) setView("campaigns");
+        else setCampaignError(true);
     };
 
     /* desactivar -> marca la campana como expirada, no se puede reactivar */
@@ -140,6 +141,28 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                         <div className="est-modal-actions">
                             <button type="button" className="btn est-modal-btn" onClick={() => setConfirmSignOut(false)}>{t("common.cancel")}</button>
                             <button type="button" className="btn est-del-confirm est-modal-btn" onClick={() => navigate("/")}>{t("profile.signOutConfirm")}</button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* error al crear campana (rechazo del backend) */}
+            {campaignError && (
+                <Modal onClose={() => setCampaignError(false)} ariaLabel="Error al crear campaña" className="est-modal">
+                    <div className="est-modal-body">
+                        <div className="est-modal-icon"><Icon name="close" size={20}/></div>
+                        <h3 className="est-modal-title">No se pudo crear la campaña</h3>
+                        <p className="est-modal-text">
+                            No fue posible crear la campaña. Verifica que no hayas alcanzado el límite de tu plan o intenta de nuevo.
+                        </p>
+                        <div className="est-modal-actions">
+                            <button type="button" className="btn est-modal-btn" onClick={() => setCampaignError(false)}>
+                                Entendido
+                            </button>
+                            <button type="button" className="btn btn-brand est-modal-btn"
+                                    onClick={() => { setCampaignError(false); setView("subscription"); }}>
+                                <Icon name="arrowRight" size={14}/> Ver planes
+                            </button>
                         </div>
                     </div>
                 </Modal>
