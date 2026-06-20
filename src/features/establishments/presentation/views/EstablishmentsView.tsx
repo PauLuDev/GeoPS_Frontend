@@ -9,6 +9,8 @@ interface EstablishmentsViewProps {
     establishments: Business[];
     onSave: (business: Business) => void;
     onDelete: (id: string) => void;
+    canCreate?: boolean;
+    onLimitReached?: () => void;
 }
 
 type Mode =
@@ -19,9 +21,15 @@ type Mode =
 const catLabel = (id: string) => CATEGORIES.find(c => c.id === id)?.label ?? id;
 const catIcon  = (id: string) => CATEGORIES.find(c => c.id === id)?.icon ?? "store";
 
-export function EstablishmentsView({ establishments, onSave, onDelete }: EstablishmentsViewProps) {
+export function EstablishmentsView({ establishments, onSave, onDelete, canCreate = true, onLimitReached }: EstablishmentsViewProps) {
     const [mode, setMode]     = useState<Mode>({ kind: "list" });
     const [toDelete, setToDelete] = useState<Business | null>(null);
+
+    /* respeta el limite del plan -> si no se puede crear mas, avisa en lugar de abrir el form */
+    const handleNewClick = () => {
+        if (canCreate) setMode({ kind: "create" });
+        else onLimitReached?.();
+    };
 
     /* form (crear / editar) */
     if (mode.kind !== "list") {
@@ -67,7 +75,7 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
                     </p>
                 </div>
                 {establishments.length > 0 && (
-                    <button type="button" className="btn btn-brand" onClick={() => setMode({ kind: "create" })}>
+                    <button type="button" className="btn btn-brand" onClick={handleNewClick}>
                         <Icon name="plus" size={14}/> Nuevo establecimiento
                     </button>
                 )}
@@ -78,7 +86,7 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
                     <div className="est-empty-icon"><Icon name="store" size={34}/></div>
                     <div className="est-empty-title">Aún no tienes establecimientos</div>
                     <div className="est-empty-sub">Registra tu primer local para empezar a publicar campañas.</div>
-                    <button type="button" className="btn btn-brand" onClick={() => setMode({ kind: "create" })}>
+                    <button type="button" className="btn btn-brand" onClick={handleNewClick}>
                         <Icon name="plus" size={14}/> Registrar establecimiento
                     </button>
                 </div>
