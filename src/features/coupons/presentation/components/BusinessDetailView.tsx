@@ -5,6 +5,15 @@ import { Business, Coupon } from "@/shared/types.ts";
 import { CouponCard } from "@/features/coupons/presentation/components/CouponCard.tsx";
 import { ReviewsSection } from "@/features/comments/presentation/components/ReviewsSection.tsx";
 
+function VerifiedBadge({ size = 15 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2L14.3 6.46L19.07 4.93L17.54 9.7L22 12L17.54 14.3L19.07 19.07L14.3 17.54L12 22L9.7 17.54L4.93 19.07L6.46 14.3L2 12L6.46 9.7L4.93 4.93L9.7 6.46Z" fill="#16a34a" stroke="none"/>
+            <polyline points="8.5 12.5 10.5 15 15.5 9.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        </svg>
+    );
+}
+
 interface BusinessDetailViewProps {
     business: Business;
     coupons: Coupon[];
@@ -108,7 +117,14 @@ export function BusinessDetailView({ business, coupons, reserved, onToggleSaved,
                                 {isOpenNow ? t("business.open") : t("business.closed")}
                             </span>
                         </div>
-                        <div className="biz-name">{business.name}</div>
+                        <div className="biz-name-row">
+                            <span className="biz-name">{business.name}</span>
+                            {business.ruc && business.ruc !== "No disponible" && (
+                                <span className="biz-verified-hero" title="Negocio premium verificado" aria-label="Verificado">
+                                    <VerifiedBadge size={16}/>
+                                </span>
+                            )}
+                        </div>
                         <div className="biz-rating">
                             <Icon name="star" size={11} filled/>
                             <span className="biz-rating-text">

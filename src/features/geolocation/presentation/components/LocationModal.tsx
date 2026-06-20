@@ -8,6 +8,7 @@ import { LIMA_ALL_PLACES, LOC_SUGGESTED } from "@/features/geolocation/infrastru
 interface LocationModalProps {
     onSelect: (loc: UserLocation) => void;
     onClose?: () => void;
+    onPickOnMap?: () => void;
     isFirst?: boolean;
 }
 
@@ -37,7 +38,7 @@ function highlight(text: string, q: string) {
     return <>{text.slice(0, idx)}<strong className="lm-hl">{text.slice(idx, idx + q.length)}</strong>{text.slice(idx + q.length)}</>;
 }
 
-export function LocationModal({ onSelect, onClose, isFirst = false }: LocationModalProps) {
+export function LocationModal({ onSelect, onClose, onPickOnMap, isFirst = false }: LocationModalProps) {
     const { t } = useTranslation();
     const [query, setQuery] = useState("");
     const [osm, setOsm] = useState<ReturnType<typeof parseNominatim>[]>([]);
@@ -122,6 +123,12 @@ export function LocationModal({ onSelect, onClose, isFirst = false }: LocationMo
                             </button>
                         )}
                     </div>
+                    {onPickOnMap && (
+                        <button type="button" className="lm-pick-btn" onClick={onPickOnMap}>
+                            <Icon name="pin" size={16}/>
+                            <span>{t("location.pickOnMap", { defaultValue: "Marcar punto en el mapa" })}</span>
+                        </button>
+                    )}
                 </div>
 
                 <div className="lm-list">

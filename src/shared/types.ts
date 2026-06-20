@@ -25,6 +25,7 @@ export interface Coupon {
     rating: number;
     reviews: number;
     featured?: boolean;
+    verified?: boolean;
     description: string;
     imageUrl?: string;
 }
