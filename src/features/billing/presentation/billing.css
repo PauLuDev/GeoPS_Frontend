@@ -1,0 +1,124 @@
+/* AccountView: cuenta del dueño + planes / upgrade (merchant) */
+.geops-app .plans-page { max-width: 1400px; }
+.geops-app .account-renewal {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--g-radius);
+  padding: 12px 16px; margin-bottom: 18px;
+}
+.geops-app .account-renewal.off { border-color: var(--warn); background: color-mix(in oklab, var(--warn) 8%, var(--bg-elev)); }
+.geops-app .account-renewal-info { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.geops-app .account-renewal.off .account-renewal-info { color: var(--ink); }
+/* perfil del dueño: mismas tarjetas/espaciado que el resto del panel */
+.geops-app .pv-merchant .profile-head,
+.geops-app .pv-merchant .profile-section {
+  background: var(--bg-elev); border: 1px solid var(--line);
+  border-radius: var(--g-radius); margin-bottom: 14px;
+}
+.geops-app .pv-merchant .profile-section { padding: 22px; }
+.geops-app .pv-merchant .profile-head { padding: 22px; }
+/* misma linea divisora que el perfil de cliente, arriba de cerrar sesion */
+.geops-app .pv-merchant .pv-foot-divider { border-top: 1px solid var(--line); margin-top: 4px; }
+
+/* banner de estado de suscripcion */
+.geops-app .sub-status {
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--line); border-radius: var(--g-radius);
+  padding: 14px 16px; margin-bottom: 18px; background: var(--bg-elev);
+}
+.geops-app .sub-status-icon {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; color: #fff; background: var(--ink-3);
+}
+.geops-app .sub-status-active   { border-color: var(--brand-strong); background: color-mix(in oklab, var(--brand) 8%, var(--bg-elev)); }
+.geops-app .sub-status-active   .sub-status-icon { background: var(--brand-strong); }
+.geops-app .sub-status-cancelled, .geops-app .sub-status-pending { border-color: var(--warn); background: color-mix(in oklab, var(--warn) 8%, var(--bg-elev)); }
+.geops-app .sub-status-cancelled .sub-status-icon, .geops-app .sub-status-pending .sub-status-icon { background: var(--warn); }
+.geops-app .sub-status-expired  { border-color: var(--danger); background: color-mix(in oklab, var(--danger) 8%, var(--bg-elev)); }
+.geops-app .sub-status-expired  .sub-status-icon { background: var(--danger); }
+.geops-app .sub-status-text { display: flex; flex-direction: column; gap: 2px; }
+.geops-app .sub-status-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.geops-app .sub-status-sub { font-size: 12.5px; color: var(--ink-2); }
+.geops-app .sub-status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px;
+  background: var(--bg-sunken); color: var(--ink-2);
+}
+.geops-app .sub-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); }
+.geops-app .sub-status-pill.on { color: var(--brand-strong); }
+.geops-app .sub-status-pill.on .sub-status-dot { background: var(--brand-strong); }
+
+.geops-app .account-plan-eyebrow { margin-top: 8px; }
+.geops-app .account-plan-sub { margin: 4px 0 16px; font-size: 13px; color: var(--ink-3); max-width: 560px; }
+
+.geops-app .plans-success {
+  display: flex; align-items: center; gap: 8px;
+  background: color-mix(in oklab, var(--brand) 12%, var(--bg-elev));
+  border: 1px solid var(--brand-strong); color: var(--brand-strong);
+  border-radius: var(--g-radius); padding: 12px 16px; font-size: 13px; font-weight: 500;
+  margin-bottom: 18px;
+}
+
+.geops-app .plans-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media (max-width: 720px) { .geops-app .plans-grid { grid-template-columns: 1fr; } }
+
+.geops-app .plan-card { padding: 22px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.geops-app .plan-card.current { border-color: var(--brand-strong); box-shadow: 0 0 0 1px var(--brand-strong); }
+.geops-app .plan-badge {
+  position: absolute; top: 16px; right: 16px;
+  font-size: 10px; font-weight: 600; color: var(--brand-strong);
+  background: color-mix(in oklab, var(--brand) 14%, var(--bg-elev));
+  padding: 3px 8px; border-radius: 999px;
+}
+.geops-app .plan-name { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.geops-app .plan-price { font-size: 28px; font-weight: 700; font-family: var(--font-mono); letter-spacing: -0.02em; }
+.geops-app .plan-limit {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--brand-strong);
+  background: var(--bg-sunken); border-radius: 8px; padding: 8px 10px; align-self: flex-start;
+}
+.geops-app .plan-feats { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.geops-app .plan-feats li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.geops-app .plan-feats li svg { color: var(--brand-strong); flex-shrink: 0; }
+.geops-app .plan-btn { margin-top: auto; width: 100%; justify-content: center; gap: 6px; }
+
+/* ChoosePlanView: paso de plan tras el registro (pantalla completa) */
+.geops-app .choose-plan {
+  min-height: 100vh; max-width: 1100px; margin: 0 auto;
+  padding: 28px 24px 56px; display: flex; flex-direction: column;
+}
+.geops-app .choose-plan-top { margin-bottom: 36px; }
+.geops-app .choose-plan-head { text-align: center; margin-bottom: 28px; }
+.geops-app .choose-plan-title { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin: 6px 0 8px; }
+.geops-app .choose-plan-sub { font-size: 14px; color: var(--ink-3); max-width: 520px; margin: 0 auto; }
+.geops-app .choose-plan-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch;
+}
+@media (max-width: 880px) { .geops-app .choose-plan-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; width: 100%; } }
+
+/* StripeCheckout: modal de pago con tarjeta */
+.geops-app .stripe-checkout-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 28px 28px 24px; }
+.geops-app .geops-dialog.stripe-checkout { width: min(440px, calc(100vw - 32px)); }
+.geops-app .stripe-checkout-icon {
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  color: var(--brand-ink); background: var(--brand); margin-bottom: 4px;
+}
+.geops-app .stripe-checkout-title { font-size: 18px; font-weight: 600; }
+.geops-app .stripe-checkout-sub { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+.geops-app .stripe-checkout-field { width: 100%; text-align: left; }
+.geops-app .stripe-card-box {
+  border: 1px dashed var(--line); border-radius: 8px; padding: 14px 12px;
+  font-size: 13px; color: var(--ink-3); background: var(--bg-sunken);
+}
+/* contenedor del CardElement real -> borde solido y fondo de input */
+.geops-app .stripe-card-box.stripe-card-live {
+  border-style: solid; background: var(--bg-elev); color: var(--ink);
+}
+.geops-app .stripe-card-box.stripe-card-live .StripeElement { width: 100%; }
+.geops-app .stripe-checkout-notice {
+  display: flex; align-items: center; gap: 7px; width: 100%; margin-top: 4px;
+  font-size: 12px; color: var(--ink); text-align: left;
+  background: color-mix(in oklab, var(--warn) 10%, var(--bg-elev));
+  border: 1px solid var(--warn); border-radius: 8px; padding: 9px 11px;
+}
+.geops-app .stripe-checkout-actions { display: flex; gap: 10px; width: 100%; margin-top: 14px; }
+.geops-app .stripe-checkout-actions .btn { flex: 1; justify-content: center; gap: 6px; }

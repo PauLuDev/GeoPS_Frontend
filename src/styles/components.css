@@ -1,0 +1,278 @@
+/* typography helpers */
+.geops-app .mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+.geops-app .tnum { font-variant-numeric: tabular-nums; }
+.geops-app .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--ink-3); font-weight: 500;
+}
+.geops-app .page-title    { margin: 6px 0 0; font-size: 32px; letter-spacing: -0.025em; font-weight: 600; }
+.geops-app .page-subtitle { margin: 6px 0 0; color: var(--ink-2); font-size: 14px; }
+.geops-app .section-title { font-size: 18px; font-weight: 600; margin-top: 4px; }
+
+/* grilla de fondo decorativa (ej. pantalla de auth) */
+.geops-app .bg-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* layout utilities */
+.geops-app .btn-row         { display: flex; gap: 8px; }
+.geops-app .card-header     { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.geops-app .card-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+
+/* top bar */
+.geops-app .topbar {
+  display: flex; align-items: center; gap: var(--space-4);
+  padding: 10px 18px; border-bottom: 1px solid var(--line);
+  background: color-mix(in oklab, var(--bg-elev) 86%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  position: sticky; top: 0; z-index: 50;
+}
+.geops-app .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; font-size: 16px; }
+.geops-app .brand-mark {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--ink); color: var(--bg-elev);
+  display: grid; place-items: center; position: relative; overflow: hidden;
+}
+.geops-app .brand-mark svg { width: 18px; height: 18px; }
+.geops-app .brand-suffix {
+  font-family: var(--font-mono); font-size: 10px; color: var(--ink-3);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-left: 2px;
+  padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px;
+}
+.geops-app .topbar-spacer { flex: 1; }
+.geops-app .topbar-loc {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--ink-2);
+  padding: 5px 10px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg-elev);
+}
+.geops-app .avatar-mini {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--ink); color: var(--bg);
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 600; flex-shrink: 0;
+}
+
+/* role switch */
+.geops-app .role-switch {
+  display: inline-flex; background: var(--bg-sunken); border: 1px solid var(--line);
+  border-radius: var(--g-radius-pill); padding: 3px; position: relative;
+}
+.geops-app .role-switch button {
+  appearance: none; border: 0; background: transparent; color: var(--ink-2);
+  font-size: 13px; font-weight: 500; padding: 6px 14px;
+  border-radius: var(--g-radius-pill); cursor: pointer;
+  position: relative; z-index: 1; transition: color 220ms ease;
+}
+.geops-app .role-switch button.active { color: var(--ink); }
+/* buttons */
+.geops-app .btn {
+  appearance: none; border: 1px solid var(--line-strong); background: var(--bg-elev);
+  color: var(--ink); font-size: 13px; font-weight: 500; padding: 8px 14px;
+  border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  transition: transform 120ms ease, background 160ms ease, border-color 160ms ease;
+  font-family: var(--font-sans);
+}
+.geops-app .btn:hover  { background: var(--bg-sunken); }
+.geops-app .btn:active { transform: translateY(1px); }
+.geops-app .btn:disabled,
+.geops-app .btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.geops-app .btn:disabled:active { transform: none; }
+
+/* select estilizado (reemplazo del nativo) */
+.geops-app .ui-select { position: relative; }
+.geops-app .ui-select-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; text-align: left; gap: 8px; }
+.geops-app .ui-select-ph { color: var(--ink-3); }
+.geops-app .ui-select-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 30;
+  background: var(--bg-elev); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.14); padding: 4px;
+  display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto;
+}
+.geops-app .ui-select-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; text-align: left; padding: 8px 10px; border-radius: 7px;
+  background: transparent; border: none; color: var(--ink); font-size: 13px; cursor: pointer;
+}
+.geops-app .ui-select-item:hover { background: var(--bg-sunken); }
+.geops-app .ui-select-item.active { color: var(--brand-strong); font-weight: 600; }
+
+/* date picker propio */
+.geops-app .ui-date-pop {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 40;
+  background: var(--bg-elev); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.14); padding: 10px; width: 260px;
+}
+.geops-app .ui-date-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.geops-app .ui-date-title { font-size: 13px; font-weight: 600; }
+.geops-app .ui-date-nav { background: transparent; border: none; cursor: pointer; color: var(--ink-2); padding: 5px; border-radius: 6px; display: inline-flex; }
+.geops-app .ui-date-nav:hover { background: var(--bg-sunken); }
+.geops-app .ui-date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.geops-app .ui-date-weekdays { margin-bottom: 4px; }
+.geops-app .ui-date-wd { text-align: center; font-size: 10px; color: var(--ink-3); padding: 2px 0; }
+.geops-app .ui-date-day {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; border-radius: 7px; cursor: pointer;
+  font-size: 12px; color: var(--ink); transition: background 120ms ease;
+}
+.geops-app .ui-date-day:hover:not(:disabled) { background: var(--bg-sunken); }
+.geops-app .ui-date-day.selected { background: var(--brand); color: var(--brand-ink); font-weight: 600; }
+.geops-app .ui-date-day:disabled { opacity: 0.3; cursor: not-allowed; }
+.geops-app .btn-primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.geops-app .btn-primary:hover { background: oklch(from var(--ink) calc(l + 0.06) c h); }
+.geops-app .btn-brand { background: var(--brand); color: var(--brand-ink); border-color: transparent; font-weight: 600; }
+.geops-app .btn-brand:hover { background: oklch(from var(--brand) calc(l - 0.04) c h); }
+.geops-app .btn-ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+.geops-app .btn-ghost:hover { background: var(--bg-sunken); color: var(--ink); }
+.geops-app .btn-icon  { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border-radius: 10px; position: relative; }
+.geops-app .btn-sm    { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+.geops-app .btn-lg    { padding: 12px 18px; font-size: 14px; border-radius: 12px; }
+.geops-app .btn-light { background: color-mix(in oklab, var(--bg-elev) 20%, transparent); color: var(--bg-elev); border-color: color-mix(in oklab, var(--bg-elev) 35%, transparent); }
+.geops-app .btn-light:hover { background: color-mix(in oklab, var(--bg-elev) 30%, transparent); }
+
+/* pills / Chips */
+.geops-app .chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: var(--g-radius-pill); background: var(--bg-elev); border: 1px solid var(--line);
+  font-size: 12.5px; color: var(--ink-2); cursor: pointer; white-space: nowrap;
+  transition: all 160ms ease; font-family: var(--font-sans); appearance: none;
+}
+.geops-app .chip:hover      { border-color: var(--line-strong); color: var(--ink); }
+.geops-app .chip.active     { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.geops-app .chip .dot       { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+
+/* badges */
+.geops-app .badge {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+  font-size: 11px; border-radius: var(--g-radius-pill); font-family: var(--font-mono);
+  font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+.geops-app .badge-ink   { background: var(--ink); color: var(--bg); }
+.geops-app .badge-line  { background: transparent; color: var(--ink-2); border: 1px solid var(--line-strong); }
+
+/* cards */
+.geops-app .card { background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--g-radius-lg); box-shadow: var(--shadow-sm); }
+
+/* boton "volver" consistente en todas las secciones */
+.geops-app .back-btn { margin-bottom: 12px; gap: 6px; }
+
+/* forms */
+.geops-app .input {
+  width: 100%; appearance: none; border: 1px solid var(--line-strong); background: var(--bg-elev);
+  color: var(--ink); border-radius: 10px; padding: 10px 12px;
+  font-family: inherit; font-size: 14px; outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.geops-app .input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 30%, transparent); }
+.geops-app .field       { display: flex; flex-direction: column; gap: 6px; }
+.geops-app .field label { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+.geops-app .modal {
+  background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--g-radius-xl);
+  box-shadow: var(--shadow-lg); width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px); overflow: auto;
+  animation: geops-scale-in 320ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+/* modal sobre <dialog> nativo (mismo look que .modal; backdrop = ::backdrop) */
+.geops-app .geops-dialog {
+  position: fixed; inset: 0; margin: auto;   /* centrado horizontal y vertical */
+  padding: 0; border: 1px solid var(--line); border-radius: var(--g-radius-xl);
+  background: var(--bg-elev); color: var(--ink); box-shadow: var(--shadow-lg);
+  width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto;
+  animation: geops-scale-in 320ms cubic-bezier(.2,.8,.2,1) both;
+}
+.geops-app .geops-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(4px);
+}
+
+/* seccion de reseñas (reutilizable -> negocio / campaña) */
+.geops-app .rv-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.geops-app .rv-rating { display: flex; align-items: center; gap: 5px; font-size: 13px; }
+.geops-app .rv-rating > svg { color: var(--warn); }
+.geops-app .rv-count { color: var(--ink-3); }
+.geops-app .rv-empty { padding: 20px 0; text-align: center; color: var(--ink-3); font-size: 13px; }
+.geops-app .rv-list { display: flex; flex-direction: column; gap: 14px; }
+.geops-app .rv-item { padding: 14px; background: var(--bg-elev); border: 1px solid var(--line); border-radius: 10px; }
+.geops-app .rv-item-head { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.geops-app .rv-author { display: flex; align-items: center; gap: 8px; }
+.geops-app .rv-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-sunken); border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; font-weight: 600; overflow: hidden; }
+.geops-app .rv-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.geops-app .rv-name { font-size: 13px; font-weight: 600; }
+.geops-app .rv-date { font-size: 11px; color: var(--ink-3); }
+.geops-app .rv-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.geops-app .rv-stars { display: flex; gap: 2px; }
+.geops-app .rv-edited-flag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--brand-strong); font-weight: 500; }
+.geops-app .rv-content { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+
+/* formulario de reseña (calificacion + comentario) */
+.geops-app .review-form { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: var(--g-radius); background: var(--bg-sunken); margin-bottom: 16px; }
+.geops-app .review-form-title { font-size: 13px; font-weight: 600; }
+.geops-app .review-stars { display: flex; gap: 4px; }
+.geops-app .review-star { appearance: none; border: 0; background: transparent; padding: 2px; cursor: pointer; color: var(--line-strong); line-height: 0; transition: transform 120ms ease; }
+.geops-app .review-star:hover { transform: scale(1.12); }
+.geops-app .review-star.on { color: var(--warn); }
+.geops-app .review-textarea { resize: vertical; min-height: 64px; font-family: inherit; }
+.geops-app .review-flash { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--brand-strong); font-weight: 500; }
+.geops-app .review-actions { display: flex; gap: 8px; align-items: center; }
+
+/* acciones de reseña propia (editar / eliminar) */
+.geops-app .rv-own-actions { display: flex; gap: 4px; margin-top: 8px; }
+.geops-app .rv-edit-btn { appearance: none; border: 0; background: transparent; cursor: pointer; color: var(--ink-3); font-size: 11px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 6px; }
+.geops-app .rv-edit-btn:hover { background: var(--bg-sunken); color: var(--ink); }
+.geops-app .rv-del-btn:hover { color: var(--danger); }
+
+/* modal de confirmacion de borrado */
+.geops-app .geops-dialog.review-confirm { width: min(380px, calc(100vw - 32px)); }
+.geops-app .review-confirm-body { padding: 22px; }
+.geops-app .review-confirm-icon { width: 42px; height: 42px; border-radius: 12px; background: #fef2f2; color: #dc2626; display: grid; place-items: center; margin-bottom: 12px; }
+.geops-app .review-confirm-icon.warn { background: #fffbeb; color: #b45309; }
+.geops-app .review-confirm-title { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+.geops-app .review-confirm-text { margin: 0 0 18px; font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+.geops-app .review-confirm-actions { display: flex; gap: 8px; }
+.geops-app .review-confirm-actions .btn { flex: 1; justify-content: center; }
+.geops-app .review-del-confirm { background: #dc2626; color: #fff; border-color: #dc2626; }
+.geops-app .review-del-confirm:hover { background: #b91c1c; border-color: #b91c1c; }
+
+/* selector de idioma (segmented EN/ES) */
+.geops-app .lang-switch { display: inline-flex; gap: 2px; background: var(--bg-sunken); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+.geops-app .lang-switch-btn { appearance: none; border: 0; background: transparent; cursor: pointer; font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--ink-3); padding: 3px 7px; border-radius: 6px; letter-spacing: 0.04em; }
+.geops-app .lang-switch-btn.active { background: var(--bg-elev); color: var(--ink); box-shadow: var(--shadow-sm); }
+
+/* focus ring */
+.geops-app :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+
+/* tooltip */
+.geops-app .tip { position: relative; }
+.geops-app .tip::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%) translateY(4px); background: var(--ink); color: var(--bg);
+  font-size: 11px; padding: 4px 8px; border-radius: 6px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 160ms ease, transform 160ms ease;
+  font-family: var(--font-mono); z-index: 100;
+}
+.geops-app .tip:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* search */
+.geops-app .search-wrap {
+  display: flex; align-items: center; gap: 8px; background: var(--bg-elev);
+  border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px;
+  box-shadow: var(--shadow); color: var(--ink-3);
+}
+.geops-app .search-input { flex: 1; appearance: none; border: 0; outline: none; background: transparent; color: var(--ink); font-size: 14px; font-family: inherit; }
+.geops-app .search-input::placeholder { color: var(--ink-3); }
+
+/* sort pills */
+.geops-app .sort-pill {
+  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; cursor: pointer;
+  transition: all 160ms ease; font-family: var(--font-sans);
+}
+.geops-app .sort-pill.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
