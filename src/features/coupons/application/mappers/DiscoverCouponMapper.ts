@@ -47,6 +47,7 @@ export function toUICoupon(c: CouponResource, business: Business, endDate?: stri
         rating: business.rating,
         reviews: business.totalReviews,
         featured: false,
+        verified: !!business.ruc && business.ruc !== "No disponible",
         description: c.description ?? "",
         imageUrl: c.imageUrl,
     };

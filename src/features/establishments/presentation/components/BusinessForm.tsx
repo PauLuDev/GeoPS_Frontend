@@ -3,6 +3,7 @@ import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Business, BusinessHours } from "@/shared/types.ts";
 import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
 import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
+import { AddressPicker, type AddressValue } from "./AddressPicker.tsx";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -36,8 +37,12 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
         establishmentApi.listCategories().then(setCategories).catch(() => setCategories([]));
     }, []);
     const [ruc,         setRuc]         = useState(initial?.ruc && initial.ruc !== "No disponible" ? initial.ruc : "");
-    const [address,     setAddress]     = useState(initial?.address ?? "");
-    const [district,    setDistrict]    = useState(initial?.district ?? "");
+    const [addrValue,   setAddrValue]   = useState<AddressValue>({
+        address:  initial?.address  ?? "",
+        district: initial?.district ?? "",
+        lat:      initial?.lat      ?? -12.05,
+        lng:      initial?.lng      ?? -77.05,
+    });
     const [phone,       setPhone]       = useState(initial?.phone ?? "");
     const [email,       setEmail]       = useState(initial?.email ?? "");
     const [website,     setWebsite]     = useState(initial?.website ?? "");
@@ -53,8 +58,8 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
         name:        !name.trim(),
         category:    categories.length > 0 && categoryId == null,
         description: !description.trim(),
-        address:     !address.trim(),
-        district:    !district.trim(),
+        address:     !addrValue.address.trim(),
+        district:    !addrValue.district.trim(),
     };
     const isValid = !Object.values(errors).some(Boolean);
     const err = (f: keyof typeof errors) => submitted && errors[f];
@@ -84,8 +89,8 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
             id: initial?.id ?? `b-${Date.now()}`,
             ruc: ruc.trim() || "No disponible",
             name: name.trim(),
-            address: address.trim(),
-            district: district.trim(),
+            address: addrValue.address.trim(),
+            district: addrValue.district.trim(),
             phone: phone.trim() || undefined,
             email: email.trim() || undefined,
             website: website.trim() || undefined,
@@ -98,8 +103,8 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
             imageUrl: photos[0] || logo || undefined,
             logo: logo || undefined,
             photos,
-            lat: initial?.lat ?? -12.1,
-            lng: initial?.lng ?? -77.03,
+            lat: addrValue.lat,
+            lng: addrValue.lng,
         });
     };
 
@@ -154,19 +159,15 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                 </div>
                                 {err("category") && <ErrMsg>Selecciona una categoría</ErrMsg>}
                             </div>
-                            <div className="bf-row2">
-                                <div className="field">
-                                    <label htmlFor={`${fid}-address`}>Dirección <Req/></label>
-                                    <input id={`${fid}-address`} className={inputCls("address")} placeholder="Av. Pardo 1145"
-                                           value={address} onChange={e => setAddress(e.target.value)}/>
-                                    {err("address") && <ErrMsg>Obligatorio</ErrMsg>}
-                                </div>
-                                <div className="field">
-                                    <label htmlFor={`${fid}-district`}>Distrito <Req/></label>
-                                    <input id={`${fid}-district`} className={inputCls("district")} placeholder="Miraflores"
-                                           value={district} onChange={e => setDistrict(e.target.value)}/>
-                                    {err("district") && <ErrMsg>Obligatorio</ErrMsg>}
-                                </div>
+                            <div className="field">
+                                <label>Dirección y ubicación <Req/></label>
+                                <AddressPicker
+                                    value={addrValue}
+                                    onChange={setAddrValue}
+                                    error={submitted && (errors.address || errors.district)}
+                                />
+                                {submitted && errors.address && <ErrMsg>Ingresa una dirección</ErrMsg>}
+                                {submitted && !errors.address && errors.district && <ErrMsg>No se detectó el distrito</ErrMsg>}
                             </div>
                             <div className="bf-row2">
                                 <div className="field">

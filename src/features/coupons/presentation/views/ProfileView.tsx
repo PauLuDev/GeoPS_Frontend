@@ -12,6 +12,8 @@ interface ProfileViewProps {
     theme?: string;
     onThemeChange?: (t: string) => void;
     onSignOut?: () => void;
+    shareLocation?: boolean;
+    onShareLocationChange?: (next: boolean) => void;
 }
 
 const PREF_ITEMS = [
@@ -22,7 +24,7 @@ const PREF_ITEMS = [
 /* referencia estable para el default y no romper el memo en cada render */
 const EMPTY_COUPONS: Coupon[] = [];
 
-export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, theme = "light", onThemeChange, onSignOut }: ProfileViewProps) {
+export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, theme = "light", onThemeChange, onSignOut, shareLocation = false, onShareLocationChange }: ProfileViewProps) {
     const { t } = useTranslation();
     const [editMode, setEditMode] = useState(false);
     const me = getCurrentUser();
@@ -35,23 +37,32 @@ export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, th
     const [draft, setDraft] = useState(profile);
     const isDarkMode = theme === "dark";
     const [confirmOut, setConfirmOut] = useState(false);
-    const [prefs, setPrefs] = useState({
-        shareLocation: false,
-    });
+    const [confirmShareOff, setConfirmShareOff] = useState(false);
 
     const saveProfile = () => { setProfile(draft); setEditMode(false); };
     const cancelEdit = () => { setDraft(profile); setEditMode(false); };
 
-    const togglePref = (key: keyof typeof prefs | "darkMode") => {
+    const togglePref = (key: "darkMode" | "shareLocation") => {
         if (key === "darkMode") {
             onThemeChange?.(isDarkMode ? "light" : "dark");
+            return;
+        }
+        if (shareLocation) {
+            /* apagar requiere confirmación */
+            setConfirmShareOff(true);
         } else {
-            setPrefs(p => ({ ...p, [key]: !p[key] }));
+            /* encender pide GPS al padre */
+            onShareLocationChange?.(true);
         }
     };
 
-    const isPrefOn = (key: keyof typeof prefs | "darkMode") =>
-        key === "darkMode" ? isDarkMode : prefs[key];
+    const confirmDisableShare = () => {
+        onShareLocationChange?.(false);
+        setConfirmShareOff(false);
+    };
+
+    const isPrefOn = (key: "darkMode" | "shareLocation") =>
+        key === "darkMode" ? isDarkMode : shareLocation;
 
     const initials = profile.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
@@ -171,6 +182,20 @@ export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, th
             <button type="button" className="signout-btn" onClick={() => setConfirmOut(true)}>
                 <Icon name="arrowLeft" size={14}/> {t("profile.signOut")}
             </button>
+
+            {confirmShareOff && (
+                <Modal onClose={() => setConfirmShareOff(false)} ariaLabel={t("pref.shareLocationOffTitle", { defaultValue: "Desactivar ubicación compartida" })} className="est-modal">
+                    <div className="est-modal-body">
+                        <div className="est-modal-icon"><Icon name="location" size={20}/></div>
+                        <h3 className="est-modal-title">{t("pref.shareLocationOffTitle", { defaultValue: "¿Desactivar compartir ubicación?" })}</h3>
+                        <p className="est-modal-text">{t("pref.shareLocationOffText", { defaultValue: "Las marcas dejarán de ver tu ubicación. Algunas ofertas personalizadas no aparecerán." })}</p>
+                        <div className="est-modal-actions">
+                            <button type="button" className="btn est-modal-btn" onClick={() => setConfirmShareOff(false)}>{t("common.cancel", { defaultValue: "Cancelar" })}</button>
+                            <button type="button" className="btn est-del-confirm est-modal-btn" onClick={confirmDisableShare}>{t("pref.shareLocationOffConfirm", { defaultValue: "Sí, desactivar" })}</button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
 
             {confirmOut && (
                 <Modal onClose={() => setConfirmOut(false)} ariaLabel={t("profile.signOutConfirmTitle")} className="est-modal">

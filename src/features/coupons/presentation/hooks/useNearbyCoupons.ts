@@ -15,6 +15,7 @@ export function useNearbyCoupons(lat: number, lng: number, radius: number) {
 
     useEffect(() => {
         let alive = true;
+        setData(EMPTY);
         setLoading(true);
         setError(null);
         discoverNearbyCoupons(lat, lng, radius)
