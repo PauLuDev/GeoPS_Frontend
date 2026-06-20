@@ -17,6 +17,7 @@ import { AccountView } from "@/features/billing/presentation/views/AccountView.t
 import { MerchantProfileView } from "@/features/billing/presentation/views/MerchantProfileView.tsx";
 import { useBilling } from "@/features/billing/presentation/hooks/useBilling.ts";
 import { CurrentSubscription, withinLimit } from "@/features/billing/domain/entities/CurrentSubscription.ts";
+import { planLimitsFor } from "@/features/billing/domain/value-objects/PlanLimits.ts";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 
@@ -32,6 +33,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const { t } = useTranslation();
     const [view, setView] = useState("dashboard");
     const [limitReached, setLimitReached] = useState(false);
+    const [establishmentLimitReached, setEstablishmentLimitReached] = useState(false);
     const [campaignError, setCampaignError] = useState(false);
     const [confirmSignOut, setConfirmSignOut] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -51,6 +53,8 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const planLimit = sub?.limits.maxActiveCampaigns ?? 0;
     const planName = sub?.planName ?? "Freemium";
     const allowNewCampaign = withinLimit(planLimit, activeCampaigns);
+    const establishmentLimit = planLimitsFor(planName).establishmentLimit;
+    const allowNewEstablishment = withinLimit(establishmentLimit, establishments.length);
 
     /* intento de crear campana -> respeta el limite del plan */
     const handleNew = () => {
@@ -111,6 +115,8 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                         establishments={establishments}
                         onSave={saveEstablishment}
                         onDelete={removeEstablishment}
+                        canCreate={allowNewEstablishment}
+                        onLimitReached={() => setEstablishmentLimitReached(true)}
                     />
                 )}
                 {view === "coupons" && (
@@ -185,6 +191,29 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                             </button>
                             <button type="button" className="btn btn-brand est-modal-btn"
                                     onClick={() => { setLimitReached(false); setView("subscription"); }}>
+                                <Icon name="arrowRight" size={14}/> Ver planes
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* limite de establecimientos del plan */}
+            {establishmentLimitReached && (
+                <Modal onClose={() => setEstablishmentLimitReached(false)} ariaLabel="Límite del plan alcanzado" className="est-modal">
+                    <div className="est-modal-body">
+                        <div className="est-modal-icon"><Icon name="flag" size={20}/></div>
+                        <h3 className="est-modal-title">Límite del plan {planName}</h3>
+                        <p className="est-modal-text">
+                            Tu plan <strong>{planName}</strong> permite hasta <strong>{establishmentLimit}</strong> establecimiento{establishmentLimit !== 1 ? "s" : ""}
+                            {" "}y ya tienes <strong>{establishments.length}</strong>. Mejora tu plan para registrar más establecimientos.
+                        </p>
+                        <div className="est-modal-actions">
+                            <button type="button" className="btn est-modal-btn" onClick={() => setEstablishmentLimitReached(false)}>
+                                Entendido
+                            </button>
+                            <button type="button" className="btn btn-brand est-modal-btn"
+                                    onClick={() => { setEstablishmentLimitReached(false); setView("subscription"); }}>
                                 <Icon name="arrowRight" size={14}/> Ver planes
                             </button>
                         </div>
