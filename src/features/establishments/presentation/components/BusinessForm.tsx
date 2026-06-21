@@ -11,6 +11,22 @@ const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "
 const blankHours = (): BusinessHours[] =>
     DAYS.map(day => ({ day, open: "09:00", close: "20:00", closed: false }));
 
+const sanitizeRuc = (val: string) => val.replace(/\D/g, "").slice(0, 9);
+/* telefono: solo digitos y simbolos comunes, maximo 9 numeros (igual al ejemplo "01 444-2323") */
+const sanitizePhone = (val: string) => {
+    const cleaned = val.replace(/[^\d\-\s]/g, "");
+    let digits = 0;
+    let result = "";
+    for (const ch of cleaned) {
+        if (/\d/.test(ch)) {
+            if (digits >= 9) continue;
+            digits++;
+        }
+        result += ch;
+    }
+    return result;
+};
+
 interface BusinessFormProps {
     initial?: Business | null;
     submitLabel: string;
@@ -190,12 +206,14 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                 <div className="field">
                                     <label htmlFor={`${fid}-ruc`}>RUC</label>
                                     <input id={`${fid}-ruc`} className="input" placeholder="20123456789"
-                                           value={ruc} onChange={e => setRuc(e.target.value)}/>
+                                           inputMode="numeric" maxLength={9}
+                                           value={ruc} onChange={e => setRuc(sanitizeRuc(e.target.value))}/>
                                 </div>
                                 <div className="field">
                                     <label htmlFor={`${fid}-phone`}>Teléfono</label>
                                     <input id={`${fid}-phone`} className="input" placeholder="01 444-2323"
-                                           value={phone} onChange={e => setPhone(e.target.value)}/>
+                                           inputMode="tel" maxLength={20}
+                                           value={phone} onChange={e => setPhone(sanitizePhone(e.target.value))}/>
                                 </div>
                             </div>
                             <div className="bf-row2">
