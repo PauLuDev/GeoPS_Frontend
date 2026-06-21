@@ -9,6 +9,8 @@ import { formatMoney } from "@/features/billing/domain/value-objects/Money.ts";
 import { useBilling } from "@/features/billing/presentation/hooks/useBilling.ts";
 import { StripeCheckout } from "@/features/billing/presentation/components/StripeCheckout.tsx";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
+import { firebaseRefreshToken } from "@/features/auth/infrastructure/firebaseAuth.ts";
+import { setToken } from "@/shared/api/tokenStore.ts";
 
 interface AccountViewProps {
     /* numero de establecimientos del dueno (el plan los cubre a todos) */
@@ -90,7 +92,14 @@ export function AccountView({ establishmentCount = 0 }: AccountViewProps) {
             const s = await currentSubscription();
             if (s) {
                 setSub(s);
-                if (s.planName === plan.name && (s.status ?? "ACTIVE") === "ACTIVE") return;
+                if (s.planName === plan.name && (s.status ?? "ACTIVE") === "ACTIVE") {
+                    /* el IAM sube el rol (ROLE_PREMIUM/PLUS) via evento al activarse;
+                       refrescamos el token para que ese rol nuevo llegue al back
+                       (ej. el limite de campanas del marketing) sin re-login */
+                    const fresh = await firebaseRefreshToken();
+                    if (fresh) setToken(fresh);
+                    return;
+                }
             }
             await new Promise(r => setTimeout(r, 1500));
         }

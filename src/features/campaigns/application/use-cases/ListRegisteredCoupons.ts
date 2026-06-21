@@ -29,8 +29,11 @@ export async function listRegisteredCoupons(): Promise<CampaignCoupon[]> {
         ),
     );
 
-    /* saca repetidos por id -> un cupon puede aparecer mas de una vez */
+    /* saca repetidos por id -> un cupon puede aparecer mas de una vez.
+       cada cupon queda etiquetado con el establecimiento del que se trajo */
     const byId = new Map<string, CampaignCoupon>();
-    lists.flat().forEach(c => byId.set(c.id, toCampaignCoupon(c)));
+    establishments.forEach((est, i) => {
+        lists[i].forEach(c => byId.set(c.id, { ...toCampaignCoupon(c), establishmentId: est.id }));
+    });
     return [...byId.values()];
 }

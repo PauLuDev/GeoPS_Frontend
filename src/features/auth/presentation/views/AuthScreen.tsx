@@ -85,16 +85,19 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                             <input id="auth-password" className="input" type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"/>
                         </div>
 
-                        {/* switch de rol (el estado se refleja con aria-pressed) */}
-                        <button type="button" className="auth-role-toggle" aria-pressed={isOwner}
-                                onClick={() => setIsOwner(v => !v)}>
-                            <div className="auth-role-icon"><Icon name="store" size={14}/></div>
-                            <div className="auth-role-text">
-                                <div className="auth-role-title">{t("auth.ownerTitle")}</div>
-                                <div className="auth-role-sub">{t("auth.ownerSub")}</div>
-                            </div>
-                            <div className="auth-role-track"><div className="auth-role-thumb"/></div>
-                        </button>
+                        {/* switch de rol -> solo en el registro; en el login el rol
+                           sale de los claims del token, no de este toggle */}
+                        {isSignup && (
+                            <button type="button" className="auth-role-toggle" aria-pressed={isOwner}
+                                    onClick={() => setIsOwner(v => !v)}>
+                                <div className="auth-role-icon"><Icon name="store" size={14}/></div>
+                                <div className="auth-role-text">
+                                    <div className="auth-role-title">{t("auth.ownerTitle")}</div>
+                                    <div className="auth-role-sub">{t("auth.ownerSub")}</div>
+                                </div>
+                                <div className="auth-role-track"><div className="auth-role-thumb"/></div>
+                            </button>
+                        )}
 
                         {error && (
                             <div className="auth-error">{error}</div>

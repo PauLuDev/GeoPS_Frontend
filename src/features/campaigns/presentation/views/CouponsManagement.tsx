@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
+import { Select } from "@/shared/ui/components/Select.tsx";
 import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
 import { useRegisteredCoupons } from "@/features/campaigns/presentation/hooks/useRegisteredCoupons.ts";
 import { NewCouponForm } from "@/features/campaigns/presentation/components/NewCouponForm.tsx";
@@ -21,6 +22,11 @@ export function CouponsManagement() {
     const [toDelete, setToDelete] = useState<CampaignCoupon | null>(null);
     const [search, setSearch] = useState("");
     const [success, setSuccess] = useState("");
+    /* filtro por establecimiento (solo util si el dueno tiene mas de uno) */
+    const [selectedEstId, setSelectedEstId] = useState("all");
+    useEffect(() => {
+        if (selectedEstId !== "all" && !establishments.some(e => e.id === selectedEstId)) setSelectedEstId("all");
+    }, [establishments, selectedEstId]);
 
     const handleCreated = () => {
         setCreating(false);
@@ -36,7 +42,11 @@ export function CouponsManagement() {
         void reload();
     };
 
-    const filtered = coupons.filter(c =>
+    /* cupones del establecimiento elegido (o todos), luego filtro por busqueda */
+    const byEstablishment = selectedEstId === "all"
+        ? coupons
+        : coupons.filter(c => c.establishmentId === selectedEstId);
+    const filtered = byEstablishment.filter(c =>
         c.title.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -59,7 +69,7 @@ export function CouponsManagement() {
                     <div className="eyebrow">Mi negocio</div>
                     <h1 className="page-title">Cupones</h1>
                     <p className="page-subtitle">
-                        {coupons.length} cupón{coupons.length !== 1 ? "es" : ""} registrado{coupons.length !== 1 ? "s" : ""}
+                        {byEstablishment.length} cupón{byEstablishment.length !== 1 ? "es" : ""} registrado{byEstablishment.length !== 1 ? "s" : ""}
                     </p>
                 </div>
                 {!creating && coupons.length > 0 && (
@@ -84,6 +94,18 @@ export function CouponsManagement() {
             {!creating && (
             <div className="card cl-card">
                 <div className="cl-toolbar">
+                    {establishments.length > 1 && (
+                        <div className="cl-est-filter">
+                            <Select
+                                value={selectedEstId}
+                                options={[
+                                    { value: "all", label: "Todos los establecimientos" },
+                                    ...establishments.map(e => ({ value: e.id, label: e.name })),
+                                ]}
+                                onChange={setSelectedEstId}
+                            />
+                        </div>
+                    )}
                     <div className="cl-spacer"/>
                     <div className="search-wrap cl-search">
                         <Icon name="search" size={14}/>

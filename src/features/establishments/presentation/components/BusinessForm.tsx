@@ -4,14 +4,12 @@ import { Business, BusinessHours } from "@/shared/types.ts";
 import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
 import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 import { AddressPicker, type AddressValue } from "./AddressPicker.tsx";
+import { uploadImage } from "@/shared/cloudinary.ts";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 const blankHours = (): BusinessHours[] =>
     DAYS.map(day => ({ day, open: "09:00", close: "20:00", closed: false }));
-
-const readFile = (file: File): Promise<string> =>
-    new Promise(res => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(file); });
 
 interface BusinessFormProps {
     initial?: Business | null;
@@ -53,6 +51,8 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
     );
 
     const [submitted, setSubmitted] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     const errors = {
         name:        !name.trim(),
@@ -67,13 +67,30 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
 
     const handleLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0];
-        if (f) setLogo(await readFile(f));
+        if (!f) return;
+        setUploading(true); setUploadError(null);
+        try {
+            setLogo(await uploadImage(f));
+        } catch (err) {
+            setUploadError(err instanceof Error ? err.message : "No se pudo subir el logo");
+        } finally {
+            setUploading(false);
+            if (logoRef.current) logoRef.current.value = "";
+        }
     };
     const handlePhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
-        const urls = await Promise.all(files.map(readFile));
-        setPhotos(prev => [...prev, ...urls]);
-        if (photosRef.current) photosRef.current.value = "";
+        if (!files.length) return;
+        setUploading(true); setUploadError(null);
+        try {
+            const urls = await Promise.all(files.map(uploadImage));
+            setPhotos(prev => [...prev, ...urls]);
+        } catch (err) {
+            setUploadError(err instanceof Error ? err.message : "No se pudieron subir las fotos");
+        } finally {
+            setUploading(false);
+            if (photosRef.current) photosRef.current.value = "";
+        }
     };
     const removePhoto = (i: number) => setPhotos(prev => prev.filter((_, j) => j !== i));
 
@@ -266,13 +283,15 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                 </button>
                             </div>
                             <span className="bf-hint">La primera foto será la portada en el mapa.</span>
+                            {uploading && <span className="bf-hint"><Icon name="image" size={11}/> Subiendo imagen…</span>}
+                            {uploadError && <ErrMsg>{uploadError}</ErrMsg>}
                         </div>
                     </div>
 
                     {/* acciones */}
                     <div className="card bf-actions">
-                        <button type="button" className="btn btn-brand btn-lg bf-fullbtn" onClick={handleSubmit}>
-                            {submitLabel} <Icon name="arrowRight" size={15}/>
+                        <button type="button" className="btn btn-brand btn-lg bf-fullbtn" onClick={handleSubmit} disabled={uploading}>
+                            {uploading ? "Subiendo imagen…" : submitLabel} <Icon name="arrowRight" size={15}/>
                         </button>
                         <button type="button" className="btn bf-fullbtn" onClick={onCancel}>
                             Cancelar

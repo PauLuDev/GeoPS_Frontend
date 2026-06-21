@@ -20,16 +20,33 @@ export function toBusiness(r: EstablishmentResource): Business {
         ruc: r.ruc,
         name: r.name,
         address: r.address,
-        district: "",
+        district: r.district ?? "",
+        phone: r.phone ?? undefined,
+        website: r.web ?? undefined,
         category: r.categories[0]?.name ?? "",
         categoryId: r.categories[0]?.id,
-        description: "",
+        description: r.description ?? "",
         rating: 0,
         totalReviews: 0,
         hours,
+        logo: r.logo ?? undefined,
+        photos: r.images ?? undefined,
+        imageUrl: r.logo ?? r.images?.[0],
         lat: r.latitude,
         lng: r.longitude,
     };
+}
+
+/* el back exige el telefono con exactamente 9 digitos (o nulo); si no, omite */
+function normalizePhone(phone?: string): string | undefined {
+    if (!phone) return undefined;
+    const digits = phone.replace(/\D/g, "");
+    return digits.length === 9 ? digits : undefined;
+}
+
+/* solo manda la lista de fotos si tiene elementos */
+function imagesOf(b: Business): string[] | undefined {
+    return b.photos && b.photos.length ? b.photos : undefined;
 }
 
 /* el id de categoria elegido en el form, o vacio si no hay */
@@ -49,6 +66,12 @@ export function toCreateEstablishmentResource(b: Business): CreateEstablishmentR
         latitude: b.lat,
         longitude: b.lng,
         categoryIds: categoryIdsOf(b),
+        logo: b.logo || undefined,
+        images: imagesOf(b),
+        description: b.description || undefined,
+        district: b.district || undefined,
+        phone: normalizePhone(b.phone),
+        web: b.website || undefined,
     };
 }
 
@@ -63,6 +86,12 @@ export function toUpdateEstablishmentResource(b: Business): UpdateEstablishmentR
         latitude: b.lat,
         longitude: b.lng,
         categoryIds: categoryIdsOf(b),
+        logo: b.logo || undefined,
+        images: imagesOf(b),
+        description: b.description || undefined,
+        district: b.district || undefined,
+        phone: normalizePhone(b.phone),
+        web: b.website || undefined,
     };
 }
 

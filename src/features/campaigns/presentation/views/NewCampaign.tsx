@@ -140,6 +140,10 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
     const addFromCatalog = (rc: CampaignCoupon) =>
         setCoupons(prev => prev.some(c => c.id === rc.id) ? prev : [...prev, { ...rc, expiresIn: expiresLabel }]);
 
+    /* la lista de abajo solo muestra los cupones creados nuevos: los del catalogo
+       ya se ven (y se quitan) en su propia tarjeta, asi no se duplican */
+    const newCoupons = coupons.filter(c => !registeredCoupons.some(rc => rc.id === c.id));
+
     /* publicar (construccion delegada al use-case) */
     const handlePublish = () => {
         setSubmitted(true);
@@ -303,8 +307,10 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                             </div>
                                         </div>
                                         {added ? (
-                                            <button type="button" className="btn btn-sm nc-catalog-btn added" disabled>
-                                                <Icon name="check" size={13}/> Agregado
+                                            <button type="button" className="btn btn-sm nc-catalog-btn added"
+                                                    title="Quitar de la campaña" aria-label="Quitar de la campaña"
+                                                    onClick={() => removeCoupon(rc.id)}>
+                                                <Icon name="check" size={13}/> Agregado <Icon name="close" size={12}/>
                                             </button>
                                         ) : (
                                             <button type="button" className="btn btn-brand btn-sm nc-catalog-btn" onClick={() => addFromCatalog(rc)}>
@@ -316,10 +322,10 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                             })}
                         </div>
 
-                        {/* lista de cupones seleccionados/creados para la campana */}
-                        {coupons.length > 0 && (
+                        {/* lista de cupones nuevos creados (los del catalogo se gestionan arriba) */}
+                        {newCoupons.length > 0 && (
                             <div className="nc-coupon-list">
-                                {coupons.map(c => (
+                                {newCoupons.map(c => (
                                     <div key={c.id} className="nc-coupon-item">
                                         <div className="nc-coupon-thumb"
                                              style={c.imageUrl ? { backgroundImage: `url(${c.imageUrl})` } : undefined}>

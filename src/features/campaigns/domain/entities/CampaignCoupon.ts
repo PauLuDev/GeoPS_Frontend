@@ -8,6 +8,7 @@ export interface CampaignCoupon {
     stock: number;
     uuid?: string;          // id real
     campaignId?: string;    // campana a la que pertenece
+    establishmentId?: string; // local al que pertenece (para filtrar por establecimiento)
 
     /* extras */
     discount: string;       // etiqueta "%" derivada de los precios

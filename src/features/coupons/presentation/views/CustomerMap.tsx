@@ -22,6 +22,11 @@ import { Business } from "@/shared/types.ts";
 import { useNearbyCoupons } from "@/features/coupons/presentation/hooks/useNearbyCoupons.ts";
 import { useReservations } from "@/features/coupons/presentation/hooks/useReservations.ts";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
+import { analyticsApi } from "@/features/analytics/infrastructure/api/analyticsApi.ts";
+
+/* el back necesita UUIDs reales; evitamos mandar ids stub o vacios */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const asUuid = (v?: string): string | undefined => (v && UUID_RE.test(v) ? v : undefined);
 
 /* local de respaldo cuando el cupon no trae su establecimiento resuelto */
 function stubBusiness(c: Coupon): Business {
@@ -63,6 +68,21 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     useEffect(() => {
         establishmentApi.listCategories().then(setCategories).catch(() => setCategories([]));
     }, []);
+
+    /* al abrir el detalle de un cupon -> registra la vista (VIEW) en analytics.
+       fire-and-forget: si falla no afecta la UI */
+    useEffect(() => {
+        const establishmentId = asUuid(detailCoupon?.establishmentId);
+        if (!detailCoupon || !establishmentId) return;
+        void analyticsApi.recordCouponView({
+            couponId: detailCoupon.id,
+            establishmentId,
+            campaignId: asUuid(detailCoupon.campaignId),
+            userId: asUuid(me?.id),
+            latitude: detailCoupon.lat,
+            longitude: detailCoupon.lng,
+        }).catch(() => {});
+    }, [detailCoupon, me?.id]);
 
     const [search, setSearch] = useState("");
     const [userLocation, setUserLocation] = useState<UserLocation>(() => {

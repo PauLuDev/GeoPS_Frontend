@@ -29,6 +29,8 @@ export function expiresInLabel(endDate?: string): string {
 export function toUICoupon(c: CouponResource, business: Business, endDate?: string): UICoupon {
     return {
         id: c.id,
+        establishmentId: business.id,
+        campaignId: c.campaignId ?? undefined,
         brand: business.name,
         category: business.category,
         x: 0, y: 0,

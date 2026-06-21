@@ -84,7 +84,13 @@ export async function firebaseSignOut(): Promise<void> {
  (403 sin roles, o 500 porque el principal no es un UUID).
 */
 export async function firebaseRefreshToken(): Promise<string | null> {
-    const user = _auth?.currentUser;
+    if (!firebaseConfig.apiKey) return null;   // modo dev / sin firebase
+    /* inicializa firebase si aun no se uso en esta sesion (ej. tras recargar la
+       pagina, donde no hubo login) y espera a que restaure la sesion persistida,
+       si no currentUser seria null y el refresh no traeria los claims nuevos */
+    const a = auth();
+    await a.authStateReady();
+    const user = a.currentUser;
     if (!user) return null;
     return user.getIdToken(true);
 }

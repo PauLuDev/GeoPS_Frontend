@@ -20,6 +20,12 @@ export interface EstablishmentResource {
     latitude: number;
     longitude: number;
     categories: CategoryResource[];
+    logo?: string;
+    images?: string[];
+    description?: string;
+    district?: string;
+    phone?: string;        // 9 digitos
+    web?: string;
 }
 
 /* body de creacion */
@@ -32,6 +38,12 @@ export interface CreateEstablishmentResource {
     latitude: number;
     longitude: number;
     categoryIds: number[];
+    logo?: string;
+    images?: string[];
+    description?: string;
+    district?: string;
+    phone?: string;        // el back exige exactamente 9 digitos (o nulo)
+    web?: string;
 }
 
 /* body de edicion */
@@ -43,4 +55,10 @@ export interface UpdateEstablishmentResource {
     latitude: number;
     longitude: number;
     categoryIds: number[];
+    logo?: string;
+    images?: string[];
+    description?: string;
+    district?: string;
+    phone?: string;
+    web?: string;
 }

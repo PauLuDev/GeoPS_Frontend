@@ -28,6 +28,8 @@ export interface Coupon {
     verified?: boolean;
     description: string;
     imageUrl?: string;
+    establishmentId?: string;  // UUID del local (para registrar vistas en analytics)
+    campaignId?: string;       // UUID de la campana, si el cupon pertenece a una
 }
 
 export interface UserCoord {

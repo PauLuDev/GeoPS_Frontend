@@ -74,6 +74,7 @@
 .geops-app .cl-toolbar { display: flex; padding: 14px 18px; border-bottom: 1px solid var(--line); gap: 10px; align-items: center; }
 .geops-app .cl-filters { display: flex; gap: 6px; flex-wrap: wrap; }
 .geops-app .cl-spacer { flex: 1; }
+.geops-app .cl-est-filter { min-width: 220px; }
 .geops-app .cl-search { padding: 6px 10px; box-shadow: none; max-width: 220px; }
 .geops-app .cl-search-input { font-size: 13px; }
 .geops-app .cl-empty { padding: 48px 24px; text-align: center; color: var(--ink-3); display: flex; flex-direction: column; align-items: center; }
@@ -86,12 +87,14 @@
 .geops-app .ct-actions { text-align: right; }
 
 /* new Campaign */
-.geops-app .nc-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
-@media (max-width: 1100px) { .geops-app .nc-grid { grid-template-columns: 1fr; } }
+/* minmax(0,..) deja que las columnas se achiquen por debajo del contenido,
+   asi el texto largo se trunca/ajusta en vez de empujar la columna fuera de la pantalla */
+.geops-app .nc-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 1100px) { .geops-app .nc-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* layout y secciones del formulario */
 .geops-app .nc-page { max-width: 1400px; }
-.geops-app .nc-col { display: flex; flex-direction: column; gap: 14px; }
+.geops-app .nc-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .geops-app .nc-card { padding: 22px; }
 .geops-app .nc-eyebrow { margin-bottom: 14px; }
 .geops-app .cl-new-coupon { margin-bottom: 16px; }
@@ -212,7 +215,7 @@
 .geops-app .nc-coupons-err { margin-top: 8px; font-size: 12px; color: #dc2626; display: flex; align-items: center; gap: 5px; }
 
 /* columna derecha: preview + resumen */
-.geops-app .nc-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 14px; align-self: flex-start; }
+.geops-app .nc-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 14px; align-self: flex-start; min-width: 0; }
 .geops-app .nc-preview-card { padding: 0; overflow: hidden; }
 .geops-app .nc-preview-head { padding: 12px 18px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
 .geops-app .nc-preview-body { padding: 14px; }

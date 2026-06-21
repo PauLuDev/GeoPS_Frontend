@@ -1,18 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { redeemByCode, RedeemOutcome } from "@/features/coupons/application/redeemCode.ts";
+import { getCurrentUser } from "@/features/auth/application/session.ts";
 
 interface Redemption {
     couponId: string;
     title: string;
     at: string;
+    day: string;   // YYYY-MM-DD local -> para filtrar "canjeados hoy"
+}
+
+/* el back no expone los canjes del comerciante, asi que guardamos los del dia
+   en localStorage (por comerciante) para que sobrevivan recargas */
+const today = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
+const storageKey = () => `geops:redeemed:${getCurrentUser()?.id ?? "anon"}`;
+
+function loadHistory(): Redemption[] {
+    try {
+        const raw = localStorage.getItem(storageKey());
+        const all = raw ? (JSON.parse(raw) as Redemption[]) : [];
+        return all.filter(r => r.day === today());   // solo los de hoy
+    } catch {
+        return [];
+    }
+}
+
+function saveHistory(list: Redemption[]) {
+    try {
+        localStorage.setItem(storageKey(), JSON.stringify(list));
+    } catch { /* almacenamiento no disponible */ }
 }
 
 export function RedeemView() {
     const [code, setCode] = useState("");
     const [result, setResult] = useState<RedeemOutcome | null>(null);
     const [loading, setLoading] = useState(false);
-    const [history, setHistory] = useState<Redemption[]>([]);
+    const [history, setHistory] = useState<Redemption[]>(loadHistory);
+
+    /* persiste el historial del dia ante cada cambio (sobrevive recargas) */
+    useEffect(() => { saveHistory(history); }, [history]);
 
     const validate = async () => {
         setLoading(true);
@@ -23,6 +49,7 @@ export function RedeemView() {
                 couponId: outcome.coupon.id,
                 title: outcome.coupon.title,
                 at: new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }),
+                day: today(),
             }, ...prev]);
             setCode("");
         }

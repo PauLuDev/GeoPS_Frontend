@@ -8,6 +8,9 @@ import { CampaignAnalytics, AnalyticsCampaignStatus } from "../../domain/entitie
 */
 const GRAPHQL_URL = import.meta.env.VITE_ANALYTICS_URL ?? "http://localhost:5003/graphql";
 
+/* arg opcional de tipo Guid (string): se omite si no hay valor */
+const guidArg = (name: string, v?: string): string => (v ? `, ${name}: "${v}"` : "");
+
 /* manda una query y devuelve el campo pedido */
 async function graphql<T>(query: string, field: string): Promise<T> {
     const token = getToken();
@@ -52,21 +55,41 @@ export const analyticsApi = {
     /* metricas del dashboard en una ventana de dias */
     dashboard: (establishmentId: string, timeframeDays: number) =>
         graphql<DashboardStats>(
-            `query { getEstablishmentDashboard(establishmentId: "${establishmentId}", timeframeDays: ${timeframeDays}) { ${DASHBOARD_FIELDS} } }`,
-            "getEstablishmentDashboard",
+            `query { establishmentDashboard(establishmentId: "${establishmentId}", timeframeDays: ${timeframeDays}) { ${DASHBOARD_FIELDS} } }`,
+            "establishmentDashboard",
         ),
 
     /* campanas, opcionalmente filtradas por estado */
     campaigns: (establishmentId: string, status?: AnalyticsCampaignStatus) =>
         graphql<CampaignAnalytics[]>(
-            `query { getCampaigns(establishmentId: "${establishmentId}"${status ? `, status: ${status}` : ""}) { ${CAMPAIGN_FIELDS} } }`,
-            "getCampaigns",
+            `query { campaigns(establishmentId: "${establishmentId}"${status ? `, status: ${status}` : ""}) { ${CAMPAIGN_FIELDS} } }`,
+            "campaigns",
         ),
 
     /* detalle de una campana */
     campaignDetails: (campaignId: string) =>
         graphql<CampaignAnalytics | null>(
-            `query { getCampaignDetails(campaignId: "${campaignId}") { ${CAMPAIGN_FIELDS} } }`,
-            "getCampaignDetails",
+            `query { campaignDetails(campaignId: "${campaignId}") { ${CAMPAIGN_FIELDS} } }`,
+            "campaignDetails",
+        ),
+
+    /* registra que un cliente abrio el detalle de un cupon -> interaccion VIEW */
+    recordCouponView: (p: {
+        couponId: string; establishmentId: string; campaignId?: string;
+        userId?: string; latitude: number; longitude: number;
+    }) =>
+        graphql<boolean>(
+            `mutation { recordCampaignInteraction(establishmentId: "${p.establishmentId}", couponId: "${p.couponId}"`
+            + `${guidArg("campaignId", p.campaignId)}${guidArg("userId", p.userId)}`
+            + `, interactionType: VIEW, latitude: ${p.latitude}, longitude: ${p.longitude}) }`,
+            "recordCampaignInteraction",
+        ),
+
+    /* registra que un cliente abrio el detalle de un establecimiento */
+    recordEstablishmentView: (p: { establishmentId: string; userId?: string; latitude: number; longitude: number }) =>
+        graphql<boolean>(
+            `mutation { recordEstablishmentView(establishmentId: "${p.establishmentId}"`
+            + `${guidArg("userId", p.userId)}, latitude: ${p.latitude}, longitude: ${p.longitude}) }`,
+            "recordEstablishmentView",
         ),
 };

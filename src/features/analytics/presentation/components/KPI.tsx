@@ -10,7 +10,7 @@ interface KPIProps {
 }
 
 export function KPI({ label, value, delta, trend, sparkData }: KPIProps) {
-    const max = Math.max(...sparkData);
+    const max = Math.max(0, ...sparkData) || 1;
     const w = 110, h = 36;
     const slug = label.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9-]/g, "");
     const path = sparkData.map((v, i) => {
@@ -23,9 +23,11 @@ export function KPI({ label, value, delta, trend, sparkData }: KPIProps) {
             <div className="eyebrow">{label}</div>
             <div className="kpi-row">
                 <div className="mono tnum kpi-value">{value}</div>
-                <div className={"kpi-delta" + (trend === "up" ? " up" : " down")}>
-                    <Icon name="trending" size={11}/> {delta}
-                </div>
+                {delta && (
+                    <div className={"kpi-delta" + (trend === "up" ? " up" : " down")}>
+                        <Icon name="trending" size={11}/> {delta}
+                    </div>
+                )}
             </div>
             <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="36" className="kpi-spark">
                 <defs>

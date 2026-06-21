@@ -77,6 +77,11 @@
 .geops-app .md-range-switch { padding: 2px; font-size: 11px; }
 .geops-app .md-range-top { width: fit-content; margin-bottom: 14px; }
 .geops-app .md-range-btn { padding: 4px 10px; font-size: 11px; }
+/* barra de controles del dashboard: establecimiento + modo (resumen / por campaña) */
+.geops-app .md-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 16px; }
+.geops-app .md-control { display: flex; flex-direction: column; gap: 5px; min-width: 200px; }
+.geops-app .md-control-label { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.geops-app .md-mode-switch { padding: 2px; font-size: 11px; }
 .geops-app .md-state { padding: 28px; text-align: center; color: var(--ink-3); font-size: 13px; }
 .geops-app .hc-empty { display: flex; align-items: center; justify-content: center; color: var(--ink-3); font-size: 13px; }
 .geops-app .dot.brand { background: var(--brand); }
@@ -90,6 +95,9 @@
 .geops-app .md-top-card { padding: 18px; }
 .geops-app .md-top-list { display: flex; flex-direction: column; gap: 8px; }
 .geops-app .md-top-row { display: grid; grid-template-columns: 4px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; background: var(--bg-sunken); border-radius: 10px; }
+/* fila clickeable -> abre la campana en "Por campaña" */
+.geops-app .md-top-row-btn { width: 100%; text-align: left; border: 1px solid transparent; font: inherit; color: inherit; cursor: pointer; transition: border-color 160ms ease, background 160ms ease; }
+.geops-app .md-top-row-btn:hover { border-color: var(--line-strong); background: var(--bg-elev); }
 .geops-app .md-top-color { height: 36px; width: 4px; border-radius: 2px; }
 .geops-app .md-top-main { min-width: 0; }
 .geops-app .md-top-name { font-size: 13px; font-weight: 500; }

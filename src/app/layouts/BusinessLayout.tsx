@@ -19,6 +19,8 @@ import { useBilling } from "@/features/billing/presentation/hooks/useBilling.ts"
 import { CurrentSubscription, withinLimit } from "@/features/billing/domain/entities/CurrentSubscription.ts";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
+import { firebaseRefreshToken } from "@/features/auth/infrastructure/firebaseAuth.ts";
+import { setToken } from "@/shared/api/tokenStore.ts";
 
 interface BusinessLayoutProps {
     onSwitchRole: () => void;
@@ -38,6 +40,13 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const { campaigns, addCampaign, updateCampaign, removeCampaign } = useCampaigns();
     const { establishments, save: saveEstablishment, remove: removeEstablishment } = useEstablishments();
 
+    /* al entrar al panel, refresca el token para traer los claims actuales
+       (ej. ROLE_PREMIUM recien asignado tras pagar). sin esto, el back rechaza
+       crear campanas/cupones porque el token guardado tiene el rol viejo */
+    useEffect(() => {
+        firebaseRefreshToken().then(tk => { if (tk) setToken(tk); }).catch(() => {});
+    }, []);
+
     /* suscripcion activa con sus limites reales */
     const { currentSubscription } = useBilling();
     const [sub, setSub] = useState<CurrentSubscription | null>(null);
@@ -52,9 +61,17 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const planName = sub?.planName ?? "Freemium";
     const allowNewCampaign = withinLimit(planLimit, activeCampaigns);
 
-    /* intento de crear campana -> respeta el limite del plan */
-    const handleNew = () => {
-        if (allowNewCampaign) setView("new");
+    /* intento de crear campana -> respeta el limite del plan.
+       refresca la suscripcion primero por si recien se hizo upgrade (asi no usa
+       el limite viejo cacheado y no obliga a recargar la pagina) */
+    const handleNew = async () => {
+        /* token fresco (rol actual) + suscripcion fresca antes de entrar al form */
+        const freshToken = await firebaseRefreshToken().catch(() => null);
+        if (freshToken) setToken(freshToken);
+        const fresh = await currentSubscription().catch(() => null);
+        if (fresh) setSub(fresh);
+        const limit = (fresh ?? sub)?.limits.maxActiveCampaigns ?? 0;
+        if (withinLimit(limit, activeCampaigns)) setView("new");
         else setLimitReached(true);
     };
 
@@ -83,8 +100,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                 {view === "dashboard" && (
                     <MerchantDashboard
                         onNew={handleNew}
-                        establishmentId={establishments[0]?.id ?? ""}
-                        establishmentName={establishments[0]?.name ?? ""}
+                        establishments={establishments.map(e => ({ id: e.id, name: e.name }))}
                     />
                 )}
                 {view === "campaigns" && (
@@ -111,6 +127,8 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                         establishments={establishments}
                         onSave={saveEstablishment}
                         onDelete={removeEstablishment}
+                        maxEstablishments={sub?.limits.maxEstablishments}
+                        onUpgrade={() => setView("subscription")}
                     />
                 )}
                 {view === "coupons" && (

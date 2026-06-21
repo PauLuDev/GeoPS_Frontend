@@ -9,6 +9,10 @@ interface EstablishmentsViewProps {
     establishments: Business[];
     onSave: (business: Business) => void;
     onDelete: (id: string) => void;
+    /* limite de establecimientos del plan (-1 = ilimitado, undefined = sin limite) */
+    maxEstablishments?: number;
+    /* navegar a la pantalla de planes desde el aviso de limite */
+    onUpgrade?: () => void;
 }
 
 type Mode =
@@ -19,9 +23,18 @@ type Mode =
 const catLabel = (id: string) => CATEGORIES.find(c => c.id === id)?.label ?? id;
 const catIcon  = (id: string) => CATEGORIES.find(c => c.id === id)?.icon ?? "store";
 
-export function EstablishmentsView({ establishments, onSave, onDelete }: EstablishmentsViewProps) {
+export function EstablishmentsView({ establishments, onSave, onDelete, maxEstablishments, onUpgrade }: EstablishmentsViewProps) {
     const [mode, setMode]     = useState<Mode>({ kind: "list" });
     const [toDelete, setToDelete] = useState<Business | null>(null);
+    const [limitReached, setLimitReached] = useState(false);
+
+    /* al darle "Nuevo establecimiento", respeta el limite del plan: si ya llego
+       al maximo no abre el formulario, muestra un aviso */
+    const atLimit = maxEstablishments != null && maxEstablishments >= 0 && establishments.length >= maxEstablishments;
+    const tryCreate = () => {
+        if (atLimit) setLimitReached(true);
+        else setMode({ kind: "create" });
+    };
 
     /* form (crear / editar) */
     if (mode.kind !== "list") {
@@ -67,7 +80,7 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
                     </p>
                 </div>
                 {establishments.length > 0 && (
-                    <button type="button" className="btn btn-brand" onClick={() => setMode({ kind: "create" })}>
+                    <button type="button" className="btn btn-brand" onClick={tryCreate}>
                         <Icon name="plus" size={14}/> Nuevo establecimiento
                     </button>
                 )}
@@ -78,7 +91,7 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
                     <div className="est-empty-icon"><Icon name="store" size={34}/></div>
                     <div className="est-empty-title">Aún no tienes establecimientos</div>
                     <div className="est-empty-sub">Registra tu primer local para empezar a publicar campañas.</div>
-                    <button type="button" className="btn btn-brand" onClick={() => setMode({ kind: "create" })}>
+                    <button type="button" className="btn btn-brand" onClick={tryCreate}>
                         <Icon name="plus" size={14}/> Registrar establecimiento
                     </button>
                 </div>
@@ -138,6 +151,32 @@ export function EstablishmentsView({ establishments, onSave, onDelete }: Establi
                         );
                     })}
                 </div>
+            )}
+
+            {/* aviso de limite del plan alcanzado */}
+            {limitReached && (
+                <Modal onClose={() => setLimitReached(false)} ariaLabel="Límite del plan alcanzado" className="est-modal">
+                    <div className="est-modal-body">
+                        <div className="est-modal-icon"><Icon name="store" size={20}/></div>
+                        <h3 className="est-modal-title">Límite de tu plan</h3>
+                        <p className="est-modal-text">
+                            Tu plan permite hasta <strong>{maxEstablishments}</strong> establecimiento{maxEstablishments === 1 ? "" : "s"} y
+                            ya tienes <strong>{establishments.length}</strong>. Mejora tu plan para registrar más,
+                            o elimina uno existente.
+                        </p>
+                        <div className="est-modal-actions">
+                            <button type="button" className="btn est-modal-btn" onClick={() => setLimitReached(false)}>
+                                Entendido
+                            </button>
+                            {onUpgrade && (
+                                <button type="button" className="btn btn-brand est-modal-btn"
+                                        onClick={() => { setLimitReached(false); onUpgrade(); }}>
+                                    <Icon name="arrowRight" size={14}/> Ver planes
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </Modal>
             )}
 
             {/* confirmacion de eliminacion */}

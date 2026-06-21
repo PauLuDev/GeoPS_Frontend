@@ -11,7 +11,8 @@ import { getCurrentUser } from "@/features/auth/application/session.ts";
 
 /*
  repositorio de establecimientos del dueno -> listar, crear, editar y borrar
- solo se guardan nombre, ruc, direccion, horario y ubicacion -> fotos, logo, distrito y descripcion todavia no se pueden guardar
+ persiste nombre, ruc, direccion, horario, ubicacion, categorias, logo, fotos,
+ descripcion, distrito, telefono (9 digitos) y web
 */
 export class HttpEstablishmentRepository implements IEstablishmentRepository {
     /* ids ya guardados, para saber si toca crear o editar */
