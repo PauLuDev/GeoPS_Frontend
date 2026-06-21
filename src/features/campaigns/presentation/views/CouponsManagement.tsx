@@ -148,11 +148,11 @@ export function CouponsManagement() {
                                     </div>
                                 </div>
                                 <div className="cm-actions">
-                                    <button type="button" className="btn btn-sm" onClick={() => setEditing(c)}>
-                                        <Icon name="edit" size={13}/> Editar
+                                    <button type="button" className="btn btn-sm" title="Editar" onClick={() => setEditing(c)}>
+                                        <Icon name="edit" size={13}/> <span className="cm-btn-label">Editar</span>
                                     </button>
-                                    <button type="button" className="btn btn-sm est-del-btn" onClick={() => setToDelete(c)}>
-                                        <Icon name="trash" size={13}/> Eliminar
+                                    <button type="button" className="btn btn-sm est-del-btn" title="Eliminar" onClick={() => setToDelete(c)}>
+                                        <Icon name="trash" size={13}/> <span className="cm-btn-label">Eliminar</span>
                                     </button>
                                 </div>
                             </div>

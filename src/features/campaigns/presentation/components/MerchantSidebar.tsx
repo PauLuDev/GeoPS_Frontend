@@ -7,6 +7,9 @@ interface SidebarProps {
     onSwitchRole: () => void;
     onSignOut: () => void;
     campaignCount?: number;
+    /* drawer en mobile: si esta abierto y como cerrarlo */
+    open?: boolean;
+    onClose?: () => void;
 }
 
 const SIDEBAR_ITEMS = [
@@ -16,10 +19,12 @@ const SIDEBAR_ITEMS = [
     { id: "redeem", labelKey: "merchant.navRedeem", icon: "redeem" },
 ] as const;
 
-export function MerchantSidebar({ view, setView, onSwitchRole, onSignOut, campaignCount = 0 }: SidebarProps) {
+export function MerchantSidebar({ view, setView, onSwitchRole, onSignOut, campaignCount = 0, open = false, onClose }: SidebarProps) {
     const { t } = useTranslation();
     return (
-        <aside className="msb">
+        <>
+        {open && <div className="msb-backdrop" onClick={onClose}/>}
+        <aside className={"msb" + (open ? " msb-open" : "")}>
             <div className="msb-head">
                 <div className="brand">
                     <div className="brand-mark">
@@ -78,5 +83,6 @@ export function MerchantSidebar({ view, setView, onSwitchRole, onSignOut, campai
                 </button>
             </div>
         </aside>
+        </>
     );
 }

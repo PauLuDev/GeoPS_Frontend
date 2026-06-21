@@ -19,6 +19,7 @@ import { useBilling } from "@/features/billing/presentation/hooks/useBilling.ts"
 import { CurrentSubscription, withinLimit } from "@/features/billing/domain/entities/CurrentSubscription.ts";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
+import { BrandMark } from "@/shared/ui/components/BrandMark.tsx";
 import { firebaseRefreshToken } from "@/features/auth/infrastructure/firebaseAuth.ts";
 import { setToken } from "@/shared/api/tokenStore.ts";
 
@@ -33,6 +34,9 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const navigate = useNavigate();
     const { t } = useTranslation();
     const [view, setView] = useState("dashboard");
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    /* navegar desde el sidebar tambien cierra el drawer en mobile */
+    const selectView = (v: string) => { setView(v); setSidebarOpen(false); };
     const [limitReached, setLimitReached] = useState(false);
     const [campaignError, setCampaignError] = useState(false);
     const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -90,8 +94,18 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
 
     return (
         <div className="merchant-app">
-            <MerchantSidebar view={view} setView={setView} onSwitchRole={onSwitchRole} onSignOut={() => setConfirmSignOut(true)} campaignCount={campaigns.length}/>
+            <MerchantSidebar view={view} setView={selectView} onSwitchRole={onSwitchRole} onSignOut={() => setConfirmSignOut(true)} campaignCount={campaigns.length}
+                             open={sidebarOpen} onClose={() => setSidebarOpen(false)}/>
             <main className="merchant-main">
+                {/* barra superior solo en mobile: hamburguesa para abrir el menu */}
+                <div className="msb-mobile-bar">
+                    <button type="button" className="msb-hamburger" aria-label="Abrir menú" onClick={() => setSidebarOpen(true)}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                    <div className="brand"><BrandMark/><span>GeoPS</span></div>
+                </div>
                 <MerchantTopbar
                     onAccount={() => setView("account")}
                     onSwitchRole={onSwitchRole}

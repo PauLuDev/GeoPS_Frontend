@@ -23,7 +23,24 @@
 
 /* merchant Sidebar */
 .geops-app .msb { background: var(--bg-elev); border-right: 1px solid var(--line); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-@media (max-width: 880px) { .geops-app .msb { position: relative; height: auto; } }
+/* drawer en mobile: el sidebar sale de pantalla y se abre con la hamburguesa */
+.geops-app .msb-mobile-bar { display: none; }
+.geops-app .msb-backdrop { display: none; }
+.geops-app .msb-hamburger { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-elev); color: var(--ink); cursor: pointer; flex-shrink: 0; }
+.geops-app .msb-hamburger:hover { background: var(--bg-sunken); }
+@media (max-width: 880px) {
+  .geops-app .msb {
+    position: fixed; top: 0; left: 0; height: 100vh; width: 264px; z-index: 60;
+    transform: translateX(-100%); transition: transform 240ms ease; box-shadow: var(--shadow-lg);
+  }
+  .geops-app .msb.msb-open { transform: translateX(0); }
+  .geops-app .msb-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 55; }
+  .geops-app .msb-mobile-bar {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    position: sticky; top: 0; z-index: 30; background: var(--bg); border-bottom: 1px solid var(--line);
+  }
+  .geops-app .merchant-topbar { top: 14px; right: 16px; }
+}
 .geops-app .msb-nav     { padding: 14px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .geops-app .msb-section { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); padding: 8px 10px 4px; }
 .geops-app .msb-item {
@@ -50,9 +67,13 @@
 .geops-app .md-head  { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
 .geops-app .md-kpis  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
 @media (max-width: 880px) { .geops-app .md-kpis { grid-template-columns: repeat(2, 1fr); } }
-.geops-app .md-grid  { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 14px; }
-@media (max-width: 1100px) { .geops-app .md-grid { grid-template-columns: 1fr; } }
-.geops-app .md-chart  { padding: 22px; min-height: 360px; }
+/* minmax(0,..) -> los items pueden achicarse y no estiran la card con su
+   contenido (asi el grafico scrollea adentro y no se ancha toda la pagina) */
+.geops-app .md-grid  { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; margin-bottom: 14px; }
+@media (max-width: 1100px) { .geops-app .md-grid { grid-template-columns: minmax(0, 1fr); } }
+.geops-app .md-chart  { padding: 22px; min-height: 360px; min-width: 0; }
+/* el grafico por hora siempre scrollea adentro de su card si no entra */
+.geops-app .hc-chart { overflow-x: auto; }
 .geops-app .md-funnel { padding: 22px; }
 .geops-app .md-chart-legend { display: flex; align-items: center; gap: 18px; margin-top: 14px; font-size: 12px; color: var(--ink-2); }
 .geops-app .md-chart-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
@@ -77,6 +98,13 @@
 .geops-app .cl-est-filter { min-width: 220px; }
 .geops-app .cl-search { padding: 6px 10px; box-shadow: none; max-width: 220px; }
 .geops-app .cl-search-input { font-size: 13px; }
+/* en pantallas angostas: filtros/selector arriba y el buscador abajo (full width) */
+@media (max-width: 640px) {
+  .geops-app .cl-toolbar { flex-direction: column; align-items: stretch; }
+  .geops-app .cl-spacer { display: none; }
+  .geops-app .cl-est-filter { min-width: 0; }
+  .geops-app .cl-search { max-width: none; }
+}
 .geops-app .cl-empty { padding: 48px 24px; text-align: center; color: var(--ink-3); display: flex; flex-direction: column; align-items: center; }
 .geops-app .cl-empty-icon { opacity: 0.25; margin-bottom: 12px; }
 .geops-app .cl-empty-title { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-bottom: 4px; }
@@ -101,6 +129,8 @@
 .geops-app .nc-optional { color: var(--ink-3); font-weight: 400; font-size: 11px; }
 .geops-app .nc-fields { display: flex; flex-direction: column; gap: 14px; }
 .geops-app .nc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+/* en modales/forms angostos las dos columnas (ej. Inicio/Fin) se apilan */
+@media (max-width: 480px) { .geops-app .nc-row2 { grid-template-columns: 1fr; } }
 .geops-app .nc-row2-sm { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 .geops-app .nc-prices { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: start; margin-bottom: 12px; }
 .geops-app .nc-group-label { font-size: 12px; color: var(--ink-2); font-weight: 500; }
@@ -280,6 +310,13 @@
 .geops-app .cm-cat-tag { background: var(--bg-sunken); color: var(--ink-2); font-weight: 600; padding: 1px 8px; border-radius: 999px; }
 .geops-app .cm-sep { opacity: 0.3; }
 .geops-app .cm-actions { display: flex; gap: 6px; flex-shrink: 0; }
+/* en pantallas angostas: la meta del cupon (incluido el stock) envuelve, y los
+   botones de la fila quedan solo con icono para que entre todo */
+@media (max-width: 560px) {
+  .geops-app .cm-meta { flex-wrap: wrap; }
+  .geops-app .cm-btn-label { display: none; }
+  .geops-app .cm-actions .btn { padding: 6px 9px; }
+}
 
 /* coupon edit modal */
 .geops-app .geops-dialog.cm-edit-modal { width: min(480px, calc(100vw - 24px)); }

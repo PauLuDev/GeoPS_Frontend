@@ -1,8 +1,8 @@
 /* analytics / Dashboard */
 .geops-app .md { padding: 28px; max-width: 1400px; margin: 0 auto; }
 .geops-app .md-head  { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-.geops-app .md-kpis  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
-@media (max-width: 880px) { .geops-app .md-kpis { grid-template-columns: repeat(2, 1fr); } }
+.geops-app .md-kpis  { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+@media (max-width: 880px) { .geops-app .md-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .geops-app .md-grid  { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 14px; }
 @media (max-width: 1100px) { .geops-app .md-grid { grid-template-columns: 1fr; } }
 .geops-app .md-chart   { padding: 22px; min-height: 360px; }
@@ -74,6 +74,16 @@
 .geops-app .dot.dot-redeemed { background: color-mix(in oklab, var(--brand) 75%, var(--bg-elev)); }
 .geops-app .hc-label { font-size: 10px; font-family: var(--font-mono); color: var(--ink-3); font-weight: 400; }
 .geops-app .hc-label.peak { color: var(--ink); font-weight: 600; }
+
+/* responsive: el grafico por hora (24 columnas) se vuelve scrolleable en
+   pantallas angostas asi las barras y etiquetas no se aplastan; y el menu de
+   export se alinea a la izquierda para no salirse de pantalla */
+@media (max-width: 680px) {
+  .geops-app .hc-chart { overflow-x: auto; gap: 4px; padding-bottom: 4px; }
+  .geops-app .hc-col { min-width: 22px; }
+  .geops-app .hc-label { font-size: 9px; }
+  .geops-app .md-export-menu { right: auto; left: 0; }
+}
 .geops-app .md-range-switch { padding: 2px; font-size: 11px; }
 .geops-app .md-range-top { width: fit-content; margin-bottom: 14px; }
 .geops-app .md-range-btn { padding: 4px 10px; font-size: 11px; }
