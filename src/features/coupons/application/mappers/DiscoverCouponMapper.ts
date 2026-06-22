@@ -26,11 +26,12 @@ export function expiresInLabel(endDate?: string): string {
  los precios de display, el destacado y las coords x/y del mapa estilizado van en cero porque no llegan en el cupon
  la distancia se calcula en vivo en el mapa
 */
-export function toUICoupon(c: CouponResource, business: Business, endDate?: string): UICoupon {
+export function toUICoupon(c: CouponResource, business: Business, endDate?: string, campaignName?: string): UICoupon {
     return {
         id: c.id,
         establishmentId: business.id,
         campaignId: c.campaignId ?? undefined,
+        campaignName,
         brand: business.name,
         category: business.category,
         x: 0, y: 0,
@@ -49,7 +50,7 @@ export function toUICoupon(c: CouponResource, business: Business, endDate?: stri
         rating: business.rating,
         reviews: business.totalReviews,
         featured: false,
-        verified: !!business.ruc && business.ruc !== "No disponible",
+        verified: business.verified ?? (!!business.ruc && business.ruc !== "No disponible"),
         description: c.description ?? "",
         imageUrl: c.imageUrl,
     };

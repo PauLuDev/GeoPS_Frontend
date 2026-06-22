@@ -17,6 +17,7 @@ export function toBusiness(r: EstablishmentResource): Business {
 
     return {
         id: r.id,
+        ownerId: r.ownerId,
         ruc: r.ruc,
         name: r.name,
         address: r.address,
