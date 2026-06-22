@@ -78,18 +78,18 @@ export const analyticsApi = {
         couponId: string; establishmentId: string; campaignId?: string;
         userId?: string; latitude: number; longitude: number;
     }) =>
-        graphql<boolean>(
+        graphql<{ success: boolean; message: string }>(
             `mutation { recordCampaignInteraction(establishmentId: "${p.establishmentId}", couponId: "${p.couponId}"`
             + `${guidArg("campaignId", p.campaignId)}${guidArg("userId", p.userId)}`
-            + `, interactionType: VIEW, latitude: ${p.latitude}, longitude: ${p.longitude}) }`,
+            + `, interactionType: VIEW, latitude: ${p.latitude}, longitude: ${p.longitude}) { success message } }`,
             "recordCampaignInteraction",
         ),
 
     /* registra que un cliente abrio el detalle de un establecimiento */
     recordEstablishmentView: (p: { establishmentId: string; userId?: string; latitude: number; longitude: number }) =>
-        graphql<boolean>(
+        graphql<{ success: boolean; message: string }>(
             `mutation { recordEstablishmentView(establishmentId: "${p.establishmentId}"`
-            + `${guidArg("userId", p.userId)}, latitude: ${p.latitude}, longitude: ${p.longitude}) }`,
+            + `${guidArg("userId", p.userId)}, latitude: ${p.latitude}, longitude: ${p.longitude}) { success message } }`,
             "recordEstablishmentView",
         ),
 };
