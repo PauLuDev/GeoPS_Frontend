@@ -30,6 +30,7 @@ export interface Coupon {
     imageUrl?: string;
     establishmentId?: string;  // UUID del local (para registrar vistas en analytics)
     campaignId?: string;       // UUID de la campana, si el cupon pertenece a una
+    campaignName?: string;     // nombre de la campana (para agrupar en el detalle del local)
 }
 
 export interface UserCoord {
@@ -68,6 +69,8 @@ export interface Business {
     lat: number;
     lng: number;
     active?: boolean;   // visibilidad en la plataforma (undefined = activo)
+    verified?: boolean; // true si el owner tiene al menos un establecimiento con RUC valido
+    ownerId?: string;   // UUID del dueno (para propagar la verificacion a todos sus locales)
 }
 
 export interface UserLocation {

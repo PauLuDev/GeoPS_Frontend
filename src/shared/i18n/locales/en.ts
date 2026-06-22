@@ -101,6 +101,8 @@ export const en = {
         noReviews: "No reviews yet. Be the first to share your opinion!",
         reserveFree: "Reserve for free",
         reserve: "Reserve · S/{{price}}",
+        soldOut: "Sold out",
+        expired: "Offer expired",
         done: "Done · go to the spot",
     },
     map: {

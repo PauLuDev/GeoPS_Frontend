@@ -119,7 +119,7 @@ export function BusinessDetailView({ business, coupons, reserved, onToggleSaved,
                         </div>
                         <div className="biz-name-row">
                             <span className="biz-name">{business.name}</span>
-                            {business.ruc && business.ruc !== "No disponible" && (
+                            {(business.verified ?? (business.ruc && business.ruc !== "No disponible")) && (
                                 <span className="biz-verified-hero" title="Negocio premium verificado" aria-label="Verificado">
                                     <VerifiedBadge size={16}/>
                                 </span>
@@ -146,7 +146,7 @@ export function BusinessDetailView({ business, coupons, reserved, onToggleSaved,
                                 <div className="eyebrow biz-info-eyebrow">{t("business.ruc")}</div>
                                 <div className="biz-info-ruc">{business.ruc}</div>
                             </div>
-                            {business.ruc !== "No disponible" && (
+                            {(business.verified ?? business.ruc !== "No disponible") && (
                                 <span className="biz-verified">{t("business.verified")}</span>
                             )}
                         </div>
@@ -240,30 +240,53 @@ export function BusinessDetailView({ business, coupons, reserved, onToggleSaved,
                     </table>
                 </div>
 
-                {/* ofertas activas */}
-                {coupons.length > 0 && (
-                    <div className="biz-section biz-section-divided">
-                        <div className="biz-offers-head">
-                            <div className="eyebrow">{t("business.activeOffers")}</div>
-                            <span className="biz-offers-count">{t("business.couponsCount", { count: coupons.length })}</span>
+                {/* ofertas agrupadas por campana -> cada campana es su propio bloque;
+                    los cupones sin campana (o cuya campana no se reconocio) caen en "Ofertas activas" */}
+                {coupons.length > 0 && (() => {
+                    const byCampaign = new Map<string, { label: string; items: typeof coupons }>();
+                    const general: typeof coupons = [];
+                    coupons.forEach(c => {
+                        if (c.campaignId && c.campaignName) {
+                            if (!byCampaign.has(c.campaignId)) {
+                                byCampaign.set(c.campaignId, { label: c.campaignName, items: [] });
+                            }
+                            byCampaign.get(c.campaignId)!.items.push(c);
+                        } else {
+                            general.push(c);
+                        }
+                    });
+
+                    const groups: { key: string; label: string; items: typeof coupons }[] = [
+                        ...Array.from(byCampaign.entries()).map(([key, g]) => ({ key, label: g.label, items: g.items })),
+                    ];
+                    if (general.length > 0) {
+                        groups.push({ key: "__general__", label: t("business.activeOffers"), items: general });
+                    }
+
+                    return groups.map(group => (
+                        <div key={group.key} className="biz-section biz-section-divided">
+                            <div className="biz-offers-head">
+                                <div className="eyebrow">{group.label}</div>
+                                <span className="biz-offers-count">{t("business.couponsCount", { count: group.items.length })}</span>
+                            </div>
+                            <div className="biz-offers-list">
+                                {group.items.map(c => (
+                                    <CouponCard
+                                        key={c.id}
+                                        c={c}
+                                        isReserved={reserved.has(c.id)}
+                                        isSelected={false}
+                                        onToggleSaved={() => onToggleSaved(c.id)}
+                                        onClick={() => onViewCoupon?.(c)}
+                                        hideBrand
+                                        realDist={realDist?.(c)}
+                                        realWalk={realWalk?.(c)}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                        <div className="biz-offers-list">
-                            {coupons.map(c => (
-                                <CouponCard
-                                    key={c.id}
-                                    c={c}
-                                    isReserved={reserved.has(c.id)}
-                                    isSelected={false}
-                                    onToggleSaved={() => onToggleSaved(c.id)}
-                                    onClick={() => onViewCoupon?.(c)}
-                                    hideBrand
-                                    realDist={realDist?.(c)}
-                                    realWalk={realWalk?.(c)}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
+                    ));
+                })()}
 
                 {/* reseñas del establecimiento */}
                 <div className="biz-section biz-section-divided">

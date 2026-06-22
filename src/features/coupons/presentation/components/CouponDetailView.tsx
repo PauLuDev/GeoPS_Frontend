@@ -24,6 +24,11 @@ export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusin
     const [copied, setCopied]    = useState(false);
     const [tcOpen, setTcOpen]    = useState(false);
 
+    /* un cupon no se puede reservar si no queda stock o ya vencio */
+    const isExpired    = c.expiresIn === "vencido";
+    const isOutOfStock = c.stock <= 0;
+    const canReserve   = !isExpired && !isOutOfStock;
+
     const handleRoute = () => {
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&destination_place_id=${encodeURIComponent(c.address)}`, "_blank");
     };
@@ -192,6 +197,10 @@ export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusin
                 {isReserved ? (
                     <button type="button" className="btn btn-primary btn-lg cd-footer-btn" onClick={onBack}>
                         {t("couponDetail.done")} <Icon name="walking" size={16}/>
+                    </button>
+                ) : !canReserve ? (
+                    <button type="button" className="btn btn-lg cd-footer-btn" disabled>
+                        <Icon name="close" size={16}/> {isExpired ? t("couponDetail.expired") : t("couponDetail.soldOut")}
                     </button>
                 ) : (
                     <button type="button" className="btn btn-brand btn-lg cd-footer-btn" disabled={reserving}
