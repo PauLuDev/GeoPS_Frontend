@@ -5,6 +5,7 @@ import { establishmentApi } from "@/features/establishments/infrastructure/api/e
 import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 import { AddressPicker, type AddressValue } from "./AddressPicker.tsx";
 import { uploadImage } from "@/shared/cloudinary.ts";
+import { areaCodeForRegion } from "@/shared/constants.ts";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -12,19 +13,15 @@ const blankHours = (): BusinessHours[] =>
     DAYS.map(day => ({ day, open: "09:00", close: "20:00", closed: false }));
 
 const sanitizeRuc = (val: string) => val.replace(/\D/g, "").slice(0, 9);
-/* telefono: solo digitos y simbolos comunes, maximo 9 numeros (igual al ejemplo "01 444-2323") */
-const sanitizePhone = (val: string) => {
-    const cleaned = val.replace(/[^\d\-\s]/g, "");
-    let digits = 0;
-    let result = "";
-    for (const ch of cleaned) {
-        if (/\d/.test(ch)) {
-            if (digits >= 9) continue;
-            digits++;
-        }
-        result += ch;
-    }
-    return result;
+
+
+const LOCAL_NUMBER_DIGITS = 7;
+
+const sanitizePhone = (val: string, areaCode: string) => {
+    const maxDigits = areaCode.length + LOCAL_NUMBER_DIGITS;
+    const digits = val.replace(/\D/g, "").slice(0, maxDigits);
+    if (digits.length <= areaCode.length) return digits;
+    return `${digits.slice(0, areaCode.length)} ${digits.slice(areaCode.length)}`;
 };
 
 interface BusinessFormProps {
@@ -58,6 +55,9 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
         lng:      initial?.lng      ?? -77.05,
     });
     const [phone,       setPhone]       = useState(initial?.phone ?? "");
+
+    const areaCode = areaCodeForRegion(addrValue.region);
+    const phonePlaceholder = `${areaCode} 4442323`;
     const [email,       setEmail]       = useState(initial?.email ?? "");
     const [website,     setWebsite]     = useState(initial?.website ?? "");
     const [hours,       setHours]       = useState<BusinessHours[]>(
@@ -211,9 +211,10 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                 </div>
                                 <div className="field">
                                     <label htmlFor={`${fid}-phone`}>Teléfono</label>
-                                    <input id={`${fid}-phone`} className="input" placeholder="01 444-2323"
+                                    <input id={`${fid}-phone`} className="input" placeholder={phonePlaceholder}
                                            inputMode="tel" maxLength={20}
-                                           value={phone} onChange={e => setPhone(sanitizePhone(e.target.value))}/>
+                                           value={phone} onChange={e => setPhone(sanitizePhone(e.target.value, areaCode))}/>
+                                    <span className="bf-hint">Código de la región según la ubicación marcada en el mapa</span>
                                 </div>
                             </div>
                             <div className="bf-row2">

@@ -6,6 +6,7 @@ export interface AddressValue {
     district: string;
     lat: number;
     lng: number;
+    region?: string;
 }
 
 interface AddressPickerProps {
@@ -27,6 +28,7 @@ interface NominatimResult {
         town?: string;
         village?: string;
         house_number?: string;
+        state?: string;
     };
 }
 
@@ -56,6 +58,11 @@ function loadLeaflet(): Promise<unknown> {
 
 function extractDistrict(addr: NominatimResult["address"]): string {
     return addr.suburb || addr.city_district || addr.district || addr.city || addr.town || addr.village || "Lima";
+}
+
+
+function extractRegion(addr: NominatimResult["address"]): string {
+    return addr.state || "Lima";
 }
 
 function buildAddress(addr: NominatimResult["address"]): string {
@@ -118,9 +125,10 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
             if (data?.address) {
                 const addr = buildAddress(data.address);
                 const dist = extractDistrict(data.address);
+                const region = extractRegion(data.address);
                 const newQ = addr || dist;
                 setQuery(newQ);
-                onChange({ address: addr || dist, district: dist, lat, lng });
+                onChange({ address: addr || dist, district: dist, lat, lng, region });
             }
         } catch { /* ignore */ } finally {
             setReverseLoading(false);
@@ -192,12 +200,13 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
     const pickSuggestion = (r: NominatimResult) => {
         const addr = buildAddress(r.address) || r.display_name;
         const dist = extractDistrict(r.address);
+        const region = extractRegion(r.address);
         const lat = parseFloat(r.lat);
         const lng = parseFloat(r.lon);
         setQuery(addr);
         setSuggestions([]);
         setOpen(false);
-        onChange({ address: addr, district: dist, lat, lng });
+        onChange({ address: addr, district: dist, lat, lng, region });
     };
 
     return (
