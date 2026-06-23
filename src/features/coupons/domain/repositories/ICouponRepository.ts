@@ -35,6 +35,8 @@ export interface EditCoupon {
 export interface ICouponRepository {
     create(data: NewCoupon): Promise<Coupon>;
     update(couponId: string, data: EditCoupon): Promise<Coupon>;
+    /* reasigna el cupon a otra campana o lo deja sin campana (campaignId null) */
+    changeCampaign(couponId: string, campaignId: string | null): Promise<Coupon>;
     reserve(couponId: string, userId: string): Promise<Coupon>;
     getReservations(userId: string): Promise<CouponReservation[]>;
     remove(couponId: string): Promise<void>;

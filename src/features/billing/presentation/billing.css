@@ -8,6 +8,8 @@
 .geops-app .account-renewal.off { border-color: var(--warn); background: color-mix(in oklab, var(--warn) 8%, var(--bg-elev)); }
 .geops-app .account-renewal-info { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
 .geops-app .account-renewal.off .account-renewal-info { color: var(--ink); }
+/* deja espacio arriba para que el avatar flotante del topbar no pise la tarjeta */
+.geops-app .md.pv-merchant { padding-top: 64px; }
 /* perfil del dueño: mismas tarjetas/espaciado que el resto del panel */
 .geops-app .pv-merchant .profile-head,
 .geops-app .pv-merchant .profile-section {

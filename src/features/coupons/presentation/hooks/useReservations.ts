@@ -27,6 +27,12 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
     /* ids de cupones ya reservados, para marcar las cards */
     const reservedIds = useMemo(() => new Set(reservations.map(r => r.couponId)), [reservations]);
 
+    /* estado de la reserva por cupon (RESERVED / REDEEMED / ...), para separarlos */
+    const statusByCoupon = useMemo(
+        () => new Map(reservations.map(r => [r.couponId, r.status])),
+        [reservations],
+    );
+
     /* reserva el cupon en el back y recarga la lista */
     const reserve = async (couponId: string) => {
         await repoRef.current.reserve(couponId, userId);
@@ -37,5 +43,5 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
     const codeFor = (couponId: string): string | undefined =>
         reservations.find(r => r.couponId === couponId)?.redemptionCode;
 
-    return { reservations, reservedIds, reserve, codeFor, reload, error };
+    return { reservations, reservedIds, statusByCoupon, reserve, codeFor, reload, error };
 }

@@ -4,18 +4,27 @@ import { Select } from "@/shared/ui/components/Select.tsx";
 import { DatePicker } from "@/shared/ui/components/DatePicker.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
+import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
 import { PromotionType, PROMOTION_TYPES } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
 import { useCoupons } from "@/features/coupons/presentation/hooks/useCoupons.ts";
 
 interface EditCouponModalProps {
     coupon: CampaignCoupon;
+    /* campanas del dueno para reasignar la campana del cupon (vacio = sin selector) */
+    campaigns?: Campaign[];
     onSaved: () => void;
     onClose: () => void;
 }
 
-/* edita un cupon en el back (PUT /coupons/{id}); el stock no se edita */
-export function EditCouponModal({ coupon, onSaved, onClose }: EditCouponModalProps) {
-    const { update, loading, error } = useCoupons();
+/* edita un cupon en el back (PUT /coupons/{id}); el stock no se edita.
+   tambien permite reasignar la campana (PATCH /coupons/{id}/campaign), o dejarlo sin campana */
+export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: EditCouponModalProps) {
+    const { update, changeCampaign, loading, error } = useCoupons();
+
+    /* solo las campanas del mismo establecimiento que el cupon (si se conoce) */
+    const assignable = coupon.establishmentId
+        ? campaigns.filter(c => c.establishmentId === coupon.establishmentId)
+        : campaigns;
 
     const [title, setTitle]               = useState(coupon.title);
     const [promotionType, setPromotionType] = useState<PromotionType>(coupon.promotionType);
@@ -24,6 +33,7 @@ export function EditCouponModal({ coupon, onSaved, onClose }: EditCouponModalPro
     const [startDate, setStartDate]       = useState(coupon.startDate ?? "");
     const [endDate, setEndDate]           = useState(coupon.endDate ?? "");
     const [description, setDescription]   = useState(coupon.description ?? "");
+    const [campaignId, setCampaignId]     = useState(coupon.campaignId ?? "");
     const [submitted, setSubmitted]       = useState(false);
 
     const needsDiscount = promotionType !== "BUY_X_GET_Y";
@@ -49,7 +59,16 @@ export function EditCouponModal({ coupon, onSaved, onClose }: EditCouponModalPro
             startDate: startDate || undefined,
             endDate: endDate || undefined,
         });
-        if (res) onSaved();
+        if (!res) return;
+
+        /* si cambio la campana asignada, la reasignamos (o la quitamos con null) */
+        const desired = campaignId || null;
+        const current = coupon.campaignId || null;
+        if (desired !== current) {
+            const moved = await changeCampaign(coupon.id, desired);
+            if (!moved) return;   // el error ya quedo en el hook
+        }
+        onSaved();
     };
 
     const discountLabel = promotionType === "FIXED_AMOUNT" ? "Monto de descuento (S/)" : "Descuento (%)";
@@ -108,6 +127,18 @@ export function EditCouponModal({ coupon, onSaved, onClose }: EditCouponModalPro
                         <textarea id="ec-desc" className="input" rows={2} value={description}
                                   onChange={e => setDescription(e.target.value)}/>
                     </div>
+
+                    {campaigns.length > 0 && (
+                        <div className="field">
+                            <label htmlFor="ec-campaign">Campaña <span className="nc-optional">opcional</span></label>
+                            <Select id="ec-campaign" value={campaignId}
+                                    options={[
+                                        { value: "", label: "Sin campaña" },
+                                        ...assignable.map(c => ({ value: c.uuid ?? "", label: c.name })),
+                                    ]}
+                                    onChange={setCampaignId}/>
+                        </div>
+                    )}
                 </div>
 
                 <div className="cm-edit-actions">

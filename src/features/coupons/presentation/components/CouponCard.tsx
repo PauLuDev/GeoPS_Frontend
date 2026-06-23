@@ -20,9 +20,11 @@ interface CouponCardProps {
     hideBrand?: boolean;
     realDist?: number;
     realWalk?: number;
+    /* el cupon ya fue canjeado -> etiqueta "Redimido" (gris) en vez de "Reservado" */
+    isRedeemed?: boolean;
 }
 
-export function CouponCard({ c, isReserved, onClick, isSelected, hideBrand = false, realDist, realWalk }: CouponCardProps) {
+export function CouponCard({ c, isReserved, onClick, isSelected, hideBrand = false, realDist, realWalk, isRedeemed = false }: CouponCardProps) {
     const { t } = useTranslation();
     const dist = realDist ?? c.distance;
     const walk = realWalk ?? c.walking;
@@ -59,7 +61,11 @@ export function CouponCard({ c, isReserved, onClick, isSelected, hideBrand = fal
                         <span className="cc-meta-item mono">
                             <Icon name="clock" size={11}/> {c.expiresIn}
                         </span>
-                        {isReserved && <span className="badge badge-ink cc-reserved"><Icon name="check" size={9}/> {t("coupon.reserved")}</span>}
+                        {isRedeemed ? (
+                            <span className="badge cc-redeemed"><Icon name="check" size={9}/> {t("coupon.redeemed", { defaultValue: "Redimido" })}</span>
+                        ) : isReserved ? (
+                            <span className="badge badge-ink cc-reserved"><Icon name="check" size={9}/> {t("coupon.reserved")}</span>
+                        ) : null}
                     </div>
                     <div className="stock-bar">
                         <div className="stock-fill" style={{ width: `${(c.stock / c.totalStock) * 100}%` }}/>

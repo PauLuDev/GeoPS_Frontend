@@ -17,6 +17,11 @@ export class HttpCouponRepository implements ICouponRepository {
         return toCoupon(resource);
     }
 
+    async changeCampaign(couponId: string, campaignId: string | null): Promise<Coupon> {
+        const resource = await couponApi.changeCampaign(couponId, campaignId);
+        return toCoupon(resource);
+    }
+
     async reserve(couponId: string, userId: string): Promise<Coupon> {
         void userId; // el dueno de la reserva sale del token
         const resource = await couponApi.reserve(couponId);

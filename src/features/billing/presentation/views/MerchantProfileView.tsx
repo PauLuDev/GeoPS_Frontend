@@ -1,76 +1,161 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { LanguageSwitcher } from "@/shared/ui/components/LanguageSwitcher.tsx";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
+import { profileApi, ProfileResource } from "@/features/auth/infrastructure/api/profileApi.ts";
+import { uploadImage } from "@/shared/cloudinary.ts";
 
 interface MerchantProfileViewProps {
     theme?: string;
     onThemeChange?: (t: string) => void;
     onSignOut?: () => void;
+    /* perfil compartido (cargado por el layout) y callback al guardar -> sincroniza el topbar */
+    profileData?: ProfileResource | null;
+    onProfileSaved?: (p: ProfileResource) => void;
 }
 
 const PREF_ITEMS = [
     { key: "darkMode" as const, labelKey: "pref.darkMode", descKey: "pref.darkModeDesc", icon: "layers" },
 ] as const;
 
-export function MerchantProfileView({ theme = "light", onThemeChange, onSignOut }: MerchantProfileViewProps) {
+interface ProfileForm {
+    profileId?: string;
+    firstName: string;
+    lastName: string;
+    avatarUrl?: string;
+    district: string;   // solo local (el back no lo guarda)
+}
+
+export function MerchantProfileView({ theme = "light", onThemeChange, onSignOut, profileData, onProfileSaved }: MerchantProfileViewProps) {
     const { t } = useTranslation();
-    const [editMode, setEditMode] = useState(false);
     const me = getCurrentUser();
-    const [profile, setProfile] = useState({
-        name: me?.username ?? "",
-        email: me?.email ?? "",
-        phone: "",
-        district: "",
+    const fileRef = useRef<HTMLInputElement>(null);
+
+    const [editMode, setEditMode] = useState(false);
+    const [profile, setProfile] = useState<ProfileForm>({
+        firstName: me?.username ?? "",
+        lastName: "",
+        avatarUrl: undefined,
+        district: (() => { try { return localStorage.getItem("geops_profile_district") ?? ""; } catch { return ""; } })(),
     });
     const [draft, setDraft] = useState(profile);
+    const [uploading, setUploading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const isDarkMode = theme === "dark";
     const [confirmOut, setConfirmOut] = useState(false);
 
-    const saveProfile = () => { setProfile(draft); setEditMode(false); };
+    /* sincroniza con el perfil real del back (nombre, apellido, foto) */
+    useEffect(() => {
+        if (!profileData) return;
+        const next: ProfileForm = {
+            profileId: profileData.profileId,
+            firstName: profileData.firstName ?? "",
+            lastName: profileData.lastName ?? "",
+            avatarUrl: profileData.avatarUrl ?? undefined,
+            district: (() => { try { return localStorage.getItem("geops_profile_district") ?? ""; } catch { return ""; } })(),
+        };
+        setProfile(next);
+        if (!editMode) setDraft(next);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileData]);
+
+    const saveProfile = async () => {
+        if (!draft.firstName.trim()) return;
+        try { localStorage.setItem("geops_profile_district", draft.district); } catch { /* ignore */ }
+        if (draft.profileId) {
+            setSaving(true);
+            try {
+                const p = await profileApi.update(draft.profileId, {
+                    firstName: draft.firstName.trim(),
+                    lastName: draft.lastName.trim() || draft.firstName.trim(),
+                    avatarUrl: draft.avatarUrl ?? null,
+                });
+                setProfile({ ...draft, firstName: p.firstName, lastName: p.lastName, avatarUrl: p.avatarUrl ?? undefined });
+                onProfileSaved?.(p);   // sincroniza el perfil compartido (topbar)
+            } catch {
+                setProfile(draft);   // si el back falla, igual reflejamos local
+            } finally {
+                setSaving(false);
+            }
+        } else {
+            setProfile(draft);
+        }
+        setEditMode(false);
+    };
     const cancelEdit = () => { setDraft(profile); setEditMode(false); };
+
+    /* sube la foto de perfil a Cloudinary y guarda la URL en el draft */
+    const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        setUploading(true);
+        try {
+            const url = await uploadImage(f);
+            setDraft(d => ({ ...d, avatarUrl: url }));
+        } catch { /* falla la subida -> no cambia la foto */ }
+        finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
+    };
 
     const togglePref = (key: "darkMode") => {
         if (key === "darkMode") onThemeChange?.(isDarkMode ? "light" : "dark");
     };
-
     const isPrefOn = (key: "darkMode") => (key === "darkMode" ? isDarkMode : false);
 
-    const initials = profile.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    /* nombre completo: firstName + lastName, sin duplicar si el apellido quedo
+       igual al nombre por el registro */
+    const joinName = (first: string, last: string) => {
+        const f = first.trim();
+        const l = last.trim();
+        return (l && l !== f) ? `${f} ${l}` : f;
+    };
+    const fullName = joinName(profile.firstName, profile.lastName) || me?.username || "";
+    const draftName = joinName(draft.firstName, draft.lastName);
+
+    const startEdit = () => {
+        const dup = profile.lastName.trim() && profile.lastName.trim() === profile.firstName.trim();
+        setDraft({ ...profile, lastName: dup ? "" : profile.lastName });
+        setEditMode(true);
+    };
+    const initials = (fullName || me?.username || "·").split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
     return (
         <div className="md pv-merchant">
             <div className="profile-head">
-                <div className="profile-avatar pv-avatar">
-                    {initials}
-                </div>
+                {editMode ? (
+                    <label className="profile-avatar pv-avatar pv-avatar-edit" title={t("profile.changePhoto", { defaultValue: "Cambiar foto" })}>
+                        {draft.avatarUrl ? <img src={draft.avatarUrl} alt=""/> : <span>{initials}</span>}
+                        <input ref={fileRef} type="file" accept="image/*" hidden onChange={handlePhoto}/>
+                        <span className="pv-avatar-overlay">
+                            {uploading ? "…" : <Icon name="image" size={15}/>}
+                        </span>
+                    </label>
+                ) : (
+                    <div className="profile-avatar pv-avatar">
+                        {profile.avatarUrl ? <img src={profile.avatarUrl} alt=""/> : initials}
+                    </div>
+                )}
                 <div className="pv-head-main">
-                    {editMode ? (
-                        <div className="field">
-                            <input className="input pv-name-input" aria-label={t("profile.nameAria")} value={draft.name} placeholder={t("profile.namePlaceholder")}
-                                   onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}/>
+                    <div className="eyebrow">{t("profile.roleOwner")}</div>
+                    <div className="pv-name">{editMode ? (draftName || t("profile.namePlaceholder")) : fullName}</div>
+                    {!editMode && (
+                        <div className="pv-contact">
+                            <span className="pv-contact-item">
+                                <Icon name="clock" size={11}/> {t("profile.memberSince")}
+                            </span>
                         </div>
-                    ) : (
-                        <>
-                            <div className="eyebrow">{t("profile.roleOwner")}</div>
-                            <div className="pv-name">{profile.name}</div>
-                            <div className="pv-contact">
-                                <span className="pv-contact-item">
-                                    <Icon name="mail" size={11}/> {profile.email}
-                                </span>
-                            </div>
-                        </>
                     )}
                 </div>
                 {editMode ? (
                     <div className="pv-edit-actions">
-                        <button type="button" className="btn btn-sm btn-ghost" onClick={cancelEdit}>{t("common.cancel")}</button>
-                        <button type="button" className="btn btn-sm btn-brand" onClick={saveProfile}><Icon name="check" size={13}/> {t("common.save")}</button>
+                        <button type="button" className="btn btn-sm btn-ghost" onClick={cancelEdit} disabled={saving}>{t("common.cancel")}</button>
+                        <button type="button" className="btn btn-sm btn-brand" onClick={saveProfile} disabled={saving || uploading}>
+                            <Icon name="check" size={13}/> {saving ? t("common.saving", { defaultValue: "Guardando…" }) : t("common.save")}
+                        </button>
                     </div>
                 ) : (
-                    <button type="button" className="btn btn-sm pv-noshrink" onClick={() => { setDraft(profile); setEditMode(true); }}>
+                    <button type="button" className="btn btn-sm pv-noshrink" onClick={startEdit}>
                         <Icon name="edit" size={14}/> {t("common.edit")}
                     </button>
                 )}
@@ -78,22 +163,27 @@ export function MerchantProfileView({ theme = "light", onThemeChange, onSignOut 
 
             {editMode && (
                 <div className="pv-edit-grid">
+                    <div className="field">
+                        <label htmlFor="mp-first">{t("profile.firstName", { defaultValue: "Nombre" })}</label>
+                        <input id="mp-first" className="input" value={draft.firstName}
+                               onChange={e => setDraft(d => ({ ...d, firstName: e.target.value }))}
+                               placeholder={t("profile.firstNamePlaceholder", { defaultValue: "Nombre" })}/>
+                    </div>
+                    <div className="field">
+                        <label htmlFor="mp-last">{t("profile.lastName", { defaultValue: "Apellido" })}</label>
+                        <input id="mp-last" className="input" value={draft.lastName}
+                               onChange={e => setDraft(d => ({ ...d, lastName: e.target.value }))}
+                               placeholder={t("profile.lastNamePlaceholder", { defaultValue: "Apellido" })}/>
+                    </div>
                     <div className="field pv-field-full">
-                        <label htmlFor="mp-name">{t("profile.fullName")}</label>
-                        <input id="mp-name" className="input" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder={t("profile.namePlaceholder")}/>
-                    </div>
-                    <div className="field">
-                        <label htmlFor="mp-email">{t("profile.email")}</label>
-                        <input id="mp-email" className="input" type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder={t("profile.emailPlaceholder")}/>
-                    </div>
-                    <div className="field">
-                        <label htmlFor="mp-phone">{t("profile.phone")}</label>
-                        <input id="mp-phone" className="input" type="tel" value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder={t("profile.phonePlaceholder")}/>
-                    </div>
-                    <div className="field">
                         <label htmlFor="mp-district">{t("profile.district")}</label>
-                        <input id="mp-district" className="input" value={draft.district} onChange={e => setDraft(d => ({ ...d, district: e.target.value }))} placeholder={t("profile.districtPlaceholder")}/>
+                        <input id="mp-district" className="input" value={draft.district}
+                               onChange={e => setDraft(d => ({ ...d, district: e.target.value }))}
+                               placeholder={t("profile.districtPlaceholder")}/>
                     </div>
+                    {uploading && (
+                        <div className="field pv-field-full"><span className="bf-hint"><Icon name="image" size={11}/> Subiendo foto…</span></div>
+                    )}
                 </div>
             )}
 

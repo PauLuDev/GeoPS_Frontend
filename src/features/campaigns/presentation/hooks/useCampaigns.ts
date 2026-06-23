@@ -47,5 +47,5 @@ export function useCampaigns(repository?: ICampaignRepository) {
         await reload();
     };
 
-    return { campaigns, loading, error, addCampaign, updateCampaign, removeCampaign };
+    return { campaigns, loading, error, reload, addCampaign, updateCampaign, removeCampaign };
 }

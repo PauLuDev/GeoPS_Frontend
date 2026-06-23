@@ -349,6 +349,8 @@
 .geops-app .cc-meta { display: flex; flex-wrap: nowrap; gap: 10px; align-items: center; margin-top: 8px; font-size: 11px; color: var(--ink-3); }
 .geops-app .cc-meta-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0; }
 .geops-app .cc-reserved { font-size: 9px; flex-shrink: 0; margin-left: auto; }
+/* etiqueta de cupon ya canjeado: gris apagado para que se note que se uso */
+.geops-app .cc-redeemed { font-size: 9px; flex-shrink: 0; margin-left: auto; background: var(--bg-sunken); color: var(--ink-3); border: 1px solid var(--line); }
 .geops-app .cc-stock-text { font-size: 10px; color: var(--ink-3); margin-top: 4px; font-family: var(--font-mono); }
 
 /* BusinessDetailView: migrado de inline */
@@ -456,7 +458,12 @@
 
 /* ProfileView: migrado de inline */
 .geops-app .pv-root { background: var(--bg); min-height: 100%; }
-.geops-app .pv-avatar { background: var(--brand); color: var(--brand-ink); font-size: 20px; user-select: none; }
+.geops-app .pv-avatar { background: var(--brand); color: var(--brand-ink); font-size: 20px; user-select: none; overflow: hidden; }
+.geops-app .pv-avatar img { width: 100%; height: 100%; object-fit: cover; }
+/* avatar editable: click para subir foto, con overlay de camara */
+.geops-app .pv-avatar-edit { position: relative; cursor: pointer; }
+.geops-app .pv-avatar-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); color: #fff; opacity: 0; transition: opacity 150ms ease; }
+.geops-app .pv-avatar-edit:hover .pv-avatar-overlay, .geops-app .pv-avatar-edit:focus-within .pv-avatar-overlay { opacity: 1; }
 .geops-app .pv-head-main { flex: 1; min-width: 0; }
 .geops-app .pv-name-input { font-size: 18px; font-weight: 600; }
 .geops-app .pv-name { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-top: 4px; }
@@ -683,6 +690,12 @@
 /* results pane */
 .geops-app .rp-count { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin-top: 4px; }
 .geops-app .rp-filters { border-bottom: 1px solid var(--line); }
+/* pestaña Cupones: orden (Todos/Distancia) + grupos Reservados/Redimidos */
+.geops-app .rp-saved-sort { display: flex; gap: 8px; padding: 10px 12px; }
+.geops-app .rp-saved-groups { display: flex; flex-direction: column; gap: 18px; }
+.geops-app .rp-saved-group { display: flex; flex-direction: column; gap: 10px; }
+.geops-app .rp-saved-group-head { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.geops-app .rp-saved-count { font-family: var(--font-mono); font-size: 10px; padding: 1px 7px; background: var(--bg-sunken); border-radius: 999px; color: var(--ink-2); }
 
 .geops-app .rp-sort-label { font-size: 10px; color: var(--ink-3); flex-shrink: 0; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; padding-right: 2px; }
 

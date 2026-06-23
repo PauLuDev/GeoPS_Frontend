@@ -3,20 +3,27 @@ import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Select } from "@/shared/ui/components/Select.tsx";
 import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
-import { useRegisteredCoupons } from "@/features/campaigns/presentation/hooks/useRegisteredCoupons.ts";
+import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
 import { NewCouponForm } from "@/features/campaigns/presentation/components/NewCouponForm.tsx";
 import { EditCouponModal } from "@/features/campaigns/presentation/components/EditCouponModal.tsx";
 import { useEstablishments } from "@/features/establishments/presentation/hooks/useEstablishments.ts";
 import { useCoupons } from "@/features/coupons/presentation/hooks/useCoupons.ts";
 import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
 
-export function CouponsManagement() {
+interface CouponsManagementProps {
+    /* fuente unica compartida con la vista de campanas (evita estados duplicados) */
+    registeredCoupons: CampaignCoupon[];
+    campaigns: Campaign[];
+    /* recarga campanas + cupones del dueno para mantener ambas vistas al dia */
+    onReload: () => Promise<void> | void;
+}
+
+export function CouponsManagement({ registeredCoupons, campaigns, onReload }: CouponsManagementProps) {
     /* cupones del dueno -> crear y eliminar van al back (editar no existe en el back todavia) */
-    const { coupons: registered, reload } = useRegisteredCoupons();
     const { establishments } = useEstablishments();
     const { remove: removeCoupon, loading: removing } = useCoupons();
     const [coupons, setCoupons] = useState<CampaignCoupon[]>([]);
-    useEffect(() => { setCoupons(registered); }, [registered]);
+    useEffect(() => { setCoupons(registeredCoupons); }, [registeredCoupons]);
     const [creating, setCreating] = useState(false);
     const [editing, setEditing] = useState<CampaignCoupon | null>(null);
     const [toDelete, setToDelete] = useState<CampaignCoupon | null>(null);
@@ -32,14 +39,14 @@ export function CouponsManagement() {
         setCreating(false);
         setSuccess("cupón publicado");
         setTimeout(() => setSuccess(""), 3000);
-        void reload();
+        void onReload();
     };
 
     const handleEdited = () => {
         setEditing(null);
         setSuccess("cupón actualizado");
         setTimeout(() => setSuccess(""), 3000);
-        void reload();
+        void onReload();
     };
 
     /* cupones del establecimiento elegido (o todos), luego filtro por busqueda */
@@ -59,7 +66,7 @@ export function CouponsManagement() {
         setCoupons(prev => prev.filter(c => c.id !== target.id));
         setSuccess(`"${target.title}" eliminado`);
         setTimeout(() => setSuccess(""), 3000);
-        void reload();
+        void onReload();
     };
 
     return (
@@ -164,7 +171,7 @@ export function CouponsManagement() {
 
             {/* modal de edicion (real, contra el back) */}
             {editing && (
-                <EditCouponModal coupon={editing} onSaved={handleEdited} onClose={() => setEditing(null)}/>
+                <EditCouponModal coupon={editing} campaigns={campaigns} onSaved={handleEdited} onClose={() => setEditing(null)}/>
             )}
 
             {/* modal de eliminacion */}

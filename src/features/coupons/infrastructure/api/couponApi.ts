@@ -16,6 +16,10 @@ export const couponApi = {
     update: (couponId: string, body: UpdateCouponResource) =>
         apiClient.put<CouponResource>(`${BASE}/coupons/${couponId}`, body),
 
+    /* reasigna el cupon a otra campana o lo deja sin campana (campaignId null) */
+    changeCampaign: (couponId: string, campaignId: string | null) =>
+        apiClient.patch<CouponResource>(`${BASE}/coupons/${couponId}/campaign`, { campaignId }),
+
     /* cupones de una campana */
     listByCampaign: (campaignId: string) =>
         apiClient.get<CouponResource[]>(`${BASE}/campaigns/${campaignId}/coupons`),

@@ -3,23 +3,26 @@ import {BrandMark} from "@/shared/ui/components/BrandMark.tsx";
 import {useEffect, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {getCurrentUser} from "@/features/auth/application/session.ts";
+import {ProfileResource} from "@/features/auth/infrastructure/api/profileApi.ts";
 
 interface CustomerTopbarProps {
     onProfileClick?: () => void;
     onSignOut?: () => void;
     locationName?: string;
     onLocationClick?: () => void;
+    profile?: ProfileResource | null;
 }
 
-export function CustomerTopbar({ onProfileClick, onSignOut, locationName = "Miraflores", onLocationClick }: CustomerTopbarProps) {
+export function CustomerTopbar({ onProfileClick, onSignOut, locationName = "Miraflores", onLocationClick, profile }: CustomerTopbarProps) {
     const { t } = useTranslation();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    /* datos del usuario logueado */
+    /* nombre (firstName del perfil) y foto */
     const me = getCurrentUser();
-    const displayName = me?.username ?? "Invitado";
-    const email = me?.email ?? "";
+    const displayName = profile?.firstName || me?.username || "Invitado";
+    const avatarUrl = profile?.avatarUrl || undefined;
     const initial = displayName.charAt(0).toUpperCase();
+    const avatar = avatarUrl ? <img src={avatarUrl} alt=""/> : initial;
 
     useEffect(() => {
         if (!menuOpen) return;
@@ -48,16 +51,15 @@ export function CustomerTopbar({ onProfileClick, onSignOut, locationName = "Mira
             <div ref={menuRef} className="topbar-menu-wrap">
                 <button type="button" className="topbar-avatar-btn" aria-expanded={menuOpen}
                         onClick={() => setMenuOpen(v => !v)}>
-                    <div className="avatar-mini">{initial}</div>
+                    <div className="avatar-mini">{avatar}</div>
                 </button>
 
                 {menuOpen && (
                     <div className="topbar-menu">
                         <div className="topbar-menu-head">
-                            <div className="avatar-mini topbar-menu-avatar">{initial}</div>
+                            <div className="avatar-mini topbar-menu-avatar">{avatar}</div>
                             <div>
                                 <div className="topbar-menu-name">{displayName}</div>
-                                {email && <div className="topbar-menu-email">{email}</div>}
                             </div>
                         </div>
                         <div className="topbar-menu-body">

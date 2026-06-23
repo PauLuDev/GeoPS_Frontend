@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
+import { Select } from "@/shared/ui/components/Select.tsx";
 import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
 import { EditCampaign } from "@/features/campaigns/domain/repositories/ICampaignRepository.ts";
+import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
+import { CampaignCouponsEditor } from "@/features/campaigns/presentation/components/CampaignCouponsEditor.tsx";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/features/campaigns/domain/value-objects/CampaignStatus.ts";
 import { bestCampaignId, bestCouponId, ratePct, redemptionRate } from "@/features/campaigns/domain/value-objects/Performance.ts";
 import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
@@ -23,11 +26,22 @@ interface CampaignsListProps {
     onDeactivate?: (id: number) => void;
     onDelete?: (id: number) => void;
     onEdit?: (id: number, data: EditCampaign) => void;
+    /* establecimientos del dueno, para filtrar las campanas por establecimiento */
+    establishments?: { id: string; name: string }[];
+    /* cupones del dueno sin campana, para sumarlos a una campana desde el modal */
+    unassignedCoupons?: CampaignCoupon[];
+    onAddCouponToCampaign?: (campaign: Campaign, couponId: string) => Promise<boolean>;
+    onRemoveCouponFromCampaign?: (couponId: string) => Promise<boolean>;
+    onDeleteCoupon?: (couponId: string) => Promise<boolean>;
 }
 
-export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete, onEdit }: CampaignsListProps) {
+export function CampaignsList({
+    campaigns, onNew, onOpen, onDeactivate, onDelete, onEdit,
+    establishments = [], unassignedCoupons = [], onAddCouponToCampaign, onRemoveCouponFromCampaign, onDeleteCoupon,
+}: CampaignsListProps) {
     const [filter, setFilter] = useState<StatusFilter>("all");
     const [search, setSearch] = useState("");
+    const [selectedEstId, setSelectedEstId] = useState("all");
     const [menuOpen, setMenuOpen] = useState<number | null>(null);
     const [toDelete, setToDelete] = useState<Campaign | null>(null);
     const [toDeactivate, setToDeactivate] = useState<Campaign | null>(null);
@@ -42,18 +56,36 @@ export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete
         setEditStart((c.startDate || "").slice(0, 10));
         setEditEnd((c.endDate || "").slice(0, 10));
     };
+
+    /* tras agregar/quitar cupones la lista de campanas se recarga -> re-sincroniza
+       la campana abierta en el modal para que su lista de cupones se vea al dia */
+    useEffect(() => {
+        if (!toEdit) return;
+        const fresh = campaigns.find(c => c.id === toEdit.id);
+        if (fresh && fresh !== toEdit) setToEdit(fresh);
+    }, [campaigns, toEdit]);
     const saveEdit = () => {
         if (!toEdit || !onEdit) return;
         onEdit(toEdit.id, { name: editName.trim(), startDate: editStart, endDate: editEnd });
         setToEdit(null);
     };
 
-    const visible = filterCampaigns(campaigns, filter, search);
-    const bestId = bestCampaignId(campaigns);   // mejor campana por tasa de canje
+    /* si el establecimiento elegido ya no existe, vuelve a "todos" */
+    useEffect(() => {
+        if (selectedEstId !== "all" && !establishments.some(e => e.id === selectedEstId)) setSelectedEstId("all");
+    }, [establishments, selectedEstId]);
 
-    const live      = countByStatus(campaigns, "live");
-    const draft     = countByStatus(campaigns, "draft");
-    const scheduled = countByStatus(campaigns, "scheduled");
+    /* campanas del establecimiento elegido (o todas) -> base para conteos y lista */
+    const byEstablishment = selectedEstId === "all"
+        ? campaigns
+        : campaigns.filter(c => c.establishmentId === selectedEstId);
+
+    const visible = filterCampaigns(byEstablishment, filter, search);
+    const bestId = bestCampaignId(byEstablishment);   // mejor campana por tasa de canje
+
+    const live      = countByStatus(byEstablishment, "live");
+    const draft     = countByStatus(byEstablishment, "draft");
+    const scheduled = countByStatus(byEstablishment, "scheduled");
 
     return (
         <div className="md cl-page">
@@ -72,6 +104,18 @@ export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete
             </header>
 
             <div className="card cl-card">
+                {establishments.length > 1 && (
+                    <div className="cl-est-bar">
+                        <Select
+                            value={selectedEstId}
+                            options={[
+                                { value: "all", label: "Todos los establecimientos" },
+                                ...establishments.map(e => ({ value: e.id, label: e.name })),
+                            ]}
+                            onChange={setSelectedEstId}
+                        />
+                    </div>
+                )}
                 <div className="cl-toolbar">
                     <div className="cl-filters">
                         {FILTER_OPTIONS.map(opt => (
@@ -81,7 +125,7 @@ export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete
                                 {opt.label}
                                 {opt.value !== "all" && (
                                     <span className="pill-count">
-                                        {countByStatus(campaigns, opt.value)}
+                                        {countByStatus(byEstablishment, opt.value)}
                                     </span>
                                 )}
                             </button>
@@ -204,9 +248,9 @@ export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete
                 )}
             </div>
 
-            {/* modal de editar campana (nombre y fechas) */}
+            {/* modal de editar campana (nombre, fechas y cupones) */}
             {toEdit && (
-                <Modal onClose={() => setToEdit(null)} ariaLabel="Editar campaña" className="est-modal">
+                <Modal onClose={() => setToEdit(null)} ariaLabel="Editar campaña" className="est-modal cl-edit-modal">
                     <div className="est-modal-body">
                         <h3 className="est-modal-title">Editar campaña</h3>
                         <div className="field">
@@ -223,6 +267,17 @@ export function CampaignsList({ campaigns, onNew, onOpen, onDeactivate, onDelete
                                 <input id="ce-end" className="input" type="date" value={editEnd} onChange={e => setEditEnd(e.target.value)}/>
                             </div>
                         </div>
+                        {onAddCouponToCampaign && onRemoveCouponFromCampaign && onDeleteCoupon && (
+                            <CampaignCouponsEditor
+                                campaign={toEdit}
+                                unassignedCoupons={unassignedCoupons.filter(c =>
+                                    !toEdit.establishmentId || c.establishmentId === toEdit.establishmentId
+                                )}
+                                onAddToCampaign={(couponId) => onAddCouponToCampaign(toEdit, couponId)}
+                                onRemoveFromCampaign={onRemoveCouponFromCampaign}
+                                onDeleteCoupon={onDeleteCoupon}
+                            />
+                        )}
                         <div className="est-modal-actions">
                             <button type="button" className="btn est-modal-btn" onClick={() => setToEdit(null)}>Cancelar</button>
                             <button type="button" className="btn btn-brand est-modal-btn"

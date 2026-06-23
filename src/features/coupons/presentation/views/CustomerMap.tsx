@@ -22,6 +22,7 @@ import { Business } from "@/shared/types.ts";
 import { useNearbyCoupons } from "@/features/coupons/presentation/hooks/useNearbyCoupons.ts";
 import { useReservations } from "@/features/coupons/presentation/hooks/useReservations.ts";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
+import { useProfile } from "@/features/auth/presentation/hooks/useProfile.ts";
 import { analyticsApi } from "@/features/analytics/infrastructure/api/analyticsApi.ts";
 
 /* el back necesita UUIDs reales; evitamos mandar ids stub o vacios */
@@ -61,7 +62,11 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     const [detailBusiness, setDetailBusiness] = useState<Business | null>(null);
     const [activePinId, setActivePinId] = useState<string | undefined>(undefined);
     const me = getCurrentUser();
-    const { reservedIds, reserve, codeFor, reservations } = useReservations(me?.id ?? "");
+    /* perfil compartido (nombre/foto) para el topbar y la vista de perfil */
+    const { profile, setProfile } = useProfile();
+    const { reservedIds, statusByCoupon, reserve, codeFor, reservations } = useReservations(me?.id ?? "");
+    /* radio de la pestaña "Cupones": por defecto Lima (todos), filtra por distancia */
+    const [savedRadius, setSavedRadius] = useState(Infinity);
 
     /* Categorías reales para los chips de filtro */
     const [categories, setCategories] = useState<CategoryResource[]>([]);
@@ -215,7 +220,10 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     }, []);
 
     /* cupones cerca del centro de exploración (no del usuario), armados juntando varias fuentes */
-    const { coupons, resolveBusiness, loading: couponsLoading } = useNearbyCoupons(viewCenter.lat, viewCenter.lng, radius);
+    /* en la pestaña Cupones traemos con el radio propio (default Lima) para que se
+       carguen los cupones reservados aunque esten lejos; en el mapa usa su radio */
+    const fetchRadius = tab === "saved" ? savedRadius : radius;
+    const { coupons, resolveBusiness, loading: couponsLoading } = useNearbyCoupons(viewCenter.lat, viewCenter.lng, fetchRadius);
     const openBusiness = (c: Coupon): Business => resolveBusiness(c.brand, stubBusiness(c));
     const [showFilter, setShowFilter] = useState("all"); 
     const [panelCollapsed, setPanelCollapsed] = useState(false);
@@ -236,23 +244,48 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
 
     /* Lista plana filtrada de cupones */
     const filtered = useMemo(() => {
-        const r = radius === Infinity ? Infinity : radius;
+        /* el mapa usa su radio; la pestaña Cupones usa su propio radio (savedRadius) */
+        const r = showSaved ? savedRadius : (radius === Infinity ? Infinity : radius);
         const list = coupons.filter((c) => {
             if (activeCategory !== "all" && c.category !== activeCategory) return false;
             if (search && !`${c.brand} ${c.title}`.toLowerCase().includes(search.toLowerCase())) return false;
             if (showSaved && !reservedIds.has(c.id)) return false;
             if (r !== Infinity && haversine(viewCenter.lat, viewCenter.lng, c.lat, c.lng) > r) return false;
-            if (showFilter === "top" && !c.featured) return false;
-            if (showFilter === "popular" && c.reviews < 100) return false;
             return true;
         });
+        /* reservas de un cupon = stock original - stock actual */
+        const reservedCount = (c: Coupon) => (c.totalStock ?? 0) - (c.stock ?? 0);
         return list.sort((a, b) => {
+            /* MOSTRAR prioriza: Top = mejor calificacion, Mas populares = mas reservas */
+            if (!showSaved && showFilter === "top") return b.rating - a.rating;
+            if (!showSaved && showFilter === "popular") return reservedCount(b) - reservedCount(a);
             if (sortBy === "discount") return parseDiscount(b.discount) - parseDiscount(a.discount);
             if (sortBy === "expiry") return parseExpiry(a.expiresIn) - parseExpiry(b.expiresIn);
             if (sortBy === "featured") return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
             return haversine(viewCenter.lat, viewCenter.lng, a.lat, a.lng) - haversine(viewCenter.lat, viewCenter.lng, b.lat, b.lng);
         });
-    }, [coupons, activeCategory, search, showSaved, reservedIds, viewCenter, radius, sortBy, showFilter]);
+    }, [coupons, activeCategory, search, showSaved, reservedIds, viewCenter, radius, savedRadius, sortBy, showFilter]);
+
+    /* pestaña "Cupones": separa reservados de redimidos */
+    const savedGroups = useMemo(() => ({
+        reserved: filtered.filter(c => statusByCoupon.get(c.id) !== "REDEEMED"),
+        redeemed: filtered.filter(c => statusByCoupon.get(c.id) === "REDEEMED"),
+    }), [filtered, statusByCoupon]);
+
+    /* render de una card de cupon (reusada en el mapa y en la pestaña Cupones) */
+    const renderCouponCard = (c: Coupon) => (
+        <CouponCard
+            key={c.id}
+            c={c}
+            isReserved={reservedIds.has(c.id)}
+            isRedeemed={statusByCoupon.get(c.id) === "REDEEMED"}
+            onToggleSaved={() => {}}
+            onClick={() => { setDetailCoupon(c); setActivePinId(`est-${c.brand}`); setDetailBusiness(null); }}
+            isSelected={activePinId === `est-${c.brand}`}
+            realDist={realDist(c)}
+            realWalk={realWalk(c)}
+        />
+    );
 
     /* 🌟 AGRUPACIÓN COMPLETA: Transforma cupones sueltos en Establecimientos con sub-cupones */
     const establishmentPins = useMemo(() => {
@@ -396,6 +429,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 onSignOut={onSignOut}
                 locationName={userLocation.name}
                 onLocationClick={() => setShowLocationModal(true)}
+                profile={profile}
             />
 
             <div className={"map-shell" + (tab === "map" || tab === "saved" ? "" : " stacked") + (panelCollapsed ? " panel-collapsed" : "")}>
@@ -628,6 +662,23 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                         </div>
                                     )}
 
+                                    {showSaved && (
+                                        <div className="rp-filters">
+                                            <div className="rp-filter-row">
+                                                <FilterDropdown
+                                                    label={t("map.radius")}
+                                                    display={savedRadius === Infinity ? t("map.radiusAll") : (savedRadius >= 1000 ? `${savedRadius / 1000}km` : `${savedRadius}m`)}
+                                                    items={RADIUS_OPTIONS.map((o) => ({
+                                                        key: o.label,
+                                                        label: o.value === Infinity ? t("map.radiusAll") : o.label,
+                                                        active: savedRadius === o.value,
+                                                        onSelect: () => setSavedRadius(o.value),
+                                                    }))}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="results-list">
                                         {couponsLoading ? (
                                             <div className="rp-empty">
@@ -709,23 +760,27 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                                     </>
                                                 )}
                                             </div>
+                                        ) : showSaved ? (
+                                            <div className="rp-saved-groups">
+                                                {savedGroups.reserved.length > 0 && (
+                                                    <div className="rp-saved-group">
+                                                        <div className="rp-saved-group-head">
+                                                            Reservados <span className="rp-saved-count">{savedGroups.reserved.length}</span>
+                                                        </div>
+                                                        {savedGroups.reserved.map(renderCouponCard)}
+                                                    </div>
+                                                )}
+                                                {savedGroups.redeemed.length > 0 && (
+                                                    <div className="rp-saved-group">
+                                                        <div className="rp-saved-group-head">
+                                                            Redimidos <span className="rp-saved-count">{savedGroups.redeemed.length}</span>
+                                                        </div>
+                                                        {savedGroups.redeemed.map(renderCouponCard)}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : (
-                                            filtered.map((c) => (
-                                                <CouponCard
-                                                    key={c.id}
-                                                    c={c}
-                                                    isReserved={reservedIds.has(c.id)}
-                                                    onToggleSaved={() => {}}
-                                                    onClick={() => {
-                                                        setDetailCoupon(c);
-                                                        setActivePinId(`est-${c.brand}`); 
-                                                        setDetailBusiness(null);
-                                                    }}
-                                                    isSelected={activePinId === `est-${c.brand}`}
-                                                    realDist={realDist(c)}
-                                                    realWalk={realWalk(c)}
-                                                />
-                                            ))
+                                            filtered.map(renderCouponCard)
                                         )}
                                     </div>
                                 </>
@@ -763,6 +818,8 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                     <ProfileView
                         reservedCount={reservations.length}
                         reservedCoupons={coupons.filter((c) => reservedIds.has(c.id))}
+                        profileData={profile}
+                        onProfileSaved={setProfile}
                         theme={theme}
                         onThemeChange={onThemeChange}
                         onSignOut={onSignOut}

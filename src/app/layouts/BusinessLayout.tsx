@@ -10,6 +10,9 @@ import { NewCampaign } from "@/features/campaigns/presentation/views/NewCampaign
 import { CouponsManagement } from "@/features/campaigns/presentation/views/CouponsManagement.tsx";
 import { RedeemView } from "@/features/coupons/presentation/views/RedeemView.tsx";
 import { useCampaigns } from "@/features/campaigns/presentation/hooks/useCampaigns.ts";
+import { useCoupons } from "@/features/coupons/presentation/hooks/useCoupons.ts";
+import { useRegisteredCoupons } from "@/features/campaigns/presentation/hooks/useRegisteredCoupons.ts";
+import { useProfile } from "@/features/auth/presentation/hooks/useProfile.ts";
 import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
 import { EstablishmentsView } from "@/features/establishments/presentation/views/EstablishmentsView.tsx";
 import { useEstablishments } from "@/features/establishments/presentation/hooks/useEstablishments.ts";
@@ -41,8 +44,17 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const [campaignError, setCampaignError] = useState(false);
     const [confirmSignOut, setConfirmSignOut] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-    const { campaigns, addCampaign, updateCampaign, removeCampaign } = useCampaigns();
+    const { campaigns, addCampaign, updateCampaign, removeCampaign, reload: reloadCampaigns } = useCampaigns();
+    const { changeCampaign: changeCouponCampaign, remove: removeCoupon } = useCoupons();
+    const { coupons: registeredCoupons, reload: reloadRegisteredCoupons } = useRegisteredCoupons();
+    const { profile, setProfile } = useProfile();
     const { establishments, save: saveEstablishment, remove: removeEstablishment } = useEstablishments();
+
+    /* refresca las dos vistas afectadas tras mover/eliminar un cupon */
+    const reloadCoupons = async () => { await Promise.all([reloadCampaigns(), reloadRegisteredCoupons()]); };
+
+    /* cupones del dueno que no estan en ninguna campana (para sumarlos a una) */
+    const unassignedCoupons = registeredCoupons.filter(c => !c.campaignId);
 
     /* al entrar al panel, refresca el token para traer los claims actuales
        (ej. ROLE_PREMIUM recien asignado tras pagar). sin esto, el back rechaza
@@ -92,6 +104,31 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
         void removeCampaign(id);
     };
 
+    /* agregar un cupon existente (sin campana) a esta campana -> PATCH campaignId */
+    const handleAddCouponToCampaign = async (campaign: Campaign, couponId: string): Promise<boolean> => {
+        if (!campaign.uuid) return false;
+        const res = await changeCouponCampaign(couponId, campaign.uuid);
+        if (res === null) return false;
+        await reloadCoupons();
+        return true;
+    };
+
+    /* quitar un cupon de la campana sin borrarlo -> PATCH campaignId null */
+    const handleRemoveCouponFromCampaign = async (couponId: string): Promise<boolean> => {
+        const res = await changeCouponCampaign(couponId, null);
+        if (res === null) return false;
+        await reloadCoupons();
+        return true;
+    };
+
+    /* eliminar el cupon de verdad -> DELETE */
+    const handleDeleteCoupon = async (couponId: string): Promise<boolean> => {
+        const res = await removeCoupon(couponId);
+        if (res === null) return false;
+        await reloadCoupons();
+        return true;
+    };
+
     return (
         <div className="merchant-app">
             <MerchantSidebar view={view} setView={selectView} onSwitchRole={onSwitchRole} onSignOut={() => setConfirmSignOut(true)} campaignCount={campaigns.length}
@@ -110,6 +147,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                     onAccount={() => setView("account")}
                     onSwitchRole={onSwitchRole}
                     onSignOut={() => setConfirmSignOut(true)}
+                    profile={profile}
                 />
                 {view === "dashboard" && (
                     <MerchantDashboard
@@ -125,6 +163,11 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                         onDeactivate={handleDeactivate}
                         onDelete={removeCampaign}
                         onEdit={(id, data) => void updateCampaign(id, data)}
+                        establishments={establishments.map(e => ({ id: e.id, name: e.name }))}
+                        unassignedCoupons={unassignedCoupons}
+                        onAddCouponToCampaign={handleAddCouponToCampaign}
+                        onRemoveCouponFromCampaign={handleRemoveCouponFromCampaign}
+                        onDeleteCoupon={handleDeleteCoupon}
                     />
                 )}
                 {view === "campaign-detail" && selectedCampaign && (
@@ -146,7 +189,11 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                     />
                 )}
                 {view === "coupons" && (
-                    <CouponsManagement/>
+                    <CouponsManagement
+                        registeredCoupons={registeredCoupons}
+                        campaigns={campaigns}
+                        onReload={reloadCoupons}
+                    />
                 )}
                 {view === "redeem" && (
                     <RedeemView/>
@@ -159,6 +206,8 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                         theme={theme}
                         onThemeChange={onThemeChange}
                         onSignOut={() => navigate("/")}
+                        profileData={profile}
+                        onProfileSaved={setProfile}
                     />
                 )}
             </main>

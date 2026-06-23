@@ -28,6 +28,7 @@ export function useCoupons(repository?: ICouponRepository) {
         error,
         create:  (data: NewCoupon) => run(() => createCoupon(repoRef.current, data)),
         update:  (couponId: string, data: EditCoupon): Promise<Coupon | null> => run(() => repoRef.current.update(couponId, data)),
+        changeCampaign: (couponId: string, campaignId: string | null): Promise<Coupon | null> => run(() => repoRef.current.changeCampaign(couponId, campaignId)),
         remove:  (couponId: string): Promise<void | null> => run(() => repoRef.current.remove(couponId)),
     };
 }
