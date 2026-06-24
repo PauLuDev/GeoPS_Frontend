@@ -25,6 +25,7 @@ import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { BrandMark } from "@/shared/ui/components/BrandMark.tsx";
 import { firebaseRefreshToken } from "@/features/auth/infrastructure/firebaseAuth.ts";
 import { setToken } from "@/shared/api/tokenStore.ts";
+import { useAuth } from "@/features/auth/presentation/hooks/useAuth.ts";
 
 interface BusinessLayoutProps {
     onSwitchRole: () => void;
@@ -36,6 +37,9 @@ interface BusinessLayoutProps {
 export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light", onThemeChange }: BusinessLayoutProps) {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { signOut } = useAuth();
+    /* limpia el token (localStorage) y la sesion de firebase (indexeddb) antes de navegar */
+    const handleSignOut = async () => { await signOut(); navigate("/"); };
     const [view, setView] = useState("dashboard");
     const [sidebarOpen, setSidebarOpen] = useState(false);
     /* navegar desde el sidebar tambien cierra el drawer en mobile */
@@ -205,7 +209,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                     <MerchantProfileView
                         theme={theme}
                         onThemeChange={onThemeChange}
-                        onSignOut={() => navigate("/")}
+                        onSignOut={handleSignOut}
                         profileData={profile}
                         onProfileSaved={setProfile}
                     />
@@ -221,7 +225,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                         <p className="est-modal-text">{t("profile.signOutConfirmText")}</p>
                         <div className="est-modal-actions">
                             <button type="button" className="btn est-modal-btn" onClick={() => setConfirmSignOut(false)}>{t("common.cancel")}</button>
-                            <button type="button" className="btn est-del-confirm est-modal-btn" onClick={() => navigate("/")}>{t("profile.signOutConfirm")}</button>
+                            <button type="button" className="btn est-del-confirm est-modal-btn" onClick={handleSignOut}>{t("profile.signOutConfirm")}</button>
                         </div>
                     </div>
                 </Modal>

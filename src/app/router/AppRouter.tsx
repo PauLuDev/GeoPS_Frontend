@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { CustomerLayout } from "@/app/layouts/CustomerLayout.tsx";
 import { BusinessLayout } from "@/app/layouts/BusinessLayout.tsx";
+import { ProtectedRoute } from "@/app/router/ProtectedRoute.tsx";
 import { AuthScreen } from "@/features/auth/presentation/views/AuthScreen.tsx";
 import { RegisterBusiness } from "@/features/establishments/presentation/views/RegisterBusiness.tsx";
 import { ChoosePlanView } from "@/features/billing/presentation/views/ChoosePlanView.tsx";
@@ -62,18 +63,22 @@ function AppRoutes({ theme, onThemeChange }: AppRouterProps) {
             <Route path="/business/plan" element={<ChoosePlanRouteView />} />
 
             <Route path="/customer/*" element={
-                <CustomerLayout
-                    onSwitchRole={() => navigate('/business')}
-                    theme={theme}
-                    onThemeChange={onThemeChange}
-                />
+                <ProtectedRoute>
+                    <CustomerLayout
+                        onSwitchRole={() => navigate('/business')}
+                        theme={theme}
+                        onThemeChange={onThemeChange}
+                    />
+                </ProtectedRoute>
             }/>
             <Route path="/business/*" element={
-                <BusinessLayout
-                    onSwitchRole={() => navigate('/customer')}
-                    theme={theme}
-                    onThemeChange={onThemeChange}
-                />
+                <ProtectedRoute>
+                    <BusinessLayout
+                        onSwitchRole={() => navigate('/customer')}
+                        theme={theme}
+                        onThemeChange={onThemeChange}
+                    />
+                </ProtectedRoute>
             }/>
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
