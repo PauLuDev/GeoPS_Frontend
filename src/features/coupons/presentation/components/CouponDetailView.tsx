@@ -7,6 +7,7 @@ import {ReviewsSection} from "@/features/comments/presentation/components/Review
 interface CouponDetailViewProps {
     c: Coupon;
     isReserved: boolean;
+    hasBeenReservedBefore?: boolean;
     onReserve: () => Promise<void> | void;
     onBack: () => void;
     onViewBusiness?: () => void;
@@ -15,7 +16,7 @@ interface CouponDetailViewProps {
     redemptionCode?: string;   // codigo de canje real (cuando ya esta reservado)
 }
 
-export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusiness, realDist, realWalk, redemptionCode }: CouponDetailViewProps) {
+export function CouponDetailView({ c, isReserved, hasBeenReservedBefore, onReserve, onBack, onViewBusiness, realDist, realWalk, redemptionCode }: CouponDetailViewProps) {
     const { t } = useTranslation();
     const dist     = realDist ?? c.distance;
     const walk     = realWalk ?? c.walking;
@@ -23,6 +24,12 @@ export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusin
     const [reserving, setReserving] = useState(false);
     const [copied, setCopied]    = useState(false);
     const [tcOpen, setTcOpen]    = useState(false);
+    const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+    const triggerToast = (msg: string) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 3000);
+    };
 
     /* un cupon no se puede reservar si no queda stock o ya vencio */
     const isExpired    = c.expiresIn === "vencido";
@@ -198,18 +205,42 @@ export function CouponDetailView({ c, isReserved, onReserve, onBack, onViewBusin
                     <button type="button" className="btn btn-primary btn-lg cd-footer-btn" onClick={onBack}>
                         {t("couponDetail.done")} <Icon name="walking" size={16}/>
                     </button>
+                ) : hasBeenReservedBefore ? (
+                    <button type="button" className="btn btn-lg cd-footer-btn" disabled>
+                        <Icon name="close" size={16}/> {t("couponDetail.alreadyReserved", { defaultValue: "Ya reservado" })}
+                    </button>
                 ) : !canReserve ? (
                     <button type="button" className="btn btn-lg cd-footer-btn" disabled>
                         <Icon name="close" size={16}/> {isExpired ? t("couponDetail.expired") : t("couponDetail.soldOut")}
                     </button>
                 ) : (
-                    <button type="button" className="btn btn-brand btn-lg cd-footer-btn" disabled={reserving}
-                            onClick={async () => { setReserving(true); await onReserve(); setReserving(false); }}>
+                    <button type="button" className="btn btn-brand btn-lg cd-footer-btn" disabled={reserving || hasBeenReservedBefore}
+                            onClick={async () => {
+                                if (hasBeenReservedBefore) {
+                                    triggerToast(t("couponDetail.alreadyReserved"));
+                                    return;
+                                }
+                                setReserving(true);
+                                try {
+                                    await onReserve();
+                                } catch (err) {
+                                    triggerToast("No se pudo realizar la reserva. Es posible que ya hayas reservado este cupón.");
+                                } finally {
+                                    setReserving(false);
+                                }
+                            }}>
                         {reserving ? "Reservando…" : c.finalPrice === 0 ? t("couponDetail.reserveFree") : t("couponDetail.reserve", { price: c.finalPrice })}
                         <Icon name="arrowRight" size={16}/>
                     </button>
                 )}
             </div>
+
+            {toastMsg && (
+                <div className="cd-toast">
+                    <Icon name="close" size={14}/>
+                    <span>{toastMsg}</span>
+                </div>
+            )}
 
         </div>
     );

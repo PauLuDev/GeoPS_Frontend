@@ -669,6 +669,18 @@
 .geops-app .cd-footer { padding: 12px 16px; border-top: 1px solid var(--line); background: var(--bg-elev); flex-shrink: 0; }
 .geops-app .cd-footer-btn { width: 100%; justify-content: center; }
 
+.geops-app .cd-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 500;
+  padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px;
+  box-shadow: var(--shadow-lg); z-index: 12000; pointer-events: none;
+  animation: geops-toast-in 240ms cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes geops-toast-in {
+  0% { opacity: 0; transform: translate(-50%, 12px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* CustomerMap: migrado de inline */
 .geops-app .map-shell:not(.stacked) { overflow-y: hidden; }
 .geops-app .map-shell.stacked { display: block; overflow-y: auto; }

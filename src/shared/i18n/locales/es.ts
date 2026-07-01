@@ -103,6 +103,7 @@ export const es = {
         reserve: "Reservar · S/{{price}}",
         soldOut: "Agotado",
         expired: "Oferta vencida",
+        alreadyReserved: "Ya reservaste esta oferta",
         done: "Listo · ir al local",
     },
     map: {

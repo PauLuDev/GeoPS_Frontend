@@ -63,7 +63,7 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
 
     const stepErrors: Record<number, boolean> = {
         0: !name.trim() || !description.trim() || (categories.length > 0 && categoryId == null),
-        1: !address.trim() || !district.trim(),
+        1: !address.trim() || !district.trim() || (phone.trim() ? phone.replace(/\D/g, "").length !== 9 : false),
         2: false,
         3: false,
     };
@@ -212,7 +212,12 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
                                 </div>
                                 <div className="field">
                                     <label>Teléfono</label>
-                                    <input className="input" placeholder="01 444-2323" value={phone} onChange={e => setPhone(e.target.value)}/>
+                                    <input className={inputCls(phone.trim() ? phone.replace(/\D/g, "").length !== 9 : false)} placeholder="999888777"
+                                           inputMode="tel" maxLength={9}
+                                           value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))}/>
+                                    {submitted && phone.trim() && phone.replace(/\D/g, "").length !== 9 && (
+                                        <span className="field-error">El teléfono debe tener exactamente 9 dígitos</span>
+                                    )}
                                 </div>
                             </div>
                             <div className="bf-row2">

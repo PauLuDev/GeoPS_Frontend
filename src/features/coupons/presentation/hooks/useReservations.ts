@@ -13,6 +13,15 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
     const [reservations, setReservations] = useState<CouponReservation[]>([]);
     const [error, setError] = useState<string | null>(null);
 
+    const [historyIds, setHistoryIds] = useState<Set<string>>(() => {
+        try {
+            const raw = localStorage.getItem(`geops_reserved_history_${userId}`);
+            return raw ? new Set(JSON.parse(raw)) : new Set();
+        } catch {
+            return new Set();
+        }
+    });
+
     const reload = useCallback(async () => {
         if (!userId) { setReservations([]); return; }
         try {
@@ -24,6 +33,29 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
     }, [userId]);
 
     useEffect(() => { void reload(); }, [reload]);
+
+    useEffect(() => {
+        if (!userId) return;
+        try {
+            const raw = localStorage.getItem(`geops_reserved_history_${userId}`);
+            const currentHistory = raw ? (JSON.parse(raw) as string[]) : [];
+            const historySet = new Set(currentHistory);
+            
+            let changed = false;
+            reservations.forEach(r => {
+                if (!historySet.has(r.couponId)) {
+                    historySet.add(r.couponId);
+                    changed = true;
+                }
+            });
+            
+            if (changed) {
+                const arr = Array.from(historySet);
+                localStorage.setItem(`geops_reserved_history_${userId}`, JSON.stringify(arr));
+                setHistoryIds(historySet);
+            }
+        } catch { /* ignore */ }
+    }, [reservations, userId]);
 
     /* refresco silencioso: actualiza el estado de las reservas (p.ej. cuando el
        dueño canjea un cupon -> pasa a REDEEMED) sin vaciar la lista si falla */
@@ -38,6 +70,10 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
     /* ids de cupones ya reservados, para marcar las cards */
     const reservedIds = useMemo(() => new Set(reservations.map(r => r.couponId)), [reservations]);
 
+    const hasBeenReservedBefore = useCallback((couponId: string) => {
+        return reservedIds.has(couponId) || historyIds.has(couponId);
+    }, [reservedIds, historyIds]);
+
     /* estado de la reserva por cupon (RESERVED / REDEEMED / ...), para separarlos */
     const statusByCoupon = useMemo(
         () => new Map(reservations.map(r => [r.couponId, r.status])),
@@ -47,6 +83,14 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
     /* reserva el cupon en el back y recarga la lista */
     const reserve = async (couponId: string) => {
         await repoRef.current.reserve(couponId, userId);
+        setHistoryIds(prev => {
+            const next = new Set(prev);
+            next.add(couponId);
+            try {
+                localStorage.setItem(`geops_reserved_history_${userId}`, JSON.stringify(Array.from(next)));
+            } catch { /* ignore */ }
+            return next;
+        });
         await reload();
     };
 
@@ -54,5 +98,5 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
     const codeFor = (couponId: string): string | undefined =>
         reservations.find(r => r.couponId === couponId)?.redemptionCode;
 
-    return { reservations, reservedIds, statusByCoupon, reserve, codeFor, reload, error };
+    return { reservations, reservedIds, statusByCoupon, reserve, codeFor, reload, error, hasBeenReservedBefore };
 }
