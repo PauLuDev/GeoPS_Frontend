@@ -27,6 +27,15 @@ export function expiresInLabel(endDate?: string): string {
  la distancia se calcula en vivo en el mapa
 */
 export function toUICoupon(c: CouponResource, business: Business, endDate?: string, campaignName?: string): UICoupon {
+    const originalPrice = c.originalProductPrice ?? 0;
+    let finalPrice = 0;
+    if (c.promotionType === "PERCENTAGE") {
+        finalPrice = originalPrice * (1 - (c.discountValue ?? 0) / 100);
+    } else if (c.promotionType === "FIXED_AMOUNT") {
+        finalPrice = originalPrice - (c.discountValue ?? 0);
+    }
+    finalPrice = Math.max(0, Math.round(finalPrice * 100) / 100);
+
     return {
         id: c.id,
         establishmentId: business.id,
@@ -39,8 +48,8 @@ export function toUICoupon(c: CouponResource, business: Business, endDate?: stri
         lng: business.lng,
         title: c.title,
         discount: discountLabel(c),
-        originalPrice: 0,
-        finalPrice: 0,
+        originalPrice,
+        finalPrice,
         distance: 0,
         walking: 0,
         address: business.address,
