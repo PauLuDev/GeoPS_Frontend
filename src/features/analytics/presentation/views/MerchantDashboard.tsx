@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon";
+import { useAutoRefresh } from "@/shared/hooks/useAutoRefresh.ts";
 import { Select } from "@/shared/ui/components/Select.tsx";
 import { KPI } from "@/features/analytics/presentation/components/KPI.tsx";
 import { HourChart } from "@/features/analytics/presentation/components/HourChart.tsx";
 import { useDashboard } from "@/features/analytics/presentation/hooks/useDashboard.ts";
 import { toReportSnapshot } from "@/features/analytics/application/mappers/DashboardReportMapper.ts";
 import { HourlyRange, RANGE_TO_TIMEFRAME, periodLabel, ReportSnapshot, ReportKpi } from "@/features/analytics/domain/value-objects/reportData.ts";
-import { analyticsApi } from "@/features/analytics/infrastructure/api/analyticsApi.ts";
+import { listCampaignAnalytics } from "@/features/analytics/application/use-cases/ListCampaignAnalytics.ts";
 import { CampaignAnalytics } from "@/features/analytics/domain/entities/CampaignAnalytics.ts";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
 
@@ -51,12 +52,19 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
         if (!establishmentId) { setCampaignStats([]); return; }
         let alive = true;
         setCampaignsLoading(true);
-        analyticsApi.campaigns(establishmentId)
+        listCampaignAnalytics(establishmentId)
             .then(cs => { if (alive) setCampaignStats(cs); })
             .catch(() => { if (alive) setCampaignStats([]); })
             .finally(() => { if (alive) setCampaignsLoading(false); });
         return () => { alive = false; };
     }, [establishmentId]);
+
+    /* refresco silencioso de las metricas por campana, en linea con el dashboard */
+    const refreshCampaignStats = useCallback(() => {
+        if (!establishmentId) return;
+        listCampaignAnalytics(establishmentId).then(setCampaignStats).catch(() => { /* mantiene lo actual */ });
+    }, [establishmentId]);
+    useAutoRefresh(refreshCampaignStats, 30000);
 
     /* abre una campana puntual en la pestaña "Por campaña" */
     const openCampaign = (id: string) => { setSelectedCampaignId(id); setMode("campaigns"); };

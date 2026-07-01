@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DashboardStats } from "../../domain/value-objects/DashboardStats.ts";
 import { IAnalyticsRepository, Timeframe } from "../../domain/repositories/IAnalyticsRepository.ts";
 import { GraphQLAnalyticsRepository } from "../../infrastructure/repositories/GraphQLAnalyticsRepository.ts";
 import { getEstablishmentDashboard } from "../../application/use-cases/GetEstablishmentDashboard.ts";
+import { useAutoRefresh } from "@/shared/hooks/useAutoRefresh.ts";
 
 /**
  * hook de presentacion: carga las metricas del dashboard de un establecimiento
@@ -38,6 +39,14 @@ export function useDashboard(
             .finally(() => { if (alive) setLoading(false); });
         return () => { alive = false; };
     }, [establishmentId, timeframeDays]);
+
+    /* refresco silencioso (sin spinner) para mantener las metricas al dia sin recargar */
+    const refresh = useCallback(() => {
+        if (!establishmentId) return;
+        getEstablishmentDashboard(repoRef.current, establishmentId, timeframeDays)
+            .then(setStats).catch(() => { /* mantiene los datos actuales */ });
+    }, [establishmentId, timeframeDays]);
+    useAutoRefresh(refresh, 30000);
 
     return { stats, loading, error };
 }

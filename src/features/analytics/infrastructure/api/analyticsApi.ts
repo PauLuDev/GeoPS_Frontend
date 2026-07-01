@@ -3,10 +3,12 @@ import { DashboardStats } from "../../domain/value-objects/DashboardStats.ts";
 import { CampaignAnalytics, AnalyticsCampaignStatus } from "../../domain/entities/CampaignAnalytics.ts";
 
 /*
- consulta las metricas por graphql
- se llama directo al endpoint, con el token
+ consulta las metricas por graphql, con el token, a traves del api-gateway
+ la ruta /analytics/** del gateway se enruta al analytics-service (graphql en /graphql),
+ asi que basta el link del gateway (VITE_API_URL). VITE_ANALYTICS_URL queda como override opcional.
 */
-const GRAPHQL_URL = import.meta.env.VITE_ANALYTICS_URL ?? "http://localhost:5003/graphql";
+const GATEWAY = (import.meta.env.VITE_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
+const GRAPHQL_URL = import.meta.env.VITE_ANALYTICS_URL ?? `${GATEWAY}/analytics/graphql`;
 
 /* arg opcional de tipo Guid (string): se omite si no hay valor */
 const guidArg = (name: string, v?: string): string => (v ? `, ${name}: "${v}"` : "");

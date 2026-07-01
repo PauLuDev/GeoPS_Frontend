@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CouponReservation } from "../../domain/entities/CouponReservation.ts";
 import { ICouponRepository } from "../../domain/repositories/ICouponRepository.ts";
 import { HttpCouponRepository } from "../../infrastructure/repositories/HttpCouponRepository.ts";
+import { useAutoRefresh } from "@/shared/hooks/useAutoRefresh.ts";
 
 /*
  hook de presentacion: reservas reales del cliente
@@ -23,6 +24,16 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
     }, [userId]);
 
     useEffect(() => { void reload(); }, [reload]);
+
+    /* refresco silencioso: actualiza el estado de las reservas (p.ej. cuando el
+       dueño canjea un cupon -> pasa a REDEEMED) sin vaciar la lista si falla */
+    const refresh = useCallback(async () => {
+        if (!userId) return;
+        try {
+            setReservations(await repoRef.current.getReservations(userId));
+        } catch { /* mantiene lo que ya hay */ }
+    }, [userId]);
+    useAutoRefresh(refresh, 15000);
 
     /* ids de cupones ya reservados, para marcar las cards */
     const reservedIds = useMemo(() => new Set(reservations.map(r => r.couponId)), [reservations]);
