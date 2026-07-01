@@ -7,7 +7,7 @@ import { SubscriptionResource, CurrentSubscriptionResource } from "../../applica
  todo pasa por el api-gateway: la ruta /billing/** se reenvia al subscription-service
  (el gateway hace StripPrefix=1, asi que /billing/api/v1/billing/... llega como /api/v1/billing/...)
 */
-const BASE_URL = (import.meta.env.VITE_BILLING_URL ?? "http://localhost:8080").replace(/\/$/, "");
+const BASE_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
 const BASE = "/billing/api/v1/billing";
 
 /* el plan tal cual llega, sin los limites que agrega el front */
