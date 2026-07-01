@@ -4,6 +4,7 @@ import { Business, BusinessHours } from "@/shared/types.ts";
 import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
 import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 import { AddressPicker, type AddressValue } from "./AddressPicker.tsx";
+import { TimePicker } from "@/shared/ui/components/TimePicker.tsx";
 import { uploadImage } from "@/shared/cloudinary.ts";
 import { areaCodeForRegion } from "@/shared/constants.ts";
 
@@ -238,11 +239,11 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                         <span className="bf-closed-text">Cerrado</span>
                                     ) : (
                                         <div className="bf-time-range">
-                                            <input type="time" className="input bf-time" aria-label={`${h.day} apertura`}
-                                                   value={h.open} onChange={e => setHour(i, "open", e.target.value)}/>
+                                            <TimePicker className="bf-time" aria-label={`${h.day} apertura`}
+                                                        value={h.open} onChange={v => setHour(i, "open", v)}/>
                                             <span className="bf-dash">—</span>
-                                            <input type="time" className="input bf-time" aria-label={`${h.day} cierre`}
-                                                   value={h.close} onChange={e => setHour(i, "close", e.target.value)}/>
+                                            <TimePicker className="bf-time" aria-label={`${h.day} cierre`}
+                                                        value={h.close} onChange={v => setHour(i, "close", v)}/>
                                         </div>
                                     )}
                                     <button type="button" onClick={() => toggleClosed(i)}

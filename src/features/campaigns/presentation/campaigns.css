@@ -55,7 +55,7 @@
 }
 .geops-app .msb-item:hover                    { background: var(--bg-sunken); color: var(--ink); }
 .geops-app .msb-item.active                   { background: var(--ink); color: var(--bg); }
-.geops-app .msb-item.active .msb-badge        { background: var(--brand); color: var(--brand-ink); }
+.geops-app .msb-item.active .msb-badge        { background: var(--brand); color: var(--on-brand); }
 
 .geops-app .msb-item span                     { flex: 1; }
 .geops-app .msb-badge { font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; background: var(--bg-sunken); border-radius: 999px; color: var(--ink-2); flex: 0 !important; }

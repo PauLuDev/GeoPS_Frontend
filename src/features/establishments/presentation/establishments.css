@@ -43,7 +43,8 @@
 .geops-app .bf-day { font-size: 13px; font-weight: 500; }
 .geops-app .bf-closed-text { font-size: 13px; color: var(--ink-3); font-style: italic; }
 .geops-app .bf-time-range { display: flex; align-items: center; gap: 8px; }
-.geops-app .bf-time { width: 118px; padding: 7px 10px; }
+.geops-app .bf-time { width: 118px; }
+.geops-app .bf-time .ui-time-btn { padding: 7px 10px; }
 .geops-app .bf-dash { color: var(--ink-3); }
 .geops-app .bf-hours-toggle { justify-self: end; }
 

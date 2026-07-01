@@ -71,6 +71,16 @@ function buildAddress(addr: NominatimResult["address"]): string {
     return road ? `${road}${number}` : "";
 }
 
+
+function isDarkTheme(): boolean {
+    return document.querySelector(".geops-app")?.getAttribute("data-theme") === "dark";
+}
+function tileUrl(dark: boolean): string {
+    return dark
+        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+}
+
 export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
     const id = useId();
     const [query, setQuery] = useState(value.address);
@@ -82,6 +92,8 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
     const markerRef = useRef<any>(null);
+    const tileLayerRef = useRef<any>(null);
+    const didAutoLocate = useRef(false);
     const valueRef = useRef(value);
     valueRef.current = value;
 
@@ -146,13 +158,13 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
 
             if (!mapRef.current) {
                 const map = L.map(mapContainerRef.current, {
-                    zoomControl: true,
+                    zoomControl: false,   // sin botones +/- -> se hace zoom con la rueda
                     attributionControl: false,
                     scrollWheelZoom: true,
                     dragging: true,
                 }).setView([valueRef.current.lat || -12.05, valueRef.current.lng || -77.05], 15);
 
-                L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+                tileLayerRef.current = L.tileLayer(tileUrl(isDarkTheme()), {
                     maxZoom: 19,
                     subdomains: "abcd",
                 }).addTo(map);
@@ -188,6 +200,43 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
         });
 
         return () => { cancelled = true; };
+    }, []);
+
+
+    useEffect(() => {
+        const appEl = document.querySelector(".geops-app");
+        if (!appEl) return;
+        const obs = new MutationObserver(() => {
+            const L = (window as any).L;
+            if (!L || !mapRef.current) return;
+            if (tileLayerRef.current) mapRef.current.removeLayer(tileLayerRef.current);
+            tileLayerRef.current = L.tileLayer(tileUrl(isDarkTheme()), {
+                maxZoom: 19, subdomains: "abcd",
+            }).addTo(mapRef.current);
+        });
+        obs.observe(appEl, { attributes: true, attributeFilter: ["data-theme"] });
+        return () => obs.disconnect();
+    }, []);
+
+
+    useEffect(() => {
+        if (didAutoLocate.current) return;
+        if (valueRef.current.address.trim()) return;   // editando -> no sobreescribir
+        if (!navigator.geolocation) return;
+        didAutoLocate.current = true;
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                if (markerRef.current && mapRef.current) {
+                    markerRef.current.setLatLng([latitude, longitude]);
+                    mapRef.current.setView([latitude, longitude], 16, { animate: true });
+                }
+                void reverseGeocode(latitude, longitude);
+            },
+            () => { /* permiso denegado -> se queda con el default */ },
+            { enableHighAccuracy: true, timeout: 8000 },
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     /* mover el marcador cuando cambia value.lat/lng desde fuera */

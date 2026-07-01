@@ -30,7 +30,8 @@ export class HttpCouponRepository implements ICouponRepository {
 
     async getReservations(userId: string): Promise<CouponReservation[]> {
         const reservations = await couponApi.reservedByUser(userId);
-        return reservations.map(toCouponReservation);
+
+        return reservations.filter(r => r.coupon).map(toCouponReservation);
     }
 
     async remove(couponId: string): Promise<void> {

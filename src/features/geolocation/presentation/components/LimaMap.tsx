@@ -136,7 +136,7 @@ export const LimaMap: React.FC<LimaMapProps> = ({
               <circle cx="0" cy="-6" r="9" fill="var(--brand)" stroke="none"/>
               {p.discount && (
                 <text x="0" y="-3" textAnchor="middle" fontSize="9" fontWeight="700"
-                      fill="var(--brand-ink)" fontFamily="var(--font-mono)" stroke="none">
+                      fill="var(--on-brand)" fontFamily="var(--font-mono)" stroke="none">
                   −{p.discount}
                 </text>
               )}
