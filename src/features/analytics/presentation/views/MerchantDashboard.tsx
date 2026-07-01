@@ -144,7 +144,7 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
             <header className="md-head">
                 <div>
                     <div className="eyebrow">Resumen · {establishmentName || "tu negocio"}</div>
-                    <h1 className="page-title">Hola{(establishmentName || getCurrentUser()?.username) ? `, ${establishmentName || getCurrentUser()?.username}` : ""} 👋</h1>
+                    <h1 className="page-title">Hola{(establishmentName || getCurrentUser()?.username) ? `, ${establishmentName || getCurrentUser()?.username}` : ""}</h1>
                     <p className="page-subtitle">
                         Revisa el rendimiento de tus campañas y exporta el reporte cuando lo necesites.
                     </p>

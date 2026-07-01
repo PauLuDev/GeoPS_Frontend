@@ -14,8 +14,8 @@
 .geops-app .md-export-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 30;
   min-width: 210px; padding: 6px;
-  background: var(--bg-surface, #fff); border: 1px solid var(--border, rgba(0,0,0,.1));
-  border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.14);
+  background: var(--bg-elev); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: var(--shadow);
   display: flex; flex-direction: column; gap: 2px;
 }
 .geops-app .md-export-item {

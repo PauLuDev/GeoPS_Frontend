@@ -102,7 +102,7 @@
 .geops-app .geops-dialog.stripe-checkout { width: min(440px, calc(100vw - 32px)); }
 .geops-app .stripe-checkout-icon {
   width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
-  color: var(--brand-ink); background: var(--brand); margin-bottom: 4px;
+  color: var(--on-brand); background: var(--brand); margin-bottom: 4px;
 }
 .geops-app .stripe-checkout-title { font-size: 18px; font-weight: 600; }
 .geops-app .stripe-checkout-sub { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }

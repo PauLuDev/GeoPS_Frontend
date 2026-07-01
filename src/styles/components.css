@@ -124,11 +124,34 @@
   font-size: 12px; color: var(--ink); transition: background 120ms ease;
 }
 .geops-app .ui-date-day:hover:not(:disabled) { background: var(--bg-sunken); }
-.geops-app .ui-date-day.selected { background: var(--brand); color: var(--brand-ink); font-weight: 600; }
+.geops-app .ui-date-day.selected { background: var(--brand); color: var(--on-brand); font-weight: 600; }
 .geops-app .ui-date-day:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.geops-app .ui-time-btn { gap: 8px; }
+.geops-app .ui-time-pop {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 40;
+  display: flex; gap: 2px; padding: 6px;
+  background: var(--bg-elev); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.geops-app .ui-time-col {
+  display: flex; flex-direction: column; gap: 2px;
+  max-height: 200px; overflow-y: auto;
+
+}
+.geops-app .ui-time-sep { align-self: center; color: var(--ink-3); font-weight: 600; padding: 0 1px; }
+.geops-app .ui-time-opt {
+  appearance: none; border: none; background: transparent; cursor: pointer;
+  color: var(--ink); font-family: var(--font-mono); font-size: 13px; font-weight: 500;
+  padding: 6px 12px; border-radius: 7px; text-align: center; min-width: 44px;
+  transition: background 120ms ease;
+}
+.geops-app .ui-time-opt:hover { background: var(--bg-sunken); }
+.geops-app .ui-time-opt.selected { background: var(--brand); color: var(--on-brand); font-weight: 600; }
+
 .geops-app .btn-primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .geops-app .btn-primary:hover { background: oklch(from var(--ink) calc(l + 0.06) c h); }
-.geops-app .btn-brand { background: var(--brand); color: var(--brand-ink); border-color: transparent; font-weight: 600; }
+.geops-app .btn-brand { background: var(--brand); color: var(--on-brand); border-color: transparent; font-weight: 600; }
 .geops-app .btn-brand:hover { background: oklch(from var(--brand) calc(l - 0.04) c h); }
 .geops-app .btn-ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
 .geops-app .btn-ghost:hover { background: var(--bg-sunken); color: var(--ink); }

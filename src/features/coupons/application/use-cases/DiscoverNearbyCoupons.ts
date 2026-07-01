@@ -16,6 +16,13 @@ export interface Discovery {
 /* radio para "ver todo lima" cuando el usuario quita el limite */
 const LIMA_RADIUS = 100000;
 
+/* cache en memoria por (lat,lng,radio) con TTL corto -> cambiar de pestaña, el
+   auto-refresh o re-renders no vuelven a descargar todo lima cada vez */
+const CACHE_TTL = 20000;
+const discoveryCache = new Map<string, { at: number; data: Discovery }>();
+const cacheKey = (lat: number, lng: number, r: number) =>
+    `${lat.toFixed(3)}|${lng.toFixed(3)}|${r}`;
+
 /* normaliza un id para comparar sin tropezar con espacios o mayusculas */
 const normId = (v: unknown): string => (v == null ? "" : String(v).trim().toLowerCase());
 
@@ -34,38 +41,41 @@ interface RawEstablishment {
 */
 export async function discoverNearbyCoupons(lat: number, lng: number, radiusMeters: number): Promise<Discovery> {
     const radius = Number.isFinite(radiusMeters) ? radiusMeters : LIMA_RADIUS;
+
+    const key = cacheKey(lat, lng, radius);
+    const cached = discoveryCache.get(key);
+    if (cached && Date.now() - cached.at < CACHE_TTL) return cached.data;
+
     const establishments = await establishmentApi.nearby(lat, lng, radius);
     const commentRepo = new HttpCommentRepository();
 
-    /* fase 1: por cada local -> rating real, cupones crudos y el cruce campaignId->nombre */
+    /* fase 1: por cada local -> rating real, cupones crudos y el cruce campaignId->nombre.
+       las 3 llamadas van en paralelo (antes el rating bloqueaba a los cupones) */
     const raw: RawEstablishment[] = await Promise.all(establishments.map(async er => {
         const business = toBusiness(er);
 
+        const [stats, cs, campaignsRaw] = await Promise.all([
+            commentRepo.getAverageRating(er.id).catch(() => null),
+            couponApi.listByEstablishment(er.id).catch(() => [] as CouponResource[]),
+            campaignApi.listByEstablishment(er.id).catch(() => []),
+        ]);
+
         /* rating real del local */
-        try {
-            const stats = await commentRepo.getAverageRating(er.id);
+        if (stats) {
             business.rating = stats.averageRating;
             business.totalReviews = stats.totalReviews;
-        } catch { /* sin reseñas todavia */ }
+        }
 
-        let couponResources: CouponResource[] = [];
+        const couponResources: CouponResource[] = cs;
         const campaignNameById: Record<string, string> = {};
-        try {
-            const [cs, campaignsRaw] = await Promise.all([
-                couponApi.listByEstablishment(er.id),
-                campaignApi.listByEstablishment(er.id).catch(() => []),
-            ]);
-            couponResources = cs;
 
-            /* tolera que el back devuelva un array directo o un objeto paginado { content: [...] } */
-            const campaigns = Array.isArray(campaignsRaw)
-                ? campaignsRaw
-                : ((campaignsRaw as { content?: unknown[] })?.content ?? []);
-
-            campaigns.forEach((camp: { id: string; name: string }) => {
-                campaignNameById[normId(camp.id)] = camp.name;
-            });
-        } catch { /* el local aun no tiene cupones */ }
+        /* tolera que el back devuelva un array directo o un objeto paginado { content: [...] } */
+        const campaigns = Array.isArray(campaignsRaw)
+            ? campaignsRaw
+            : ((campaignsRaw as { content?: unknown[] })?.content ?? []);
+        campaigns.forEach((camp: { id: string; name: string }) => {
+            campaignNameById[normId(camp.id)] = camp.name;
+        });
 
         return { business, couponResources, campaignNameById };
     }));
@@ -94,5 +104,7 @@ export async function discoverNearbyCoupons(lat: number, lng: number, radiusMete
     const businessByName: Record<string, Business> = {};
     raw.forEach(r => { businessByName[r.business.name] = r.business; });
 
-    return { coupons, businessByName };
+    const result: Discovery = { coupons, businessByName };
+    discoveryCache.set(key, { at: Date.now(), data: result });
+    return result;
 }

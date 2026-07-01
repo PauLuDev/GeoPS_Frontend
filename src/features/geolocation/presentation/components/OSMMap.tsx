@@ -300,7 +300,7 @@ export const OSMMap: FC<OSMMapProps> = ({
                   fill="${isActive ? "var(--ink)" : "var(--bg-elev)"}" stroke="var(--ink)" stroke-width="2"/>
             <circle cx="0" cy="-6" r="8" fill="var(--brand)"/>
             <text x="0" y="-3" text-anchor="middle" font-size="8" font-weight="700"
-                  fill="var(--brand-ink)" font-family="var(--font-mono)">${markerLabel}</text>
+                  fill="var(--on-brand)" font-family="var(--font-mono)">${markerLabel}</text>
           </svg>
         </div>`;
             const icon = L.divIcon({

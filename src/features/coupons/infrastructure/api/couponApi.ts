@@ -32,7 +32,7 @@ export const couponApi = {
     reserve: (couponId: string) =>
         apiClient.post<CouponResource>(`${BASE}/coupons/${couponId}/reservations`),
 
-    /* reservas de un usuario, cada una con su codigo de canje */
+    /* reservas de un usuario, cada una con su codigo de canje y estado */
     reservedByUser: (userId: string) =>
         apiClient.get<CouponReservationResource[]>(`${BASE}/users/${userId}/coupons`),
 
