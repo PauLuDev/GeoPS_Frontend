@@ -50,7 +50,7 @@ export class HttpCampaignRepository implements ICampaignRepository {
         const estId = created.establishmentId;
         if (estId && created.uuid && campaign.coupons.length > 0) {
             await Promise.all(campaign.coupons.map(c =>
-                couponApi.create(toCreateCouponResource(toNewCoupon(c, estId, created.uuid!))).catch(() => undefined),
+                couponApi.create(toCreateCouponResource(toNewCoupon(c, estId, created.uuid!, campaign.startDate, campaign.endDate))),
             ));
         }
         return created;

@@ -58,4 +58,7 @@ export interface CreateCouponResource {
     minPurchaseAmount?: number | null;
     startDate?: string;   // yyyy-MM-dd
     endDate?: string;     // yyyy-MM-dd
+    restrictions?: string;
+    terms?: string;
+    originalProductPrice?: number;
 }

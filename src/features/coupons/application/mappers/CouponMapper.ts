@@ -64,5 +64,8 @@ export function toCreateCouponResource(data: NewCoupon): CreateCouponResource {
         minPurchaseAmount: data.minPurchaseAmount ?? null,
         startDate: data.startDate,
         endDate: data.endDate,
+        restrictions: data.restrictions,
+        terms: data.terms,
+        originalProductPrice: data.originalProductPrice,
     };
 }

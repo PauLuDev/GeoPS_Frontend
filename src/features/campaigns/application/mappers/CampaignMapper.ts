@@ -72,7 +72,7 @@ export function toUpdateCampaignResource(data: EditCampaign): UpdateCampaignReso
 }
 
 /* cupon de la campana -> datos para crearlo en el back (deriva el discountValue de los precios) */
-export function toNewCoupon(cc: CampaignCoupon, establishmentId: string, campaignId: string): NewCoupon {
+export function toNewCoupon(cc: CampaignCoupon, establishmentId: string, campaignId: string, startDate?: string, endDate?: string): NewCoupon {
     let discountValue = 0;
     if (cc.promotionType === "PERCENTAGE") {
         discountValue = cc.originalPrice > 0 ? Math.round((cc.originalPrice - cc.finalPrice) / cc.originalPrice * 100) : 0;
@@ -88,6 +88,11 @@ export function toNewCoupon(cc: CampaignCoupon, establishmentId: string, campaig
         stock: cc.stock,
         promotionType: cc.promotionType,
         discountValue,
+        originalProductPrice: cc.originalPrice,
+        restrictions: cc.restrictions?.join(", "),
+        terms: cc.terms,
+        startDate: startDate ? startDate.slice(0, 10) : undefined,
+        endDate: endDate ? endDate.slice(0, 10) : undefined,
     };
 }
 

@@ -14,6 +14,9 @@ export interface NewCoupon {
     minPurchaseAmount?: number | null;
     startDate?: string;   // yyyy-MM-dd, obligatorio si no hay campana
     endDate?: string;
+    restrictions?: string;
+    terms?: string;
+    originalProductPrice?: number;
 }
 
 /* datos para editar un cupon -> sin stock; las fechas son opcionales */

@@ -26,6 +26,21 @@ import { BrandMark } from "@/shared/ui/components/BrandMark.tsx";
 import { firebaseRefreshToken } from "@/features/auth/infrastructure/firebaseAuth.ts";
 import { setToken } from "@/shared/api/tokenStore.ts";
 import { useAuth } from "@/features/auth/presentation/hooks/useAuth.ts";
+import { ApiError } from "@/shared/api/apiClient.ts";
+
+function getApiErrorMessage(err: unknown): string {
+    if (err instanceof ApiError) {
+        const body = err.body as any;
+        if (body && typeof body === "object") {
+            if (typeof body.message === "string") return body.message;
+            if (Array.isArray(body.errors) && body.errors.length > 0) {
+                return body.errors.map((e: any) => typeof e === "string" ? e : e.message || JSON.stringify(e)).join(", ");
+            }
+        }
+        return `Error del servidor (${err.status}): ${err.message}`;
+    }
+    return err instanceof Error ? err.message : "Error desconocido al procesar la solicitud.";
+}
 
 interface BusinessLayoutProps {
     onSwitchRole: () => void;
@@ -45,7 +60,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     /* navegar desde el sidebar tambien cierra el drawer en mobile */
     const selectView = (v: string) => { setView(v); setSidebarOpen(false); };
     const [limitReached, setLimitReached] = useState(false);
-    const [campaignError, setCampaignError] = useState(false);
+    const [campaignErrorMsg, setCampaignErrorMsg] = useState<string | null>(null);
     const [confirmSignOut, setConfirmSignOut] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
     const { campaigns, addCampaign, updateCampaign, removeCampaign, reload: reloadCampaigns } = useCampaigns();
@@ -98,9 +113,13 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
     const handleDone = async (campaign: Campaign) => {
         const establishmentId = establishments[0]?.id;
         if (!establishmentId) { setView("establishments"); return; }
-        const ok = await addCampaign({ ...campaign, establishmentId });
-        if (ok) setView("campaigns");
-        else setCampaignError(true);
+        try {
+            const ok = await addCampaign({ ...campaign, establishmentId });
+            if (ok) setView("campaigns");
+            else setCampaignErrorMsg("No se pudo crear la campaña por un motivo indeterminado.");
+        } catch (err) {
+            setCampaignErrorMsg(getApiErrorMessage(err));
+        }
     };
 
     /* desactivar -> marca la campana como expirada, no se puede reactivar */
@@ -232,20 +251,20 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
             )}
 
             {/* error al crear campana (rechazo del backend) */}
-            {campaignError && (
-                <Modal onClose={() => setCampaignError(false)} ariaLabel="Error al crear campaña" className="est-modal">
+            {campaignErrorMsg && (
+                <Modal onClose={() => setCampaignErrorMsg(null)} ariaLabel="Error al crear campaña" className="est-modal">
                     <div className="est-modal-body">
                         <div className="est-modal-icon"><Icon name="close" size={20}/></div>
                         <h3 className="est-modal-title">No se pudo crear la campaña</h3>
                         <p className="est-modal-text">
-                            No fue posible crear la campaña. Verifica que no hayas alcanzado el límite de tu plan o intenta de nuevo.
+                            {campaignErrorMsg}
                         </p>
                         <div className="est-modal-actions">
-                            <button type="button" className="btn est-modal-btn" onClick={() => setCampaignError(false)}>
+                            <button type="button" className="btn est-modal-btn" onClick={() => setCampaignErrorMsg(null)}>
                                 Entendido
                             </button>
                             <button type="button" className="btn btn-brand est-modal-btn"
-                                    onClick={() => { setCampaignError(false); setView("subscription"); }}>
+                                    onClick={() => { setCampaignErrorMsg(null); setView("subscription"); }}>
                                 <Icon name="arrowRight" size={14}/> Ver planes
                             </button>
                         </div>
