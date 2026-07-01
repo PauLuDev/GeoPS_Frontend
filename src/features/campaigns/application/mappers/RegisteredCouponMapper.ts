@@ -8,16 +8,26 @@ import { discountLabel } from "@/features/coupons/application/mappers/DiscoverCo
  el expiresIn se completa al asociarlo a una campana -> hereda su vigencia
 */
 export function toCampaignCoupon(c: CouponResource): CampaignCoupon {
+    const originalPrice = c.originalProductPrice ?? 0;
+    let finalPrice = 0;
+    if (c.promotionType === "PERCENTAGE") {
+        finalPrice = originalPrice * (1 - (c.discountValue ?? 0) / 100);
+    } else if (c.promotionType === "FIXED_AMOUNT") {
+        finalPrice = originalPrice - (c.discountValue ?? 0);
+    }
+    finalPrice = Math.max(0, Math.round(finalPrice * 100) / 100);
+
     return {
         id: c.id,
         title: c.title,
         promotionType: c.promotionType,
         discount: discountLabel(c),
-        originalPrice: 0,
-        finalPrice: 0,
+        originalPrice,
+        finalPrice,
         stock: c.originalStock,
         expiresIn: "",
-        restrictions: [],
+        restrictions: c.restrictions ? c.restrictions.split(", ") : [],
+        terms: c.terms,
         description: c.description ?? "",
         imageUrl: c.imageUrl,
         views: 0,

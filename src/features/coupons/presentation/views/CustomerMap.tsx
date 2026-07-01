@@ -64,7 +64,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     const me = getCurrentUser();
     /* perfil compartido (nombre/foto) para el topbar y la vista de perfil */
     const { profile, setProfile } = useProfile();
-    const { reservedIds, statusByCoupon, reserve, codeFor, reservations } = useReservations(me?.id ?? "");
+    const { reservedIds, statusByCoupon, reserve, codeFor, reservations, hasBeenReservedBefore } = useReservations(me?.id ?? "");
     /* radio de la pestaña "Cupones": por defecto Lima (todos), filtra por distancia */
     const [savedRadius, setSavedRadius] = useState(Infinity);
 
@@ -600,6 +600,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                 <CouponDetailView
                                     c={detailCoupon}
                                     isReserved={reservedIds.has(detailCoupon.id)}
+                                    hasBeenReservedBefore={hasBeenReservedBefore(detailCoupon.id)}
                                     onReserve={() => handleReserve(detailCoupon.id)}
                                     redemptionCode={codeFor(detailCoupon.id)}
                                     onBack={() => {

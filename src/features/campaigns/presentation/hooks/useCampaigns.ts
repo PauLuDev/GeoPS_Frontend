@@ -33,7 +33,7 @@ export function useCampaigns(repository?: ICampaignRepository) {
             return true;
         } catch (e) {
             setError(e instanceof Error ? e.message : "no se pudo crear la campaña");
-            return false;
+            throw e;
         }
     };
 

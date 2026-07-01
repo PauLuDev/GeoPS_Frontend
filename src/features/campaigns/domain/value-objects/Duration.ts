@@ -8,11 +8,11 @@
 export function fmtDuration(ms: number): string {
     if (ms <= 0) return "—";
     const totalMin = Math.round(ms / 60_000);
-    const days  = Math.floor(totalMin / 1440);
+    const days = Math.floor(totalMin / 1440);
     const hours = Math.floor((totalMin % 1440) / 60);
-    const mins  = totalMin % 60;
-    if (days > 0)  return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
-    if (hours > 0) return mins  > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    const mins = totalMin % 60;
+    if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+    if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
     return `${mins}m`;
 }
 
@@ -25,7 +25,7 @@ export function daysDiff(to: string, from?: string): number {
 
 /* etiqueta de vigencia que vera el cliente en el cupon */
 export function durationLabel(startISO: string, endISO: string): string {
-    if (!endISO) return "según campaña";
+    if (!endISO) return "";
     const start = startISO ? new Date(startISO).getTime() : Date.now();
     return fmtDuration(new Date(endISO).getTime() - start);
 }

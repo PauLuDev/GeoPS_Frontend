@@ -21,7 +21,7 @@ export class HttpAuthRepository implements IAuthRepository {
         TokenStorage.setToken(session.idToken);
 
         /* 2) registrar el usuario */
-        const resource = await authApi.signUp({
+        await authApi.signUp({
             username: data.username,
             firebaseUid: session.uid,
             roles: data.roles,
@@ -29,15 +29,9 @@ export class HttpAuthRepository implements IAuthRepository {
             lastname: data.lastname,
         });
 
-        /* 3) refrescar el token: ahora el IAM ya seteo los custom claims
-           (userId + roles), pero el token actual es anterior y no los trae.
-           sin esto, crear establecimiento/campana/cupon falla hasta re-login */
-        const refreshed = await firebaseRefreshToken();
-        if (refreshed) TokenStorage.setToken(refreshed);
-
-        const user = toUser(resource);
-        TokenStorage.setUser(JSON.stringify(user));
-        return user;
+        /* 3) Hacer auto-login: iniciamos sesión con las credenciales registradas
+           para obtener un token fresco con todos los custom claims (userId y roles) */
+        return this.signIn({ email: data.email, password: data.password, roles: data.roles });
     }
 
     async signIn(data: SignInData): Promise<User> {

@@ -21,4 +21,7 @@ export interface Coupon {
     minPurchaseAmount?: number | null;
     createdAt?: string;
     updatedAt?: string;
+    restrictions?: string;
+    terms?: string;
+    originalProductPrice?: number;
 }

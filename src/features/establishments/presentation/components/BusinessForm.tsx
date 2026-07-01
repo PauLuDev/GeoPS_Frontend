@@ -15,14 +15,7 @@ const blankHours = (): BusinessHours[] =>
 const sanitizeRuc = (val: string) => val.replace(/\D/g, "").slice(0, 9);
 
 
-const LOCAL_NUMBER_DIGITS = 7;
-
-const sanitizePhone = (val: string, areaCode: string) => {
-    const maxDigits = areaCode.length + LOCAL_NUMBER_DIGITS;
-    const digits = val.replace(/\D/g, "").slice(0, maxDigits);
-    if (digits.length <= areaCode.length) return digits;
-    return `${digits.slice(0, areaCode.length)} ${digits.slice(areaCode.length)}`;
-};
+const sanitizePhone = (val: string) => val.replace(/\D/g, "").slice(0, 9);
 
 interface BusinessFormProps {
     initial?: Business | null;
@@ -76,6 +69,7 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
         description: !description.trim(),
         address:     !addrValue.address.trim(),
         district:    !addrValue.district.trim(),
+        phone:       phone.trim() ? phone.replace(/\D/g, "").length !== 9 : false,
     };
     const isValid = !Object.values(errors).some(Boolean);
     const err = (f: keyof typeof errors) => submitted && errors[f];
@@ -211,10 +205,11 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                 </div>
                                 <div className="field">
                                     <label htmlFor={`${fid}-phone`}>Teléfono</label>
-                                    <input id={`${fid}-phone`} className="input" placeholder={phonePlaceholder}
-                                           inputMode="tel" maxLength={20}
-                                           value={phone} onChange={e => setPhone(sanitizePhone(e.target.value, areaCode))}/>
-                                    <span className="bf-hint">Código de la región según la ubicación marcada en el mapa</span>
+                                    <input id={`${fid}-phone`} className={inputCls("phone")} placeholder="999888777"
+                                           inputMode="tel" maxLength={9}
+                                           value={phone} onChange={e => setPhone(sanitizePhone(e.target.value))}/>
+                                    <span className="bf-hint">Debe ingresar exactamente 9 dígitos</span>
+                                    {err("phone") && <span className="field-error">El teléfono debe tener exactamente 9 dígitos</span>}
                                 </div>
                             </div>
                             <div className="bf-row2">

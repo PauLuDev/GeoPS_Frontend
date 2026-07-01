@@ -103,6 +103,7 @@ export const en = {
         reserve: "Reserve · S/{{price}}",
         soldOut: "Sold out",
         expired: "Offer expired",
+        alreadyReserved: "You already claimed this offer",
         done: "Done · go to the spot",
     },
     map: {

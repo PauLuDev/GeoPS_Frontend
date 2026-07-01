@@ -15,6 +15,7 @@ import { durationLabel, isRangeValid } from "@/features/campaigns/domain/value-o
 import { validateCampaign, isCampaignValid, buildCampaign } from "@/features/campaigns/application/use-cases/CreateCampaign.ts";
 import { validateCoupon, isCouponValid, buildCoupon } from "@/features/campaigns/application/use-cases/AddCoupon.ts";
 import { CouponDraftInput } from "@/features/campaigns/application/dtos/CampaignDraft.ts";
+import { uploadImage } from "@/shared/cloudinary.ts";
 
 /* coupon draft (estado local del formulario) */
 interface CouponDraft {
@@ -74,6 +75,8 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
     const [addingCoupon, setAddingCoupon] = useState(false);
     const [couponDraft,  setCouponDraft]  = useState<CouponDraft>(EMPTY_DRAFT);
     const [couponSubmit, setCouponSubmit] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     /* campaign submit */
     const [submitted, setSubmitted] = useState(false);
@@ -99,12 +102,20 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
     const expiresLabel = durationLabel(startDate, endDate);
 
     /* subida de imagen */
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => setCouponDraft(d => ({ ...d, imageUrl: String(reader.result) }));
-        reader.readAsDataURL(file);
+        setUploading(true);
+        setUploadError(null);
+        try {
+            const url = await uploadImage(file);
+            setCouponDraft(d => ({ ...d, imageUrl: url }));
+        } catch (err) {
+            setUploadError(err instanceof Error ? err.message : "No se pudo subir la imagen");
+        } finally {
+            setUploading(false);
+            if (fileRef.current) fileRef.current.value = "";
+        }
     };
 
     /* restricciones */
@@ -361,22 +372,24 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                 {/* a) imagen */}
                                 <div className="field nc-mb12">
                                     <span className="nc-group-label">Imagen del cupón</span>
-                                    <input ref={fileRef} type="file" accept="image/*" aria-label="Imagen del cupón" className="nc-hidden-input" onChange={handleImageUpload}/>
+                                    <input ref={fileRef} type="file" accept="image/*" aria-label="Imagen del cupón" className="nc-hidden-input" onChange={handleImageUpload} disabled={uploading}/>
                                     {couponDraft.imageUrl ? (
                                         <div className="nc-img-preview">
                                             <img src={couponDraft.imageUrl} alt="Cupón"/>
-                                            <button type="button" className="nc-img-remove"
+                                            <button type="button" className="nc-img-remove" disabled={uploading}
                                                     onClick={() => { setCouponDraft(d => ({ ...d, imageUrl: "" })); if (fileRef.current) fileRef.current.value = ""; }}>
                                                 <Icon name="close" size={12}/> Quitar
                                             </button>
                                         </div>
                                     ) : (
-                                        <button type="button" className="nc-img-upload" onClick={() => fileRef.current?.click()}>
+                                        <button type="button" className="nc-img-upload" onClick={() => fileRef.current?.click()} disabled={uploading}>
                                             <Icon name="image" size={22}/>
-                                            Subir imagen desde tu dispositivo
+                                            {uploading ? "Subiendo..." : "Subir imagen desde tu dispositivo"}
                                             <span className="nc-img-hint">JPG, PNG · máx. recomendado 1 MB</span>
                                         </button>
                                     )}
+                                    {uploading && <span className="nc-img-hint"><Icon name="image" size={11}/> Subiendo imagen…</span>}
+                                    {uploadError && <span className="field-error"><Icon name="close" size={11}/> {uploadError}</span>}
                                 </div>
 
                                 {/* b) nombre */}
@@ -518,12 +531,12 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                 </div>
 
                                 <div className="nc-form-actions">
-                                    <button type="button" className="btn"
+                                    <button type="button" className="btn" disabled={uploading}
                                             onClick={() => { setAddingCoupon(false); setCouponDraft(EMPTY_DRAFT); setCouponSubmit(false); }}>
                                         Cancelar
                                     </button>
-                                    <button type="button" className="btn btn-brand nc-grow" onClick={addCoupon}>
-                                        Agregar cupón
+                                    <button type="button" className="btn btn-brand nc-grow" onClick={addCoupon} disabled={uploading}>
+                                        {uploading ? "Subiendo..." : "Agregar cupón"}
                                     </button>
                                 </div>
                             </div>

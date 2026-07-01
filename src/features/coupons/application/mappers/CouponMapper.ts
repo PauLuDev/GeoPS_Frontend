@@ -21,6 +21,9 @@ export function toCoupon(r: CouponResource): Coupon {
         minPurchaseAmount: r.minPurchaseAmount,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
+        restrictions: r.restrictions,
+        terms: r.terms,
+        originalProductPrice: r.originalProductPrice,
     };
 }
 
@@ -47,6 +50,9 @@ export function toUpdateCouponResource(data: EditCoupon): UpdateCouponResource {
         minPurchaseAmount: data.minPurchaseAmount ?? null,
         startDate: data.startDate,
         endDate: data.endDate,
+        restrictions: data.restrictions,
+        terms: data.terms,
+        originalProductPrice: data.originalProductPrice,
     };
 }
 
@@ -64,5 +70,8 @@ export function toCreateCouponResource(data: NewCoupon): CreateCouponResource {
         minPurchaseAmount: data.minPurchaseAmount ?? null,
         startDate: data.startDate,
         endDate: data.endDate,
+        restrictions: data.restrictions,
+        terms: data.terms,
+        originalProductPrice: data.originalProductPrice,
     };
 }
