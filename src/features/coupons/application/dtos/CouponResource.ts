@@ -31,6 +31,9 @@ export interface CouponResource {
     status?: string;
     createdAt?: string;
     updatedAt?: string;
+    restrictions?: string;
+    terms?: string;
+    originalProductPrice?: number;
 }
 
 /* body de edicion -> sin stock; las fechas son opcionales */
@@ -43,6 +46,9 @@ export interface UpdateCouponResource {
     minPurchaseAmount?: number | null;
     startDate?: string;   // yyyy-MM-dd
     endDate?: string;     // yyyy-MM-dd
+    restrictions?: string;
+    terms?: string;
+    originalProductPrice?: number;
 }
 
 /* body de creacion -> campaignId null = cupon suelto (ahi startDate y endDate son obligatorios) */

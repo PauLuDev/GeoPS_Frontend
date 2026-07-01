@@ -29,6 +29,9 @@ export interface EditCoupon {
     minPurchaseAmount?: number | null;
     startDate?: string;
     endDate?: string;
+    restrictions?: string;
+    terms?: string;
+    originalProductPrice?: number;
 }
 
 /**

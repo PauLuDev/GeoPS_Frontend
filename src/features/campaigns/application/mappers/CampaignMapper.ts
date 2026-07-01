@@ -98,6 +98,15 @@ export function toNewCoupon(cc: CampaignCoupon, establishmentId: string, campaig
 
 /* cupon del back -> cupon embebido en la campana (vista del dueno) */
 export function toCampaignCoupon(r: CouponResource): CampaignCoupon {
+    const originalPrice = r.originalProductPrice ?? 0;
+    let finalPrice = 0;
+    if (r.promotionType === "PERCENTAGE") {
+        finalPrice = originalPrice * (1 - (r.discountValue ?? 0) / 100);
+    } else if (r.promotionType === "FIXED_AMOUNT") {
+        finalPrice = originalPrice - (r.discountValue ?? 0);
+    }
+    finalPrice = Math.max(0, Math.round(finalPrice * 100) / 100);
+
     return {
         id: r.id,
         uuid: r.id,
@@ -107,12 +116,13 @@ export function toCampaignCoupon(r: CouponResource): CampaignCoupon {
         stock: r.currentStock,
         // etiqueta del descuento segun el tipo (el back no manda precios de display todavia)
         discount: discountLabel(r),
-        originalPrice: 0,
-        finalPrice: 0,
+        originalPrice,
+        finalPrice,
         expiresIn: "",
         description: r.description,
         imageUrl: r.imageUrl,
-        restrictions: [],
+        restrictions: r.restrictions ? r.restrictions.split(", ") : [],
+        terms: r.terms,
         // valores reales para editar el cupon
         discountValue: r.discountValue,
         minPurchaseAmount: r.minPurchaseAmount,
