@@ -5,6 +5,7 @@ import { Business, BusinessHours } from "@/shared/types.ts";
 import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
 import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 import { uploadImage } from "@/shared/cloudinary.ts";
+import { AddressPicker, type AddressValue } from "../components/AddressPicker.tsx";
 
 interface RegisterBusinessProps {
     onDone: (business: Business) => void;
@@ -38,8 +39,12 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
     const [categoryId,  setCategoryId]  = useState<number | null>(null);
     const [categories,  setCategories]  = useState<CategoryResource[]>([]);
     const [ruc,         setRuc]         = useState("");
-    const [address,     setAddress]     = useState("");
-    const [district,    setDistrict]    = useState("");
+    const [addrValue,   setAddrValue]   = useState<AddressValue>({
+        address: "",
+        district: "",
+        lat: -12.05,
+        lng: -77.05,
+    });
     const [phone,       setPhone]       = useState("");
     const [email,       setEmail]       = useState("");
     const [website,     setWebsite]     = useState("");
@@ -63,7 +68,7 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
 
     const stepErrors: Record<number, boolean> = {
         0: !name.trim() || !description.trim() || (categories.length > 0 && categoryId == null),
-        1: !address.trim() || !district.trim() || (phone.trim() ? phone.replace(/\D/g, "").length !== 9 : false),
+        1: !addrValue.address.trim() || !addrValue.district.trim() || (phone.trim() ? phone.replace(/\D/g, "").length !== 9 : false),
         2: false,
         3: false,
     };
@@ -118,8 +123,8 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
             id: `b-${Date.now()}`,
             ruc: ruc.trim() || "No disponible",
             name: name.trim(),
-            address: address.trim(),
-            district: district.trim(),
+            address: addrValue.address.trim(),
+            district: addrValue.district.trim(),
             phone: phone.trim() || undefined,
             email: email.trim() || undefined,
             website: website.trim() || undefined,
@@ -132,8 +137,8 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
             imageUrl: photos[0] || logo || undefined,
             logo: logo || undefined,
             photos,
-            lat: -12.1,
-            lng: -77.03,
+            lat: addrValue.lat,
+            lng: addrValue.lng,
         });
     };
 
@@ -193,17 +198,15 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
                     {/* paso 1 -> ubicacion y contacto */}
                     {step === 1 && (
                         <div className="rw-fields">
-                            <div className="bf-row2">
-                                <div className="field">
-                                    <label>Dirección <Req/></label>
-                                    <input className={inputCls(!address.trim())} placeholder="Av. Pardo 1145"
-                                           value={address} onChange={e => setAddress(e.target.value)}/>
-                                </div>
-                                <div className="field">
-                                    <label>Distrito <Req/></label>
-                                    <input className={inputCls(!district.trim())} placeholder="Miraflores"
-                                           value={district} onChange={e => setDistrict(e.target.value)}/>
-                                </div>
+                            <div className="field">
+                                <label>Dirección y ubicación <Req/></label>
+                                <AddressPicker
+                                    value={addrValue}
+                                    onChange={setAddrValue}
+                                    error={submitted && (!addrValue.address.trim() || !addrValue.district.trim())}
+                                />
+                                {submitted && !addrValue.address.trim() && <span className="field-error">Ingresa una dirección</span>}
+                                {submitted && addrValue.address.trim() && !addrValue.district.trim() && <span className="field-error">No se detectó el distrito</span>}
                             </div>
                             <div className="bf-row2">
                                 <div className="field">
@@ -332,7 +335,7 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
                                 <div className="rw-right-name">{name || "Tu negocio"}</div>
                                 <div className="rw-right-meta">
                                     {cat && <><Icon name="store" size={11}/> {cat.name}</>}
-                                    {district && <> · {district}</>}
+                                    {addrValue.district && <> · {addrValue.district}</>}
                                 </div>
                             </div>
                         </div>
