@@ -4,6 +4,7 @@ import { BrandMark } from "@/shared/ui/components/BrandMark.tsx";
 import { Business, BusinessHours } from "@/shared/types.ts";
 import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
 import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
+import { uploadImage } from "@/shared/cloudinary.ts";
 
 interface RegisterBusinessProps {
     onDone: (business: Business) => void;
@@ -14,8 +15,7 @@ const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "
 const blankHours = (): BusinessHours[] =>
     DAYS.map(day => ({ day, open: "09:00", close: "20:00", closed: false }));
 
-const readFile = (file: File): Promise<string> =>
-    new Promise(res => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(file); });
+
 
 const STEPS = [
     { label: "Información",        title: "Cuéntanos de tu negocio" },
@@ -58,6 +58,9 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
         return () => clearInterval(id);
     }, [photos.length]);
 
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
     const stepErrors: Record<number, boolean> = {
         0: !name.trim() || !description.trim() || (categories.length > 0 && categoryId == null),
         1: !address.trim() || !district.trim(),
@@ -68,13 +71,32 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
 
     const handleLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0];
-        if (f) setLogo(await readFile(f));
+        if (!f) return;
+        setUploading(true);
+        setUploadError(null);
+        try {
+            setLogo(await uploadImage(f));
+        } catch (err) {
+            setUploadError(err instanceof Error ? err.message : "No se pudo subir el logo");
+        } finally {
+            setUploading(false);
+            if (logoRef.current) logoRef.current.value = "";
+        }
     };
     const handlePhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
-        const urls = await Promise.all(files.map(readFile));
-        setPhotos(prev => [...prev, ...urls]);
-        if (photosRef.current) photosRef.current.value = "";
+        if (!files.length) return;
+        setUploading(true);
+        setUploadError(null);
+        try {
+            const urls = await Promise.all(files.map(uploadImage));
+            setPhotos(prev => [...prev, ...urls]);
+        } catch (err) {
+            setUploadError(err instanceof Error ? err.message : "No se pudieron subir las fotos");
+        } finally {
+            setUploading(false);
+            if (photosRef.current) photosRef.current.value = "";
+        }
     };
     const removePhoto = (i: number) => setPhotos(prev => prev.filter((_, j) => j !== i));
     const setHour = (i: number, field: "open" | "close", val: string) =>
@@ -83,12 +105,13 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
         setHours(prev => prev.map((h, j) => j === i ? { ...h, closed: !h.closed } : h));
 
     const next = () => {
+        if (uploading) return;
         setSubmitted(true);
         if (stepErrors[step]) return;
         if (step < STEPS.length - 1) { setStep(step + 1); setSubmitted(false); }
         else submit();
     };
-    const prev = () => { if (step > 0) { setStep(step - 1); setSubmitted(false); } else onBack(); };
+    const prev = () => { if (uploading) return; if (step > 0) { setStep(step - 1); setSubmitted(false); } else onBack(); };
 
     const submit = () => {
         onDone({
@@ -210,13 +233,13 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
                         <div className="rw-fields">
                             <input ref={logoRef} type="file" accept="image/*" className="bf-hidden-input" onChange={handleLogo} aria-label="Subir logo"/>
                             <div className="bf-logo-row">
-                                <button type="button" onClick={() => logoRef.current?.click()} className="bf-logo-btn" aria-label="Subir logo">
+                                <button type="button" onClick={() => logoRef.current?.click()} className="bf-logo-btn" aria-label="Subir logo" disabled={uploading}>
                                     {logo ? <img src={logo} alt="Logo"/> : <div className="bf-logo-placeholder"><Icon name="image" size={20}/><div>Logo</div></div>}
                                 </button>
                                 <div className="bf-logo-info">
                                     <div className="bf-logo-name">Logo del negocio</div>
                                     <div className="bf-logo-hint">Cuadrado · JPG o PNG</div>
-                                    <button type="button" className="btn btn-sm" onClick={() => logoRef.current?.click()}>
+                                    <button type="button" className="btn btn-sm" onClick={() => logoRef.current?.click()} disabled={uploading}>
                                         <Icon name="image" size={12}/> {logo ? "Cambiar" : "Subir logo"}
                                     </button>
                                 </div>
@@ -229,17 +252,19 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
                                     {photos.map((p, i) => (
                                         <div key={p} className="bf-photo">
                                             <img src={p} alt={`Foto ${i + 1}`}/>
-                                            <button type="button" onClick={() => removePhoto(i)} className="bf-photo-remove" aria-label={`Quitar foto ${i + 1}`}>
+                                            <button type="button" onClick={() => removePhoto(i)} className="bf-photo-remove" aria-label={`Quitar foto ${i + 1}`} disabled={uploading}>
                                                 <Icon name="close" size={11}/>
                                             </button>
                                             {i === 0 && <span className="bf-photo-cover">Portada</span>}
                                         </div>
                                     ))}
-                                    <button type="button" onClick={() => photosRef.current?.click()} className="bf-photo-add">
+                                    <button type="button" onClick={() => photosRef.current?.click()} className="bf-photo-add" disabled={uploading}>
                                         <Icon name="plus" size={16}/><span>Agregar</span>
                                     </button>
                                 </div>
                                 <span className="bf-hint">La primera foto será la portada en el mapa.</span>
+                                {uploading && <span className="bf-hint"><Icon name="image" size={11}/> Subiendo imagen…</span>}
+                                {uploadError && <div className="rw-error"><Icon name="close" size={14}/> {uploadError}</div>}
                             </div>
                         </div>
                     )}
@@ -276,11 +301,11 @@ export function RegisterBusiness({ onDone, onBack }: RegisterBusinessProps) {
                         ))}
                     </div>
                     <div className="rw-nav">
-                        <button type="button" className="btn" onClick={prev}>
+                        <button type="button" className="btn" onClick={prev} disabled={uploading}>
                             {step === 0 ? "Cancelar" : "Anterior"}
                         </button>
-                        <button type="button" className="btn btn-brand" onClick={next}>
-                            {step === STEPS.length - 1 ? "Registrar negocio" : "Siguiente"} <Icon name="arrowRight" size={15}/>
+                        <button type="button" className="btn btn-brand" onClick={next} disabled={uploading}>
+                            {uploading ? "Subiendo..." : (step === STEPS.length - 1 ? "Registrar negocio" : "Siguiente")} <Icon name="arrowRight" size={15}/>
                         </button>
                     </div>
                 </div>

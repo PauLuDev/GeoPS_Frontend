@@ -34,12 +34,18 @@ function AuthView() {
     );
 }
 
-/* registro de negocio */
 function RegisterBusinessView() {
     const navigate = useNavigate();
     const { save } = useEstablishments();
     /* guarda el establecimiento nuevo y luego pasa a elegir plan */
-    const handleDone = (b: Business) => { void save(b).finally(() => navigate('/business/plan')); };
+    const handleDone = (b: Business) => {
+        save(b)
+            .then(() => navigate('/business/plan'))
+            .catch(err => {
+                console.error("Error al guardar el establecimiento:", err);
+                alert("Hubo un error al guardar el negocio. Por favor, inténtelo de nuevo.");
+            });
+    };
     return (
         <RegisterBusiness
             onDone={handleDone}
