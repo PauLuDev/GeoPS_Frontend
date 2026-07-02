@@ -1,8 +1,10 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import {
     getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-    signOut as fbSignOut, getIdTokenResult, type Auth, type User as FbUser,
+    signOut as fbSignOut, getIdTokenResult, setPersistence, browserLocalPersistence,
+    onAuthStateChanged, type Auth, type User as FbUser,
 } from "firebase/auth";
+import { TokenStorage } from "./TokenStorage.ts";
 
 /*
  login y registro con firebase, devuelve el id token
@@ -24,6 +26,22 @@ export function isFirebaseConfigured(): boolean {
 
 let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
+let _persistencePromise: Promise<void> | null = null;
+
+async function syncStoredSession(user: FbUser | null): Promise<void> {
+    if (!user) {
+        TokenStorage.clear();
+        return;
+    }
+    const session = await toSession(user, true);
+    TokenStorage.setToken(session.idToken);
+    TokenStorage.setUser(JSON.stringify({
+        id: session.userId,
+        username: (session.email ?? user.email ?? "user").split("@")[0],
+        email: session.email ?? undefined,
+        roles: session.roles,
+    }));
+}
 
 /* crea la app solo la primera vez que se usa */
 function auth(): Auth {
@@ -33,6 +51,13 @@ function auth(): Auth {
         }
         _app = initializeApp(firebaseConfig);
         _auth = getAuth(_app);
+        _persistencePromise = setPersistence(_auth, browserLocalPersistence)
+            .catch(() => undefined)
+            .then(() => {
+                onAuthStateChanged(_auth!, (user) => {
+                    void syncStoredSession(user);
+                });
+            });
     }
     return _auth;
 }
@@ -63,12 +88,16 @@ async function toSession(user: FbUser, forceRefresh = false): Promise<FirebaseSe
 }
 
 export async function firebaseSignUp(email: string, password: string): Promise<FirebaseSession> {
-    const cred = await createUserWithEmailAndPassword(auth(), email, password);
+    const a = auth();
+    await _persistencePromise;
+    const cred = await createUserWithEmailAndPassword(a, email, password);
     return toSession(cred.user);
 }
 
 export async function firebaseSignIn(email: string, password: string): Promise<FirebaseSession> {
-    const cred = await signInWithEmailAndPassword(auth(), email, password);
+    const a = auth();
+    await _persistencePromise;
+    const cred = await signInWithEmailAndPassword(a, email, password);
     return toSession(cred.user);
 }
 
@@ -89,6 +118,7 @@ export async function firebaseRefreshToken(): Promise<string | null> {
        pagina, donde no hubo login) y espera a que restaure la sesion persistida,
        si no currentUser seria null y el refresh no traeria los claims nuevos */
     const a = auth();
+    await _persistencePromise;
     await a.authStateReady();
     const user = a.currentUser;
     if (!user) return null;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { CustomerLayout } from "@/app/layouts/CustomerLayout.tsx";
 import { BusinessLayout } from "@/app/layouts/BusinessLayout.tsx";
@@ -8,6 +8,8 @@ import { RegisterBusiness } from "@/features/establishments/presentation/views/R
 import { ChoosePlanView } from "@/features/billing/presentation/views/ChoosePlanView.tsx";
 import { useEstablishments } from "@/features/establishments/presentation/hooks/useEstablishments.ts";
 import { Business } from "@/shared/types.ts";
+import { getToken } from "@/shared/api/tokenStore.ts";
+import { getCurrentUser } from "@/features/auth/application/session.ts";
 
 interface AppRouterProps {
     theme?: string;
@@ -18,6 +20,14 @@ interface AppRouterProps {
 function AuthView() {
     const navigate = useNavigate();
     const [mode, setMode] = useState("signin");
+
+    useEffect(() => {
+        if (!getToken()) return;
+        const user = getCurrentUser();
+        const roles = user?.roles ?? [];
+        const asOwner = roles.includes("ROLE_OWNER") || roles.includes("ROLE_BUSINESS");
+        navigate(asOwner ? "/business" : "/customer", { replace: true });
+    }, [navigate]);
 
     const handleSuccess = (asOwner: boolean) => {
         if (!asOwner) {
