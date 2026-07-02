@@ -3,6 +3,7 @@ import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/features/campaigns/domain/value-objects/CampaignStatus.ts";
 import { ratePct, redemptionRate, bestCouponId } from "@/features/campaigns/domain/value-objects/Performance.ts";
 import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
+import { useCampaignAnalytics } from "@/features/analytics/presentation/hooks/useCampaignAnalytics.ts";
 
 interface CampaignDetailProps {
     campaign: Campaign;
@@ -10,6 +11,13 @@ interface CampaignDetailProps {
 }
 
 export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
+    const { data: analytics, loading: analyticsLoading } = useCampaignAnalytics(c.uuid);
+    const a = analytics?.analytics;
+
+    const views      = a?.viewsCount      ?? c.views;
+    const reserved   = a?.reservationsCount ?? c.reserved;
+    const redeemed   = a?.redemptionsCount ?? c.redeemed;
+
     const bestId = bestCouponId(c.coupons);
     const best = c.coupons.find(cp => cp.id === bestId) ?? null;
 
@@ -18,11 +26,12 @@ export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
         (a, b) => redemptionRate(b.views, b.redeemed) - redemptionRate(a.views, a.redeemed)
     );
 
+    const fmt = (n: number) => analyticsLoading ? "—" : n.toLocaleString("es-PE");
     const kpis = [
-        { label: "Cupones vistos", value: c.views.toLocaleString("es-PE") },
-        { label: "Reservados",     value: c.reserved.toLocaleString("es-PE") },
-        { label: "Redimidos",      value: c.redeemed.toLocaleString("es-PE") },
-        { label: "Tasa de canje",  value: ratePct(c.views, c.redeemed), highlight: true },
+        { label: "Cupones vistos", value: fmt(views) },
+        { label: "Reservados",     value: fmt(reserved) },
+        { label: "Redimidos",      value: fmt(redeemed) },
+        { label: "Tasa de canje",  value: analyticsLoading ? "—" : ratePct(views, redeemed), highlight: true },
     ];
 
     return (
