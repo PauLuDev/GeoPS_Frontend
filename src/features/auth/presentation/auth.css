@@ -2,7 +2,7 @@
 .geops-app .auth-col-pair {
   position: relative; z-index: 1; width: min(900px, 100%);
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 20px; align-items: start;
+  gap: 20px; align-items: stretch;   /* ambas cards con la misma altura */
 }
 @media (max-width: 680px) { .geops-app .auth-col-pair { grid-template-columns: 1fr; } }
 
@@ -21,6 +21,9 @@
   border-radius: var(--g-radius-xl); padding: 32px 28px;
   display: flex; flex-direction: column; gap: 22px;
   border: 1px solid color-mix(in oklab, var(--brand) 30%, transparent);
+  /* mantiene su altura natural: no se estira cuando el form de registro crece
+     (switch "soy negocio") -> solo cambia la card blanca */
+  align-self: start;
 }
 .geops-app .auth-tagline {
   position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
@@ -87,3 +90,20 @@
   font-size: 10px; color: var(--brand-ink); opacity: 0.45;
   font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase;
 }
+
+/* modo oscuro: la card promo se veia apagada -> fondo mas vivo y texto blanco nitido */
+.geops-app[data-theme="dark"] .auth-promo-panel {
+  background: linear-gradient(140deg, color-mix(in oklab, var(--brand) 62%, #000) 0%, color-mix(in oklab, var(--accent-2) 60%, #000) 100%);
+  border-color: color-mix(in oklab, var(--brand) 45%, transparent);
+}
+.geops-app[data-theme="dark"] .auth-promo-eyebrow,
+.geops-app[data-theme="dark"] .auth-promo-title,
+.geops-app[data-theme="dark"] .auth-promo-text,
+.geops-app[data-theme="dark"] .auth-feature,
+.geops-app[data-theme="dark"] .auth-promo-foot { color: #fff; }
+.geops-app[data-theme="dark"] .auth-promo-eyebrow { opacity: 0.85; }
+.geops-app[data-theme="dark"] .auth-promo-text    { opacity: 0.9; }
+.geops-app[data-theme="dark"] .auth-feature       { opacity: 0.95; }
+.geops-app[data-theme="dark"] .auth-promo-foot    { opacity: 0.6; }
+.geops-app[data-theme="dark"] .auth-promo-em { border-bottom-color: rgba(255,255,255,0.5); }
+.geops-app[data-theme="dark"] .auth-feature-icon { background: rgba(255,255,255,0.16); }
