@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Select } from "@/shared/ui/components/Select.tsx";
@@ -7,17 +8,13 @@ import { EditCampaign } from "@/features/campaigns/domain/repositories/ICampaign
 import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
 import { CampaignCouponsEditor } from "@/features/campaigns/presentation/components/CampaignCouponsEditor.tsx";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/features/campaigns/domain/value-objects/CampaignStatus.ts";
-import { bestCampaignId, bestCouponId, ratePct, redemptionRate } from "@/features/campaigns/domain/value-objects/Performance.ts";
+import { bestCouponId, ratePct, redemptionRate } from "@/features/campaigns/domain/value-objects/Performance.ts";
 import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
 import { filterCampaigns, countByStatus, StatusFilter } from "@/features/campaigns/application/use-cases/ListCampaigns.ts";
+import { listCampaignAnalytics } from "@/features/analytics/application/use-cases/ListCampaignAnalytics.ts";
+import { CampaignStats } from "@/features/analytics/domain/entities/CampaignAnalytics.ts";
 
-const FILTER_OPTIONS: { label: string; value: StatusFilter }[] = [
-    { label: "Todas",       value: "all"       },
-    { label: "En vivo",     value: "live"      },
-    { label: "Programadas", value: "scheduled" },
-    { label: "Borradores",  value: "draft"     },
-    { label: "Finalizadas", value: "ended"     },
-];
+const statusFilterOrder: StatusFilter[] = ["all", "live", "scheduled", "draft", "ended"];
 
 interface CampaignsListProps {
     campaigns: Campaign[];
@@ -39,6 +36,7 @@ export function CampaignsList({
     campaigns, onNew, onOpen, onDeactivate, onDelete, onEdit,
     establishments = [], unassignedCoupons = [], onAddCouponToCampaign, onRemoveCouponFromCampaign, onDeleteCoupon,
 }: CampaignsListProps) {
+    const { t } = useTranslation();
     const [filter, setFilter] = useState<StatusFilter>("all");
     const [search, setSearch] = useState("");
     const [selectedEstId, setSelectedEstId] = useState("all");
@@ -49,6 +47,41 @@ export function CampaignsList({
     const [editName, setEditName]   = useState("");
     const [editStart, setEditStart] = useState("");
     const [editEnd, setEditEnd]     = useState("");
+
+    /* métricas reales de analytics, superpuestas a las campañas del marketing-service */
+    const [metrics, setMetrics] = useState<Map<string, CampaignStats>>(new Map());
+    const [metricsLoading, setMetricsLoading] = useState(false);
+
+    useEffect(() => {
+        setMetricsLoading(true);
+        let alive = true;
+        const load = async () => {
+            try {
+                const lists = selectedEstId === "all"
+                    ? await Promise.all(establishments.map(e => listCampaignAnalytics(e.id).catch(() => [])))
+                    : [await listCampaignAnalytics(selectedEstId).catch(() => [])];
+                if (!alive) return;
+                const next = new Map<string, CampaignStats>();
+                lists.flat().forEach(c => { next.set(c.id, c.analytics); });
+                setMetrics(next);
+            } finally {
+                if (alive) setMetricsLoading(false);
+            }
+        };
+        void load();
+        return () => { alive = false; };
+    }, [selectedEstId, establishments]);
+
+    /* helpers para leer métricas reales o fallback a la campaña */
+    const campaignMetrics = (c: Campaign) => {
+        const m = c.uuid ? metrics.get(c.uuid) : undefined;
+        return {
+            views: m?.viewsCount ?? c.views,
+            reserved: m?.reservationsCount ?? c.reserved,
+            redeemed: m?.redemptionsCount ?? c.redeemed,
+        };
+    };
+    const fmtMetric = (n: number) => metricsLoading ? "—" : n.toLocaleString("es-PE");
 
     const openEdit = (c: Campaign) => {
         setToEdit(c);
@@ -81,7 +114,19 @@ export function CampaignsList({
         : campaigns.filter(c => c.establishmentId === selectedEstId);
 
     const visible = filterCampaigns(byEstablishment, filter, search);
-    const bestId = bestCampaignId(byEstablishment);   // mejor campana por tasa de canje
+
+    /* mejor campana por tasa de canje, usando métricas reales */
+    const bestId = useMemo(() => {
+        let best: number | null = null;
+        let bestRate = -1;
+        for (const c of byEstablishment) {
+            const { views, redeemed } = campaignMetrics(c);
+            if (views <= 0) continue;
+            const r = redemptionRate(views, redeemed);
+            if (r > bestRate) { bestRate = r; best = c.id; }
+        }
+        return best;
+    }, [byEstablishment, metrics]);
 
     const live      = countByStatus(byEstablishment, "live");
     const draft     = countByStatus(byEstablishment, "draft");
@@ -91,14 +136,14 @@ export function CampaignsList({
         <div className="md cl-page">
             <header className="md-head">
                 <div>
-                    <h1 className="page-title">Campañas</h1>
+                    <h1 className="page-title">{t("campaigns.title")}</h1>
                     <p className="page-subtitle">
-                        {live} activa{live !== 1 ? "s" : ""} · {draft} borrador{draft !== 1 ? "es" : ""} · {scheduled} programada{scheduled !== 1 ? "s" : ""}
+                        {t("campaigns.subtitle", { live, draft, scheduled })}
                     </p>
                 </div>
                 {campaigns.length > 0 && (
                     <button type="button" className="btn btn-brand" onClick={onNew}>
-                        <Icon name="plus" size={14}/> Nueva campaña
+                        <Icon name="plus" size={14}/> {t("campaigns.new")}
                     </button>
                 )}
             </header>
@@ -106,26 +151,26 @@ export function CampaignsList({
             <div className="card cl-card">
                 {establishments.length > 1 && (
                     <div className="cl-est-bar">
-                        <Select
-                            value={selectedEstId}
-                            options={[
-                                { value: "all", label: "Todos los establecimientos" },
-                                ...establishments.map(e => ({ value: e.id, label: e.name })),
-                            ]}
-                            onChange={setSelectedEstId}
-                        />
+                            <Select
+                                value={selectedEstId}
+                                options={[
+                                    { value: "all", label: t("campaigns.allEstablishments") },
+                                    ...establishments.map(e => ({ value: e.id, label: e.name })),
+                                ]}
+                                onChange={setSelectedEstId}
+                            />
                     </div>
                 )}
                 <div className="cl-toolbar">
                     <div className="cl-filters">
-                        {FILTER_OPTIONS.map(opt => (
-                            <button type="button" key={opt.value}
-                                    className={"sort-pill " + (filter === opt.value ? "active" : "")}
-                                    onClick={() => setFilter(opt.value)}>
-                                {opt.label}
-                                {opt.value !== "all" && (
+                        {statusFilterOrder.map(value => (
+                            <button type="button" key={value}
+                                    className={"sort-pill " + (filter === value ? "active" : "")}
+                                    onClick={() => setFilter(value)}>
+                                {t(`campaigns.filters.${value}`)}
+                                {value !== "all" && (
                                     <span className="pill-count">
-                                        {countByStatus(byEstablishment, opt.value)}
+                                        {countByStatus(byEstablishment, value)}
                                     </span>
                                 )}
                             </button>
@@ -134,7 +179,7 @@ export function CampaignsList({
                     <div className="cl-spacer"/>
                     <div className="search-wrap cl-search">
                         <Icon name="search" size={14}/>
-                        <input className="search-input cl-search-input" aria-label="Buscar campaña" placeholder="Buscar campaña"
+                        <input className="search-input cl-search-input" aria-label={t("campaigns.searchPlaceholder")} placeholder={t("campaigns.searchPlaceholder")}
                                value={search} onChange={e => setSearch(e.target.value)}/>
                     </div>
                 </div>
@@ -143,11 +188,11 @@ export function CampaignsList({
                     <div className="cl-empty">
                         <div className="cl-empty-icon"><Icon name="ticket" size={32}/></div>
                         <div className="cl-empty-title">
-                            {search ? "Ninguna campaña coincide con la búsqueda" : "No hay campañas en esta categoría"}
+                            {search ? t("campaigns.emptySearch") : t("campaigns.emptyCategory")}
                         </div>
                         {!search && (
                             <button type="button" className="btn btn-sm btn-brand cl-empty-cta" onClick={onNew}>
-                                <Icon name="plus" size={12}/> Crear campaña
+                                <Icon name="plus" size={12}/> {t("campaigns.create")}
                             </button>
                         )}
                     </div>
@@ -158,6 +203,7 @@ export function CampaignsList({
                             const ranked = [...c.coupons].sort(
                                 (a, b) => redemptionRate(b.views, b.redeemed) - redemptionRate(a.views, a.redeemed)
                             );
+                            const { views, reserved, redeemed } = campaignMetrics(c);
                             return (
                                 <div key={c.id} className={"cg-card" + (c.id === bestId ? " cg-card-best" : "")}>
                                     {/* cabecera -> la campana (ocasion) en grande */}
@@ -174,23 +220,23 @@ export function CampaignsList({
                                                     {STATUS_LABEL[c.status]}
                                                 </span>
                                                 {c.id === bestId && (
-                                                    <span className="ct-best-badge" title="Mejor campaña por tasa de canje">
-                                                        <Icon name="star" size={11}/> Mejor
+                                                    <span className="ct-best-badge" title={t("campaigns.best")}>
+                                                        <Icon name="star" size={11}/> {t("campaigns.best")}
                                                     </span>
                                                 )}
                                             </div>
                                             <div className="cg-sub">
-                                                {c.category} · {c.coupons.length} cupón{c.coupons.length !== 1 ? "es" : ""} · #GEO-{(1000 + c.id).toString()}
+                                                {c.category} · {c.coupons.length} {c.coupons.length === 1 ? t("campaigns.coupon") : t("campaigns.coupons")} · #GEO-{(1000 + c.id).toString()}
                                             </div>
                                         </div>
                                         <div className="cg-metrics">
-                                            <span><strong className="mono">{c.views.toLocaleString()}</strong> vistos</span>
-                                            <span><strong className="mono">{c.reserved.toLocaleString()}</strong> reservados</span>
-                                            <span><strong className="mono">{c.redeemed.toLocaleString()}</strong> redimidos</span>
-                                            <span className="cg-metric-rate"><strong className="mono">{c.views > 0 ? ratePct(c.views, c.redeemed) : "—"}</strong> canje</span>
+                                            <span><strong className="mono">{fmtMetric(views)}</strong> {t("campaigns.metrics.views")}</span>
+                                            <span><strong className="mono">{fmtMetric(reserved)}</strong> {t("campaigns.metrics.reserved")}</span>
+                                            <span><strong className="mono">{fmtMetric(redeemed)}</strong> {t("campaigns.metrics.redeemed")}</span>
+                                            <span className="cg-metric-rate"><strong className="mono">{metricsLoading ? "—" : (views > 0 ? ratePct(views, redeemed) : "—")}</strong> {t("campaigns.metrics.conversion")}</span>
                                         </div>
                                         <div className="ct-actions ct-actions-menu" onClick={e => e.stopPropagation()}>
-                                            <button type="button" className="btn btn-icon btn-sm" aria-label="Acciones"
+                                            <button type="button" className="btn btn-icon btn-sm" aria-label={t("campaigns.actions")}
                                                     onClick={() => setMenuOpen(menuOpen === c.id ? null : c.id)}>
                                                 <Icon name="chevron" size={14}/>
                                             </button>
@@ -198,23 +244,23 @@ export function CampaignsList({
                                                 <div className="ct-menu">
                                                     <button type="button" className="ct-menu-item"
                                                             onClick={() => { setMenuOpen(null); openEdit(c); }}>
-                                                        <Icon name="edit" size={13}/> Editar
+                                                        <Icon name="edit" size={13}/> {t("common.edit")}
                                                     </button>
                                                     {c.status === "live" && (
                                                         <button type="button" className="ct-menu-item"
                                                                 onClick={() => { setMenuOpen(null); setToDeactivate(c); }}>
-                                                            <Icon name="close" size={13}/> Desactivar
+                                                            <Icon name="close" size={13}/> {t("campaigns.deactivateTitle")}
                                                         </button>
                                                     )}
                                                     {c.status === "ended" && (
                                                         <button type="button" className="ct-menu-item"
                                                                 onClick={() => { setMenuOpen(null); setToDeactivate(c); }}>
-                                                            <Icon name="check" size={13}/> Reactivar
+                                                            <Icon name="check" size={13}/> {t("campaigns.reactivateTitle")}
                                                         </button>
                                                     )}
                                                     <button type="button" className="ct-menu-item ct-menu-danger"
                                                             onClick={() => { setMenuOpen(null); setToDelete(c); }}>
-                                                        <Icon name="trash" size={13}/> Eliminar
+                                                        <Icon name="trash" size={13}/> {t("common.delete")}
                                                     </button>
                                                 </div>
                                             )}
@@ -224,18 +270,18 @@ export function CampaignsList({
                                     {/* cupones que pertenecen a esta campana */}
                                     <div className="cg-coupons">
                                         {ranked.length === 0 ? (
-                                            <div className="cg-coupon-empty">Esta campaña aún no tiene cupones.</div>
+                                            <div className="cg-coupon-empty">{t("campaigns.noCoupons")}</div>
                                         ) : ranked.map(cp => (
                                             <div key={cp.id} className={"cg-coupon" + (cp.id === bestCoupon ? " cg-coupon-best" : "")}>
                                                 <div className="cg-coupon-name">
                                                     {cp.id === bestCoupon && <Icon name="star" size={12}/>}
                                                     {cp.title}
-                                                    <span className="cd-cat-tag">{promotionLabel(cp.promotionType)}</span>
+                                                    <span className="cd-cat-tag">{promotionLabel(cp.promotionType, t)}</span>
                                                 </div>
                                                 <div className="cg-coupon-metrics mono">
-                                                    <span>{cp.views.toLocaleString()} vistos</span>
-                                                    <span>{cp.reserved.toLocaleString()} res.</span>
-                                                    <span>{cp.redeemed.toLocaleString()} red.</span>
+                                                    <span>{cp.views.toLocaleString()} {t("campaigns.metrics.views")}</span>
+                                                    <span>{cp.reserved.toLocaleString()} {t("campaigns.metrics.reserved")}.</span>
+                                                    <span>{cp.redeemed.toLocaleString()} {t("campaigns.metrics.redeemed")}.</span>
                                                     <span className="cg-coupon-rate">{cp.views > 0 ? ratePct(cp.views, cp.redeemed) : "—"}</span>
                                                 </div>
                                             </div>
@@ -250,20 +296,20 @@ export function CampaignsList({
 
             {/* modal de editar campana (nombre, fechas y cupones) */}
             {toEdit && (
-                <Modal onClose={() => setToEdit(null)} ariaLabel="Editar campaña" className="est-modal cl-edit-modal">
+                <Modal onClose={() => setToEdit(null)} ariaLabel={t("campaigns.editTitle")} className="est-modal cl-edit-modal">
                     <div className="est-modal-body">
-                        <h3 className="est-modal-title">Editar campaña</h3>
+                        <h3 className="est-modal-title">{t("campaigns.editTitle")}</h3>
                         <div className="field">
-                            <label htmlFor="ce-name">Nombre</label>
+                            <label htmlFor="ce-name">{t("campaigns.name")}</label>
                             <input id="ce-name" className="input" value={editName} onChange={e => setEditName(e.target.value)}/>
                         </div>
                         <div className="nc-row2">
                             <div className="field">
-                                <label htmlFor="ce-start">Inicio</label>
+                                <label htmlFor="ce-start">{t("campaigns.start")}</label>
                                 <input id="ce-start" className="input" type="date" value={editStart} onChange={e => setEditStart(e.target.value)}/>
                             </div>
                             <div className="field">
-                                <label htmlFor="ce-end">Fin</label>
+                                <label htmlFor="ce-end">{t("campaigns.end")}</label>
                                 <input id="ce-end" className="input" type="date" value={editEnd} onChange={e => setEditEnd(e.target.value)}/>
                             </div>
                         </div>
@@ -279,11 +325,11 @@ export function CampaignsList({
                             />
                         )}
                         <div className="est-modal-actions">
-                            <button type="button" className="btn est-modal-btn" onClick={() => setToEdit(null)}>Cancelar</button>
+                            <button type="button" className="btn est-modal-btn" onClick={() => setToEdit(null)}>{t("common.cancel")}</button>
                             <button type="button" className="btn btn-brand est-modal-btn"
                                     disabled={!editName.trim() || !editStart || !editEnd || editEnd < editStart}
                                     onClick={saveEdit}>
-                                <Icon name="check" size={14}/> Guardar
+                                <Icon name="check" size={14}/> {t("common.save")}
                             </button>
                         </div>
                     </div>
@@ -292,24 +338,24 @@ export function CampaignsList({
 
             {/* modal desactivar/reactivar campana */}
             {toDeactivate && (
-                <Modal onClose={() => setToDeactivate(null)} ariaLabel="Desactivar campaña" className="est-modal">
+                <Modal onClose={() => setToDeactivate(null)} ariaLabel={t("campaigns.deactivateTitle")} className="est-modal">
                     <div className="est-modal-body">
                         <div className="est-modal-icon est-modal-icon-neutral">
                             <Icon name={toDeactivate.status === "live" ? "close" : "check"} size={20}/>
                         </div>
                         <h3 className="est-modal-title">
-                            {toDeactivate.status === "live" ? "Desactivar campaña" : "Reactivar campaña"}
+                            {toDeactivate.status === "live" ? t("campaigns.deactivateTitle") : t("campaigns.reactivateTitle")}
                         </h3>
                         <p className="est-modal-text">
                             {toDeactivate.status === "live"
-                                ? <>¿Seguro que quieres desactivar <strong>{toDeactivate.name}</strong>? Los cupones dejarán de ser visibles para los clientes.</>
-                                : <>¿Quieres reactivar <strong>{toDeactivate.name}</strong>?</>}
+                                ? t("campaigns.deactivateText", { name: toDeactivate.name })
+                                : t("campaigns.reactivateText", { name: toDeactivate.name })}
                         </p>
                         <div className="est-modal-actions">
-                            <button type="button" className="btn est-modal-btn" onClick={() => setToDeactivate(null)}>Cancelar</button>
+                            <button type="button" className="btn est-modal-btn" onClick={() => setToDeactivate(null)}>{t("common.cancel")}</button>
                             <button type="button" className="btn btn-brand est-modal-btn"
                                     onClick={() => { onDeactivate?.(toDeactivate.id); setToDeactivate(null); }}>
-                                {toDeactivate.status === "live" ? "Desactivar" : "Reactivar"}
+                                {toDeactivate.status === "live" ? t("campaigns.deactivateTitle") : t("campaigns.reactivateTitle")}
                             </button>
                         </div>
                     </div>
@@ -321,15 +367,15 @@ export function CampaignsList({
                 <Modal onClose={() => setToDelete(null)} labelledBy="cl-del-title" className="est-modal">
                     <div className="est-modal-body">
                         <div className="est-modal-icon"><Icon name="trash" size={20}/></div>
-                        <h3 id="cl-del-title" className="est-modal-title">Eliminar campaña</h3>
+                        <h3 id="cl-del-title" className="est-modal-title">{t("campaigns.deleteTitle")}</h3>
                         <p className="est-modal-text">
-                            ¿Seguro que quieres eliminar <strong>{toDelete.name}</strong>? Se eliminarán todos sus cupones asociados. Esta acción no se puede deshacer.
+                            {t("campaigns.deleteText", { name: toDelete.name })}
                         </p>
                         <div className="est-modal-actions">
-                            <button type="button" className="btn est-modal-btn" onClick={() => setToDelete(null)}>Cancelar</button>
+                            <button type="button" className="btn est-modal-btn" onClick={() => setToDelete(null)}>{t("common.cancel")}</button>
                             <button type="button" className="btn est-del-confirm est-modal-btn"
                                     onClick={() => { onDelete?.(toDelete.id); setToDelete(null); }}>
-                                <Icon name="trash" size={14}/> Eliminar
+                                <Icon name="trash" size={14}/> {t("common.delete")}
                             </button>
                         </div>
                     </div>

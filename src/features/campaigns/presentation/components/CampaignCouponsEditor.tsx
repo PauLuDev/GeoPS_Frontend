@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
 import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
@@ -25,6 +26,7 @@ interface CampaignCouponsEditorProps {
 export function CampaignCouponsEditor({
     campaign, unassignedCoupons, onAddToCampaign, onRemoveFromCampaign, onDeleteCoupon,
 }: CampaignCouponsEditorProps) {
+    const { t } = useTranslation();
     const [busy, setBusy] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function CampaignCouponsEditor({
         <div className="cce">
             <div className="cce-head">
                 <span className="cce-label">
-                    Cupones de la campaña <span className="cce-count">{campaign.coupons.length}</span>
+                    {t("campaigns.couponsEditor.title")} <span className="cce-count">{campaign.coupons.length}</span>
                 </span>
             </div>
 
@@ -52,32 +54,32 @@ export function CampaignCouponsEditor({
             {/* cupones que estan en la campana */}
             <div className="cce-list">
                 {campaign.coupons.length === 0 ? (
-                    <div className="cce-empty">Esta campaña aún no tiene cupones.</div>
+                    <div className="cce-empty">{t("campaigns.couponsEditor.emptyCampaign")}</div>
                 ) : campaign.coupons.map(cp => (
                     <div key={cp.id} className="cce-row">
                         <div className="cce-row-info">
                             <span className="cce-row-title">{cp.title}</span>
                             <span className="cce-row-meta">
-                                {promotionLabel(cp.promotionType)} · {cp.discount} · Stock: {cp.stock}
+                                {promotionLabel(cp.promotionType, t)} · {cp.discount} · Stock: {cp.stock}
                             </span>
                         </div>
                         {confirmDelete === cp.id ? (
                             <div className="cce-confirm">
-                                <span>¿Eliminar?</span>
+                                <span>{t("campaigns.couponsEditor.confirmDelete")}</span>
                                 <button type="button" className="btn btn-sm est-del-confirm" disabled={busy}
-                                        onClick={() => void act(() => onDeleteCoupon(cp.id), "No se pudo eliminar el cupón.")}>Sí</button>
+                                        onClick={() => void act(() => onDeleteCoupon(cp.id), t("campaigns.couponsEditor.errorDelete"))}>{t("campaigns.couponsEditor.yes")}</button>
                                 <button type="button" className="btn btn-sm" disabled={busy}
-                                        onClick={() => setConfirmDelete(null)}>No</button>
+                                        onClick={() => setConfirmDelete(null)}>{t("campaigns.couponsEditor.no")}</button>
                             </div>
                         ) : (
                             <div className="cce-row-actions">
-                                <button type="button" className="btn btn-icon btn-sm" title="Quitar de la campaña"
-                                        aria-label="Quitar de la campaña" disabled={busy}
-                                        onClick={() => void act(() => onRemoveFromCampaign(cp.id), "No se pudo quitar el cupón de la campaña.")}>
+                                <button type="button" className="btn btn-icon btn-sm" title={t("campaigns.couponsEditor.removeFromCampaign")}
+                                        aria-label={t("campaigns.couponsEditor.removeFromCampaign")} disabled={busy}
+                                        onClick={() => void act(() => onRemoveFromCampaign(cp.id), t("campaigns.couponsEditor.errorRemove"))}>
                                     <Icon name="close" size={13}/>
                                 </button>
-                                <button type="button" className="btn btn-icon btn-sm est-del-btn" title="Eliminar cupón"
-                                        aria-label="Eliminar cupón" disabled={busy}
+                                <button type="button" className="btn btn-icon btn-sm est-del-btn" title={t("campaigns.couponsEditor.deleteCoupon")}
+                                        aria-label={t("campaigns.couponsEditor.deleteCoupon")} disabled={busy}
                                         onClick={() => setConfirmDelete(cp.id)}>
                                     <Icon name="trash" size={13}/>
                                 </button>
@@ -90,24 +92,24 @@ export function CampaignCouponsEditor({
             {/* cupones existentes sin campana -> se pueden sumar a esta campana */}
             <div className="cce-head cce-head-sub">
                 <span className="cce-label">
-                    Sin campaña <span className="cce-count">{unassignedCoupons.length}</span>
+                    {t("campaigns.couponsEditor.unassigned")} <span className="cce-count">{unassignedCoupons.length}</span>
                 </span>
             </div>
             <div className="cce-list">
                 {unassignedCoupons.length === 0 ? (
-                    <div className="cce-empty">No hay cupones libres para agregar.</div>
+                    <div className="cce-empty">{t("campaigns.couponsEditor.emptyUnassigned")}</div>
                 ) : unassignedCoupons.map(cp => (
                     <div key={cp.id} className="cce-row">
                         <div className="cce-row-info">
                             <span className="cce-row-title">{cp.title}</span>
                             <span className="cce-row-meta">
-                                {promotionLabel(cp.promotionType)} · {cp.discount} · Stock: {cp.stock}
+                                {promotionLabel(cp.promotionType, t)} · {cp.discount} · Stock: {cp.stock}
                             </span>
                         </div>
-                        <button type="button" className="btn btn-sm cce-add" title="Agregar a la campaña"
+                        <button type="button" className="btn btn-sm cce-add" title={t("campaigns.couponsEditor.add")}
                                 disabled={busy}
-                                onClick={() => void act(() => onAddToCampaign(cp.id), "No se pudo agregar el cupón a la campaña.")}>
-                            <Icon name="plus" size={12}/> Agregar
+                                onClick={() => void act(() => onAddToCampaign(cp.id), t("campaigns.couponsEditor.errorAdd"))}>
+                            <Icon name="plus" size={12}/> {t("campaigns.couponsEditor.add")}
                         </button>
                     </div>
                 ))}

@@ -55,7 +55,7 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
     const finalNum = parseFloat(finalPrice);
     const stockNum = parseInt(stock);
 
-    const needsDiscount = promotionType !== "BUY_X_GET_Y";
+    const needsDiscount = true;
     const discountPct = calcDiscountPct(origNum, finalNum);
     const expiresLabel = durationLabel(startDate, endDate) || "—";
     const today = todayISO();
@@ -144,28 +144,28 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
         return (
             <div className="card cl-empty">
                 <div className="cl-empty-icon"><Icon name="store" size={30}/></div>
-                <div className="cl-empty-title">Registra un establecimiento primero</div>
-                <p className="page-subtitle">Un cupón siempre pertenece a un establecimiento tuyo.</p>
-                <button type="button" className="btn" onClick={onCancel}>Volver</button>
+                <div className="cl-empty-title">{t("couponsManagement.newCouponForm.registerFirst")}</div>
+                <p className="page-subtitle">{t("couponsManagement.newCouponForm.belongsToEst")}</p>
+                <button type="button" className="btn" onClick={onCancel}>{t("common.back")}</button>
             </div>
         );
     }
 
-    const discountLabel = promotionType === "FIXED_AMOUNT" ? "Monto de descuento (S/)" : "Descuento (%)";
+    const discountLabel = promotionType === "FIXED_AMOUNT" ? t("campaigns.newForm.discountAmount") : t("campaigns.newForm.discountPercent");
 
     return (
         <div className="card nc-card cl-new-coupon">
-            <div className="eyebrow nc-eyebrow">Nuevo cupón</div>
+            <div className="eyebrow nc-eyebrow">{t("couponsManagement.newCoupon")}</div>
 
             {submitted && !isValid && (
-                <div className="nc-coupons-err"><Icon name="close" size={12}/> Completa los campos obligatorios</div>
+                <div className="nc-coupons-err"><Icon name="close" size={12}/> {t("campaigns.newForm.requiredFields")}</div>
             )}
             {error && <div className="nc-coupons-err"><Icon name="close" size={12}/> {error.message}</div>}
 
             <div className="nc-fields">
                 {establishments.length > 1 && (
                     <div className="field">
-                        <label htmlFor="ncf-est">Establecimiento</label>
+                        <label htmlFor="ncf-est">{t("dashboard.establishment")}</label>
                         <select id="ncf-est" className="input" value={establishmentId}
                                 onChange={e => setEstablishmentId(e.target.value)} disabled={uploading}>
                             {establishments.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -175,59 +175,57 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
 
                 {/* Imagen del cupón */}
                 <div className="field nc-mb12">
-                    <span className="nc-group-label">Imagen del cupón</span>
-                    <input ref={fileRef} type="file" accept="image/*" aria-label="Imagen del cupón" className="nc-hidden-input" onChange={handleImageUpload} disabled={uploading}/>
+                    <span className="nc-group-label">{t("campaigns.newForm.couponImage")}</span>
+                    <input ref={fileRef} type="file" accept="image/*" aria-label={t("campaigns.newForm.couponImage")} className="nc-hidden-input" onChange={handleImageUpload} disabled={uploading}/>
                     {imageUrl ? (
                         <div className="nc-img-preview">
                             <img src={imageUrl} alt="Cupón"/>
                             <button type="button" className="nc-img-remove" disabled={uploading}
                                     onClick={() => { setImageUrl(""); if (fileRef.current) fileRef.current.value = ""; }}>
-                                <Icon name="close" size={12}/> Quitar
+                                <Icon name="close" size={12}/> {t("couponsManagement.editModal.quitar")}
                             </button>
                         </div>
                     ) : (
                         <button type="button" className="nc-img-upload" onClick={() => fileRef.current?.click()} disabled={uploading}>
                             <Icon name="image" size={22}/>
-                            {uploading ? "Subiendo..." : "Subir imagen desde tu dispositivo"}
-                            <span className="nc-img-hint">JPG, PNG · máx. recomendado 1 MB</span>
+                            {uploading ? t("campaigns.newForm.uploading") : t("couponsManagement.editModal.subirLogo")}
+                            <span className="nc-img-hint">{t("campaigns.newForm.imageSpecs")}</span>
                         </button>
                     )}
-                    {uploading && <span className="nc-img-hint"><Icon name="image" size={11}/> Subiendo imagen…</span>}
+                    {uploading && <span className="nc-img-hint"><Icon name="image" size={11}/> {t("campaigns.newForm.uploading")}</span>}
                     {uploadError && <span className="field-error"><Icon name="close" size={11}/> {uploadError}</span>}
-                </div>
-
-                <div className="field">
-                    <label htmlFor="ncf-title">Nombre del cupón</label>
+                </div>                       <div className="field">
+                    <label htmlFor="ncf-title">{t("campaigns.newForm.couponName")}</label>
                     <input id="ncf-title" className={"input" + (err("title") ? " input-error" : "")}
                            placeholder='Ej. "2x1 en lomo saltado"'
                            value={title} onChange={e => setTitle(e.target.value)} disabled={uploading}/>
                 </div>
-
+ 
                 <div className="nc-row2">
                     <div className="field">
-                        <label htmlFor="ncf-promo">Tipo de cupón</label>
+                        <label htmlFor="ncf-promo">{t("campaigns.newForm.couponType")}</label>
                         <Select id="ncf-promo" value={promotionType}
-                                options={PROMOTION_TYPES.map(p => ({ value: p.id, label: p.label }))}
+                                options={PROMOTION_TYPES.map(p => ({ value: p.id, label: t(p.labelKey) }))}
                                 onChange={v => setPromotionType(v as PromotionType)} disabled={uploading}/>
                     </div>
                 </div>
-
+ 
                 {needsDiscount && (
                     <div className="nc-prices">
                         <div className="field">
-                            <label htmlFor="ncf-orig">Precio original (S/)</label>
+                            <label htmlFor="ncf-orig">{t("campaigns.newForm.originalPrice")}</label>
                             <input id="ncf-orig" className={"input" + (err("original") ? " input-error" : "")} type="number" min="0" step="0.5" placeholder="48"
                                    value={originalPrice} onChange={e => setOriginalPrice(e.target.value)} disabled={uploading}/>
-                            {err("original") && <span className="field-error">Mayor a 0</span>}
+                            {err("original") && <span className="field-error">{t("campaigns.newForm.errorGreaterZero")}</span>}
                         </div>
                         <div className="field">
-                            <label htmlFor="ncf-final">Precio final (S/)</label>
+                            <label htmlFor="ncf-final">{t("campaigns.newForm.finalPrice")}</label>
                             <input id="ncf-final" className={"input" + (err("final") ? " input-error" : "")} type="number" min="0" step="0.5" placeholder="24"
                                    value={finalPrice} onChange={e => setFinalPrice(e.target.value)} disabled={uploading}/>
-                            {err("final") && <span className="field-error">Menor al original</span>}
+                            {err("final") && <span className="field-error">{t("campaigns.newForm.errorSmallerOriginal")}</span>}
                         </div>
                         <div className="field">
-                            <span className="nc-group-label">Descuento</span>
+                            <span className="nc-group-label">{t("campaigns.newForm.discount")}</span>
                             <div className={"nc-discount-box" + (discountPct ? " active" : "")}>
                                 {promotionType === "FIXED_AMOUNT"
                                     ? (savings(origNum, finalNum) > 0 ? `−S/${savings(origNum, finalNum)}` : "—")
@@ -236,57 +234,55 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
                             {discountPct !== null && (
                                 <span className="nc-discount-save">
                                     {promotionType === "FIXED_AMOUNT"
-                                        ? `Equivale a ${discountPct}%`
-                                        : `Ahorro S/${savings(origNum, finalNum)}`}
+                                        ? t("campaigns.newForm.equivalentTo", { value: discountPct })
+                                        : t("campaigns.newForm.savings", { value: savings(origNum, finalNum) })}
                                 </span>
                             )}
                         </div>
                     </div>
                 )}
-
                 <div className="nc-row2">
                     <div className="field">
-                        <label htmlFor="ncf-stock">Stock (unidades)</label>
+                        <label htmlFor="ncf-stock">{t("campaigns.newForm.stock")}</label>
                         <input id="ncf-stock" className={"input" + (err("stock") ? " input-error" : "")}
                                type="number" min={1} step={1}
                                value={stock} onChange={e => setStock(e.target.value)} disabled={uploading}/>
                     </div>
                     <div className="field">
-                        <span className="nc-group-label">Vigencia</span>
+                        <span className="nc-group-label">{t("campaigns.newForm.validity")}</span>
                         <div className="nc-vigencia-box">
                             <Icon name="clock" size={13}/>
                             <span className="nc-vigencia-val">{expiresLabel}</span>
                         </div>
                     </div>
                 </div>
-
+ 
                 <div className="nc-row2">
                     <div className="field">
-                        <label htmlFor="ncf-start">Inicio</label>
+                        <label htmlFor="ncf-start">{t("campaigns.start")}</label>
                         <DatePicker id="ncf-start" value={startDate} onChange={setStartDate} min={today} error={err("start") || errors.startPast} disabled={uploading}/>
-                        {err("start") && !errors.startPast && <span className="field-error">Obligatorio</span>}
+                        {err("start") && !errors.startPast && <span className="field-error">{t("campaigns.newForm.required")}</span>}
                         {err("startPast") && <span className="field-error">{t("campaign.errors.datePast")}</span>}
                     </div>
                     <div className="field">
-                        <label htmlFor="ncf-end">Fin</label>
+                        <label htmlFor="ncf-end">{t("campaigns.end")}</label>
                         <DatePicker id="ncf-end" value={endDate} onChange={setEndDate} min={endMin} error={err("end") || errors.endPast} disabled={uploading}/>
-                        {err("end") && !errors.endBeforeStart && !errors.endPast && <span className="field-error">Obligatorio</span>}
+                        {err("end") && !errors.endBeforeStart && !errors.endPast && <span className="field-error">{t("campaigns.newForm.required")}</span>}
                         {err("endBeforeStart") && <span className="field-error">{t("campaign.errors.endBeforeStart")}</span>}
                         {err("endPast") && <span className="field-error">{t("campaign.errors.datePast")}</span>}
                     </div>
                 </div>
-
                 <div className="field">
-                    <label htmlFor="ncf-desc">Descripción <span className="nc-optional">opcional</span></label>
+                    <label htmlFor="ncf-desc">{t("campaigns.newForm.description")} <span className="nc-optional">{t("common.optional")}</span></label>
                     <textarea id="ncf-desc" className="input" rows={2}
-                              placeholder="Condiciones o detalles del cupón..."
+                              placeholder={t("campaigns.newForm.descCouponPlaceholder")}
                               value={description} onChange={e => setDescription(e.target.value)} disabled={uploading}/>
                 </div>
-
+ 
                 {/* Restricciones */}
                 <div className="nc-restr">
                     <div className="nc-restr-head">
-                        <div className="nc-restr-title">Restricciones de uso</div>
+                        <div className="nc-restr-title">{t("campaigns.newForm.useRestrictions")}</div>
                     </div>
                     <div className="nc-restr-chips">
                         {PRESET_RESTRICTIONS.map(p => {
@@ -295,14 +291,14 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
                                 <button type="button" key={p} className="nc-restr-chip" aria-pressed={on}
                                         onClick={() => togglePreset(p)} disabled={uploading}>
                                     {on && <Icon name="check" size={10}/>}
-                                    {p}
+                                    {t(`couponRestrictions.${p}`, { defaultValue: p })}
                                 </button>
                             );
                         })}
                     </div>
                     <div className="nc-restr-add-row">
                         <input className="input nc-restr-input"
-                               placeholder="Agrega una restricción personalizada..."
+                               placeholder={t("campaigns.newForm.customRestrictionPlaceholder")}
                                aria-label="Restricción personalizada"
                                value={customRestriction}
                                onChange={e => setCustomRestriction(e.target.value)}
@@ -311,7 +307,7 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
                         <button type="button" className="btn btn-sm nc-noshrink"
                                 disabled={!customRestriction.trim() || uploading}
                                 onClick={addCustomRestriction}>
-                            <Icon name="plus" size={13}/> Añadir
+                            <Icon name="plus" size={13}/> {t("campaigns.newForm.addButton")}
                         </button>
                     </div>
                     {customList.length > 0 && (
@@ -328,22 +324,22 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
                         </div>
                     )}
                 </div>
-
+ 
                 {/* Términos y condiciones */}
                 <div className="nc-terms">
-                    <div className="nc-terms-title">Términos y condiciones</div>
+                    <div className="nc-terms-title">{t("campaigns.newForm.terms")}</div>
                     <textarea className="input" rows={3}
-                              aria-label="Términos y condiciones"
-                              placeholder="El cupón es válido únicamente durante el período indicado. Solo puede ser canjeado una vez por cliente. El establecimiento se reserva el derecho de modificar o cancelar la oferta sin previo aviso..."
+                              aria-label={t("campaigns.newForm.terms")}
+                              placeholder={t("campaigns.newForm.termsPlaceholder")}
                               value={terms}
                               onChange={e => setTerms(e.target.value)} disabled={uploading}/>
                 </div>
             </div>
-
+ 
             <div className="nc-form-actions">
-                <button type="button" className="btn" onClick={onCancel} disabled={loading || uploading}>Cancelar</button>
+                <button type="button" className="btn" onClick={onCancel} disabled={loading || uploading}>{t("common.cancel")}</button>
                 <button type="button" className="btn btn-brand nc-grow" onClick={submit} disabled={loading || uploading}>
-                    {loading ? "Guardando…" : (uploading ? "Subiendo imagen..." : <>Publicar cupón <Icon name="arrowRight" size={14}/></>)}
+                    {loading ? t("couponsManagement.editModal.saving") : (uploading ? t("campaigns.newForm.uploading") : <>{t("couponsManagement.newCoupon")} <Icon name="arrowRight" size={14}/></>)}
                 </button>
             </div>
         </div>

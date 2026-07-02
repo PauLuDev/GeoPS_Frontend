@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon";
 import { useAutoRefresh } from "@/shared/hooks/useAutoRefresh.ts";
 import { Select } from "@/shared/ui/components/Select.tsx";
@@ -10,21 +11,27 @@ import { HourlyRange, RANGE_TO_TIMEFRAME, periodLabel, ReportSnapshot, ReportKpi
 import { listCampaignAnalytics } from "@/features/analytics/application/use-cases/ListCampaignAnalytics.ts";
 import { CampaignAnalytics } from "@/features/analytics/domain/entities/CampaignAnalytics.ts";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
+import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
+import { useCouponMetrics } from "@/features/analytics/presentation/hooks/useCouponMetrics.ts";
+import { CouponAnalytics } from "@/features/analytics/domain/entities/CouponAnalytics.ts";
+import { ratePct } from "@/features/campaigns/domain/value-objects/Performance.ts";
 
 interface DashboardEstablishment { id: string; name: string; }
 interface DashboardProps {
     onNew: () => void;
     establishments: DashboardEstablishment[];
+    coupons?: CampaignCoupon[];
 }
 
 const TOP_COLORS = ["var(--brand)", "var(--accent-2)", "oklch(0.72 0.16 35)"];
-const RANGES: { id: HourlyRange; label: string }[] = [
-    { id: "today", label: "Hoy" },
-    { id: "7d",    label: "7d" },
-    { id: "30d",   label: "30d" },
-];
+const rangeLabels: Record<HourlyRange, string> = {
+    today: "dashboard.range.today",
+    "7d": "dashboard.range.7d",
+    "30d": "dashboard.range.30d",
+};
 
-export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
+export function MerchantDashboard({ onNew, establishments, coupons = [] }: DashboardProps) {
+    const { t, i18n } = useTranslation();
     const [exportOpen, setExportOpen] = useState(false);
     const [range, setRange] = useState<HourlyRange>("today");
     const exportRef = useRef<HTMLDivElement>(null);
@@ -69,6 +76,25 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
     /* abre una campana puntual en la pestaña "Por campaña" */
     const openCampaign = (id: string) => { setSelectedCampaignId(id); setMode("campaigns"); };
 
+    /* metricas de cupones sin campaña para el establecimiento elegido */
+    const standaloneCoupons = useMemo(
+        () => coupons.filter(c => !c.campaignId && c.establishmentId === establishmentId),
+        [coupons, establishmentId]
+    );
+    const { metrics: couponMetrics, loading: couponMetricsLoading } = useCouponMetrics(establishmentId);
+    const couponMetricsById = useMemo(() => {
+        const map = new Map<string, CouponAnalytics>();
+        couponMetrics.forEach(m => map.set(m.couponId, m));
+        return map;
+    }, [couponMetrics]);
+    const topStandaloneCoupons = useMemo(() => {
+        return standaloneCoupons
+            .map(c => ({ coupon: c, metrics: couponMetricsById.get(c.uuid ?? c.id) }))
+            .filter((item): item is { coupon: typeof item.coupon; metrics: CouponAnalytics } => !!item.metrics)
+            .sort((a, b) => b.metrics.viewsCount - a.metrics.viewsCount)
+            .slice(0, 5);
+    }, [standaloneCoupons, couponMetricsById]);
+
     /* campana elegida en el modo "por campana" */
     const [selectedCampaignId, setSelectedCampaignId] = useState("");
     useEffect(() => {
@@ -80,8 +106,8 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
 
     /* foto del reporte que usan la vista y la exportacion */
     const report = useMemo(
-        () => (stats ? toReportSnapshot(stats, establishmentName, range) : null),
-        [stats, establishmentName, range],
+        () => (stats ? toReportSnapshot(stats, establishmentName, range, t) : null),
+        [stats, establishmentName, range, t, i18n.language],
     );
 
     /* reporte de la campana elegida (KPIs + funnel + export). el back no expone
@@ -93,23 +119,23 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
         const pct = (n: number) => Math.round((n / maxStep) * 100);
         const flat = [0, 0];
         const kpis: ReportKpi[] = [
-            { label: "Cupones vistos", value: String(a.viewsCount), delta: "", trend: "up", spark: flat },
-            { label: "Redimidos", value: String(a.redemptionsCount), delta: "", trend: "up", spark: flat },
-            { label: "Reservados", value: String(a.reservationsCount), delta: "", trend: "up", spark: flat },
-            { label: "Tasa conversión", value: `${a.conversionRate.toFixed(1)}%`, delta: "", trend: "up", spark: flat },
+            { label: t("dashboard.kpi.views"), value: String(a.viewsCount), delta: "", trend: "up", spark: flat },
+            { label: t("dashboard.kpi.redeemed"), value: String(a.redemptionsCount), delta: "", trend: "up", spark: flat },
+            { label: t("dashboard.kpi.reserved"), value: String(a.reservationsCount), delta: "", trend: "up", spark: flat },
+            { label: t("dashboard.kpi.conversion"), value: `${a.conversionRate.toFixed(1)}%`, delta: "", trend: "up", spark: flat },
         ];
         return {
-            meta: { businessName: `${establishmentName} · ${selectedCampaign.name}`, period: "Histórico" },
+            meta: { businessName: `${establishmentName} · ${selectedCampaign.name}`, period: t("dashboard.period.historic") },
             kpis,
             funnel: [
-                { label: "Abrieron el cupón", value: a.viewsCount, pct: pct(a.viewsCount) },
-                { label: "Reservaron", value: a.reservationsCount, pct: pct(a.reservationsCount) },
-                { label: "Canjearon en el local", value: a.redemptionsCount, pct: pct(a.redemptionsCount) },
+                { label: t("dashboard.funnel.views"), value: a.viewsCount, pct: pct(a.viewsCount) },
+                { label: t("dashboard.funnel.reserved"), value: a.reservationsCount, pct: pct(a.reservationsCount) },
+                { label: t("dashboard.funnel.redeemed"), value: a.redemptionsCount, pct: pct(a.redemptionsCount) },
             ],
             topCampaigns: [],
             hourly: [],
         };
-    }, [selectedCampaign, establishmentName]);
+    }, [selectedCampaign, establishmentName, t, i18n.language]);
 
     /* reporte activo segun el modo (lo usan exportacion y el boton) */
     const activeReport = mode === "campaigns" ? campaignReport : report;
@@ -143,32 +169,37 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
         <div className="md">
             <header className="md-head">
                 <div>
-                    <div className="eyebrow">Resumen · {establishmentName || "tu negocio"}</div>
-                    <h1 className="page-title">Hola{(establishmentName || getCurrentUser()?.username) ? `, ${establishmentName || getCurrentUser()?.username}` : ""}</h1>
+                    <div className="eyebrow">{t("dashboard.eyebrow", { name: establishmentName || t("dashboard.yourBusiness") })}</div>
+                    <h1 className="page-title">
+                        {(() => {
+                            const name = establishmentName || getCurrentUser()?.username;
+                            return name ? t("dashboard.greetingWithName", { name }) : t("dashboard.greeting");
+                        })()}
+                    </h1>
                     <p className="page-subtitle">
-                        Revisa el rendimiento de tus campañas y exporta el reporte cuando lo necesites.
+                        {t("dashboard.subtitle")}
                     </p>
                 </div>
                 <div className="btn-row">
                     <div className="md-export" ref={exportRef}>
                         <button type="button" className="btn" disabled={!activeReport} onClick={() => setExportOpen(o => !o)}>
-                            <Icon name="chart" size={14}/> Exportar <Icon name="chevronDown" size={13}/>
+                            <Icon name="chart" size={14}/> {t("dashboard.export")} <Icon name="chevronDown" size={13}/>
                         </button>
                         {exportOpen && (
                             <div className="md-export-menu" role="menu">
                                 <button type="button" role="menuitem" className="md-export-item" onClick={() => runExport("pdf")}>
-                                    <Icon name="filePdf" size={15}/> Descargar PDF
+                                    <Icon name="filePdf" size={15}/> {t("dashboard.exportPdf")}
                                 </button>
                                 <button type="button" role="menuitem" className="md-export-item" onClick={() => runExport("excel")}>
-                                    <Icon name="fileExcel" size={15}/> Descargar Excel (.xlsx)
+                                    <Icon name="fileExcel" size={15}/> {t("dashboard.exportExcel")}
                                 </button>
                                 <button type="button" role="menuitem" className="md-export-item" onClick={() => runExport("csv")}>
-                                    <Icon name="fileCsv" size={15}/> Descargar CSV
+                                    <Icon name="fileCsv" size={15}/> {t("dashboard.exportCsv")}
                                 </button>
                             </div>
                         )}
                     </div>
-                    <button type="button" className="btn btn-brand" onClick={onNew}><Icon name="plus" size={14}/> Nueva campaña</button>
+                    <button type="button" className="btn btn-brand" onClick={onNew}><Icon name="plus" size={14}/> {t("dashboard.newCampaign")}</button>
                 </div>
             </header>
 
@@ -176,7 +207,7 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
             <div className="md-controls">
                 {establishments.length > 1 && (
                     <div className="md-control">
-                        <span className="md-control-label">Establecimiento</span>
+                        <span className="md-control-label">{t("dashboard.establishment")}</span>
                         <Select
                             value={selectedEstId}
                             options={establishments.map(e => ({ value: e.id, label: e.name }))}
@@ -186,13 +217,13 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
                 )}
                 <div className="role-switch md-mode-switch">
                     <button type="button" className={"md-range-btn" + (mode === "summary" ? " active" : "")}
-                            onClick={() => setMode("summary")}>Resumen</button>
+                            onClick={() => setMode("summary")}>{t("dashboard.mode.summary")}</button>
                     <button type="button" className={"md-range-btn" + (mode === "campaigns" ? " active" : "")}
-                            onClick={() => setMode("campaigns")}>Por campaña</button>
+                            onClick={() => setMode("campaigns")}>{t("dashboard.mode.campaigns")}</button>
                 </div>
                 {mode === "campaigns" && campaignStats.length > 0 && (
                     <div className="md-control">
-                        <span className="md-control-label">Campaña</span>
+                        <span className="md-control-label">{t("dashboard.campaign")}</span>
                         <Select
                             value={selectedCampaignId}
                             options={campaignStats.map(c => ({ value: c.id, label: c.name }))}
@@ -204,12 +235,12 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
 
             {/* sin establecimiento no hay de donde sacar metricas */}
             {!establishmentId ? (
-                <div className="card md-state">Registra un establecimiento para ver sus métricas.</div>
+                <div className="card md-state">{t("dashboard.noEstablishment")}</div>
             ) : mode === "campaigns" ? (
                 campaignsLoading ? (
-                    <div className="card md-state">Cargando métricas…</div>
+                    <div className="card md-state">{t("dashboard.loading")}</div>
                 ) : !campaignReport ? (
-                    <div className="card md-state">Aún no hay campañas con métricas en este establecimiento.</div>
+                    <div className="card md-state">{t("dashboard.noCampaignMetrics")}</div>
                 ) : (
                     <>
                         <section className="md-kpis stagger">
@@ -220,8 +251,8 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
 
                         <section className="md-grid">
                             <div className="card md-funnel">
-                                <div className="eyebrow">Funnel</div>
-                                <div className="section-title md-funnel-title">Del mapa al local</div>
+                                <div className="eyebrow">{t("dashboard.funnel.title")}</div>
+                                <div className="section-title md-funnel-title">{t("dashboard.funnel.mapToStore")}</div>
                                 {campaignReport.funnel.map((row, i) => (
                                     <div key={row.label} className="funnel-row">
                                         <div className="funnel-row-head">
@@ -241,30 +272,30 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
                             </div>
 
                             <div className="card md-funnel">
-                                <div className="eyebrow">Campaña</div>
+                                <div className="eyebrow">{t("dashboard.campaign")}</div>
                                 <div className="section-title md-funnel-title">{selectedCampaign?.name}</div>
                                 <p className="page-subtitle">
-                                    Métricas históricas de esta campaña. El gráfico por hora está disponible en la pestaña “Resumen” (a nivel establecimiento).
+                                    {t("dashboard.campaignHint")}
                                 </p>
                             </div>
                         </section>
                     </>
                 )
             ) : loading ? (
-                <div className="card md-state">Cargando métricas…</div>
+                <div className="card md-state">{t("dashboard.loading")}</div>
             ) : error ? (
-                <div className="card md-state">No se pudieron cargar las métricas: {error.message}</div>
+                <div className="card md-state">{t("dashboard.error", { message: error.message })}</div>
             ) : !report ? (
-                <div className="card md-state">Aún no hay métricas para este rango.</div>
+                <div className="card md-state">{t("dashboard.noMetrics")}</div>
             ) : (
                 <>
                     {/* selector de rango */}
                     <div className="role-switch md-range-switch md-range-top">
-                        {RANGES.map(r => (
-                            <button type="button" key={r.id}
-                                    className={"md-range-btn" + (range === r.id ? " active" : "")}
-                                    onClick={() => setRange(r.id)}>
-                                {r.label}
+                        {(Object.keys(rangeLabels) as HourlyRange[]).map(r => (
+                            <button type="button" key={r}
+                                    className={"md-range-btn" + (range === r ? " active" : "")}
+                                    onClick={() => setRange(r)}>
+                                {t(rangeLabels[r])}
                             </button>
                         ))}
                     </div>
@@ -279,21 +310,21 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
                         <div className="card md-chart">
                             <div className="card-header-top">
                                 <div>
-                                    <div className="eyebrow">Rendimiento</div>
-                                    <div className="section-title">Cuándo se redimen tus cupones</div>
+                                    <div className="eyebrow">{t("dashboard.performance")}</div>
+                                    <div className="section-title">{t("dashboard.performanceSubtitle")}</div>
                                 </div>
                             </div>
                             <HourChart data={report.hourly}/>
                             <div className="md-chart-legend">
-                                <div><span className="dot dot-reserved"/> Reservados</div>
-                                <div><span className="dot dot-redeemed"/> Redimidos</div>
-                                <div className="mono md-legend-spacer">Pico: {peakHour}</div>
+                                <div><span className="dot dot-reserved"/> {t("dashboard.legend.reserved")}</div>
+                                <div><span className="dot dot-redeemed"/> {t("dashboard.legend.redeemed")}</div>
+                                <div className="mono md-legend-spacer">{t("dashboard.peak", { hour: peakHour })}</div>
                             </div>
                         </div>
 
                         <div className="card md-funnel">
-                            <div className="eyebrow">Funnel</div>
-                            <div className="section-title md-funnel-title">Del mapa al local</div>
+                            <div className="eyebrow">{t("dashboard.funnel.title")}</div>
+                            <div className="section-title md-funnel-title">{t("dashboard.funnel.mapToStore")}</div>
                             {report.funnel.map((row, i) => (
                                 <div key={row.label} className="funnel-row">
                                     <div className="funnel-row-head">
@@ -313,20 +344,20 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
                         </div>
                     </section>
 
-                    <section>
+                    <section className="md-section">
                         <div className="card md-top-card">
                             <div className="card-header">
                                 <div>
-                                    <div className="eyebrow">Top campañas</div>
-                                    <div className="section-title">Tus campañas</div>
+                                    <div className="eyebrow">{t("dashboard.topCampaigns")}</div>
+                                    <div className="section-title">{t("dashboard.yourCampaigns")}</div>
                                 </div>
                                 {campaignStats.length > 0 && (
-                                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode("campaigns")}>Ver todas</button>
+                                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode("campaigns")}>{t("dashboard.seeAll")}</button>
                                 )}
                             </div>
                             <div className="md-top-list">
                                 {campaignStats.length === 0 ? (
-                                    <div className="md-state">Aún no tienes campañas en este establecimiento.</div>
+                                    <div className="md-state">{t("dashboard.noCampaigns")}</div>
                                 ) : campaignStats.map((c, i) => (
                                     <button type="button" key={c.id} className="md-top-row md-top-row-btn"
                                             onClick={() => openCampaign(c.id)}>
@@ -334,11 +365,49 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
                                         <div className="md-top-main">
                                             <div className="md-top-name">{c.name}</div>
                                             <div className="mono md-top-meta">
-                                                {c.analytics.viewsCount} vistos · {c.analytics.reservationsCount} reservados · {c.analytics.redemptionsCount} redimidos · {Math.round(c.analytics.conversionRate)}% conv.
+                                                {t("dashboard.miniMetrics", {
+                                                    views: c.analytics.viewsCount,
+                                                    reserved: c.analytics.reservationsCount,
+                                                    redeemed: c.analytics.redemptionsCount,
+                                                    rate: Math.round(c.analytics.conversionRate),
+                                                })}
                                             </div>
                                         </div>
                                         <Icon name="chevron" size={14}/>
                                     </button>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="md-section">
+                        <div className="card md-top-card">
+                            <div className="card-header">
+                                <div>
+                                    <div className="eyebrow">{t("dashboard.standaloneCoupons")}</div>
+                                    <div className="section-title">{t("dashboard.yourStandaloneCoupons")}</div>
+                                </div>
+                            </div>
+                            <div className="md-top-list">
+                                {couponMetricsLoading ? (
+                                    <div className="md-state">{t("dashboard.loading")}</div>
+                                ) : topStandaloneCoupons.length === 0 ? (
+                                    <div className="md-state">{t("dashboard.noStandaloneCoupons")}</div>
+                                ) : topStandaloneCoupons.map(({ coupon: c, metrics: m }, i) => (
+                                    <div key={c.id} className="md-top-row">
+                                        <div className="md-top-color" style={{ background: TOP_COLORS[i % TOP_COLORS.length] }}/>
+                                        <div className="md-top-main">
+                                            <div className="md-top-name">{c.title}</div>
+                                            <div className="mono md-top-meta">
+                                                {t("dashboard.miniMetrics", {
+                                                    views: m.viewsCount,
+                                                    reserved: m.reservationsCount,
+                                                    redeemed: m.redemptionsCount,
+                                                    rate: m.viewsCount > 0 ? Math.round((m.redemptionsCount / m.viewsCount) * 1000) / 10 : 0,
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         </div>

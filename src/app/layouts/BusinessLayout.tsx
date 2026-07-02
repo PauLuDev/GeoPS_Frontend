@@ -28,7 +28,9 @@ import { setToken } from "@/shared/api/tokenStore.ts";
 import { useAuth } from "@/features/auth/presentation/hooks/useAuth.ts";
 import { ApiError } from "@/shared/api/apiClient.ts";
 
-function getApiErrorMessage(err: unknown): string {
+import type { TFunction } from "i18next";
+
+function getApiErrorMessage(err: unknown, t: TFunction): string {
     if (err instanceof ApiError) {
         const body = err.body as any;
         if (body && typeof body === "object") {
@@ -37,9 +39,9 @@ function getApiErrorMessage(err: unknown): string {
                 return body.errors.map((e: any) => typeof e === "string" ? e : e.message || JSON.stringify(e)).join(", ");
             }
         }
-        return `Error del servidor (${err.status}): ${err.message}`;
+        return t("campaigns.errors.serverError", { status: err.status, message: err.message });
     }
-    return err instanceof Error ? err.message : "Error desconocido al procesar la solicitud.";
+    return err instanceof Error ? err.message : t("campaigns.errors.unknownError");
 }
 
 interface BusinessLayoutProps {
@@ -116,9 +118,9 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
         try {
             const ok = await addCampaign({ ...campaign, establishmentId });
             if (ok) setView("campaigns");
-            else setCampaignErrorMsg("No se pudo crear la campaña por un motivo indeterminado.");
+            else setCampaignErrorMsg(t("campaigns.errors.cannotCreateDefault"));
         } catch (err) {
-            setCampaignErrorMsg(getApiErrorMessage(err));
+            setCampaignErrorMsg(getApiErrorMessage(err, t));
         }
     };
 
@@ -159,7 +161,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
             <main className="merchant-main">
                 {/* barra superior solo en mobile: hamburguesa para abrir el menu */}
                 <div className="msb-mobile-bar">
-                    <button type="button" className="msb-hamburger" aria-label="Abrir menú" onClick={() => setSidebarOpen(true)}>
+                    <button type="button" className="msb-hamburger" aria-label={t("common.openMenu")} onClick={() => setSidebarOpen(true)}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                             <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                         </svg>
@@ -176,6 +178,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                     <MerchantDashboard
                         onNew={handleNew}
                         establishments={establishments.map(e => ({ id: e.id, name: e.name }))}
+                        coupons={registeredCoupons}
                     />
                 )}
                 {view === "campaigns" && (
@@ -252,20 +255,20 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
 
             {/* error al crear campana (rechazo del backend) */}
             {campaignErrorMsg && (
-                <Modal onClose={() => setCampaignErrorMsg(null)} ariaLabel="Error al crear campaña" className="est-modal">
+                <Modal onClose={() => setCampaignErrorMsg(null)} ariaLabel={t("campaigns.errors.cannotCreateTitle")} className="est-modal">
                     <div className="est-modal-body">
                         <div className="est-modal-icon"><Icon name="close" size={20}/></div>
-                        <h3 className="est-modal-title">No se pudo crear la campaña</h3>
+                        <h3 className="est-modal-title">{t("campaigns.errors.cannotCreateTitle")}</h3>
                         <p className="est-modal-text">
                             {campaignErrorMsg}
                         </p>
                         <div className="est-modal-actions">
                             <button type="button" className="btn est-modal-btn" onClick={() => setCampaignErrorMsg(null)}>
-                                Entendido
+                                {t("establishments.limitModal.close")}
                             </button>
                             <button type="button" className="btn btn-brand est-modal-btn"
                                     onClick={() => { setCampaignErrorMsg(null); setView("subscription"); }}>
-                                <Icon name="arrowRight" size={14}/> Ver planes
+                                <Icon name="arrowRight" size={14}/> {t("establishments.limitModal.action")}
                             </button>
                         </div>
                     </div>
@@ -274,22 +277,20 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
 
             {/* limite de campanas del plan freemium */}
             {limitReached && (
-                <Modal onClose={() => setLimitReached(false)} ariaLabel="Límite del plan alcanzado" className="est-modal">
+                <Modal onClose={() => setLimitReached(false)} ariaLabel={t("campaigns.limitModal.title")} className="est-modal">
                     <div className="est-modal-body">
                         <div className="est-modal-icon"><Icon name="flag" size={20}/></div>
-                        <h3 className="est-modal-title">Límite del plan {planName}</h3>
+                        <h3 className="est-modal-title">{t("campaigns.limitModal.subtitle", { planName })}</h3>
                         <p className="est-modal-text">
-                            Tu plan <strong>{planName}</strong> permite hasta <strong>{planLimit}</strong> campañas
-                            activas a la vez y ya tienes <strong>{activeCampaigns}</strong>. Mejora tu plan para
-                            crear más campañas, o finaliza/elimina una campaña activa.
+                            {t("campaigns.limitModal.text", { planName, planLimit, activeCampaigns })}
                         </p>
                         <div className="est-modal-actions">
                             <button type="button" className="btn est-modal-btn" onClick={() => setLimitReached(false)}>
-                                Entendido
+                                {t("establishments.limitModal.close")}
                             </button>
                             <button type="button" className="btn btn-brand est-modal-btn"
                                     onClick={() => { setLimitReached(false); setView("subscription"); }}>
-                                <Icon name="arrowRight" size={14}/> Ver planes
+                                <Icon name="arrowRight" size={14}/> {t("establishments.limitModal.action")}
                             </button>
                         </div>
                     </div>

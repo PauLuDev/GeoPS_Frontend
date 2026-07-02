@@ -1,0 +1,21 @@
+export const redeem = {
+    redeem: {
+        title: "Canjear cupón",
+        subtitle: "Ingresa el código que muestra el cliente para validar y redimir su cupón.",
+        codeLabel: "Código de reserva",
+        codePlaceholder: "Pega el código del cliente",
+        codeHint: "Ingresa el código de canje que muestra el cliente en su cupón reservado.",
+        validate: "Validar y canjear",
+        validating: "Validando…",
+        successTitle: "¡Cupón canjeado!",
+        successSub: "Validado y marcado como redimido.",
+        alreadyTitle: "Este código ya fue canjeado",
+        alreadySub: "Cada cupón solo puede redimirse una vez.",
+        notFoundTitle: "Código no válido",
+        notFoundSub: "No encontramos ningún cupón con ese código. Revisa que esté bien escrito.",
+        errorTitle: "No se pudo validar",
+        errorSub: "Ocurrió un problema al validar el código: {{message}}. Intenta de nuevo.",
+        today: "Canjeados hoy",
+        emptyToday: "Aún no has canjeado cupones.",
+    },
+} as const;

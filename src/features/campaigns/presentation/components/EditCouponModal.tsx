@@ -57,7 +57,7 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
     const origNum  = parseFloat(originalPrice);
     const finalNum = parseFloat(finalPrice);
 
-    const needsDiscount = promotionType !== "BUY_X_GET_Y";
+    const needsDiscount = true;
     const discountPct = calcDiscountPct(origNum, finalNum);
     const today = todayISO();
     const endMin = startDate && startDate >= today ? startDate : today;
@@ -142,7 +142,7 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
         onSaved();
     };
 
-    const discountLabel = promotionType === "FIXED_AMOUNT" ? "Monto de descuento (S/)" : "Descuento (%)";
+    const discountLabel = promotionType === "FIXED_AMOUNT" ? t("campaigns.newForm.discountAmount") : t("campaigns.newForm.discountPercent");
 
     const selectedCampaign = campaigns.find(c => c.uuid === campaignId || String(c.id) === campaignId);
     const expiresLabel = selectedCampaign
@@ -150,46 +150,46 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
         : (durationLabel(startDate, endDate) || "—");
 
     return (
-        <Modal onClose={onClose} ariaLabel="Editar cupón" className="cm-edit-modal">
+        <Modal onClose={onClose} ariaLabel={t("couponsManagement.editModal.title")} className="cm-edit-modal">
             <div className="cm-edit-body">
-                <h3 className="cm-edit-title">Editar cupón</h3>
+                <h3 className="cm-edit-title">{t("couponsManagement.editModal.title")}</h3>
                 {error && <div className="nc-coupons-err"><Icon name="close" size={12}/> {error.message}</div>}
-
+ 
                 <div className="cm-edit-fields">
                     {/* Imagen del cupón */}
                     <div className="field nc-mb12">
-                        <span className="nc-group-label">Imagen del cupón</span>
-                        <input ref={fileRef} type="file" accept="image/*" aria-label="Imagen del cupón" className="nc-hidden-input" onChange={handleImageUpload} disabled={uploading}/>
+                        <span className="nc-group-label">{t("campaigns.newForm.couponImage")}</span>
+                        <input ref={fileRef} type="file" accept="image/*" aria-label={t("campaigns.newForm.couponImage")} className="nc-hidden-input" onChange={handleImageUpload} disabled={uploading}/>
                         {imageUrl ? (
                             <div className="nc-img-preview">
                                 <img src={imageUrl} alt="Cupón"/>
                                 <button type="button" className="nc-img-remove" disabled={uploading}
                                         onClick={() => { setImageUrl(""); if (fileRef.current) fileRef.current.value = ""; }}>
-                                    <Icon name="close" size={12}/> Quitar
+                                    <Icon name="close" size={12}/> {t("couponsManagement.editModal.quitar")}
                                 </button>
                             </div>
                         ) : (
                             <button type="button" className="nc-img-upload" onClick={() => fileRef.current?.click()} disabled={uploading}>
                                 <Icon name="image" size={22}/>
-                                {uploading ? "Subiendo..." : "Subir imagen desde tu dispositivo"}
-                                <span className="nc-img-hint">JPG, PNG · máx. recomendado 1 MB</span>
+                                {uploading ? t("campaigns.newForm.uploading") : t("couponsManagement.editModal.subirLogo")}
+                                <span className="nc-img-hint">{t("campaigns.newForm.imageSpecs")}</span>
                             </button>
                         )}
-                        {uploading && <span className="nc-img-hint"><Icon name="image" size={11}/> Subiendo imagen…</span>}
+                        {uploading && <span className="nc-img-hint"><Icon name="image" size={11}/> {t("campaigns.newForm.uploading")}</span>}
                         {uploadError && <span className="field-error"><Icon name="close" size={11}/> {uploadError}</span>}
                     </div>
 
                     <div className="field">
-                        <label htmlFor="ec-title">Título</label>
+                        <label htmlFor="ec-title">{t("campaigns.newForm.couponName")}</label>
                         <input id="ec-title" className={"input" + (err("title") ? " input-error" : "")}
                                value={title} onChange={e => setTitle(e.target.value)} disabled={uploading}/>
                     </div>
 
                     <div className="nc-row2">
                         <div className="field">
-                            <label htmlFor="ec-promo">Tipo</label>
+                            <label htmlFor="ec-promo">{t("campaigns.newForm.couponType")}</label>
                             <Select id="ec-promo" value={promotionType}
-                                    options={PROMOTION_TYPES.map(p => ({ value: p.id, label: p.label }))}
+                                    options={PROMOTION_TYPES.map(p => ({ value: p.id, label: t(p.labelKey) }))}
                                     onChange={v => setPromotionType(v as PromotionType)} disabled={uploading}/>
                         </div>
                     </div>
@@ -197,19 +197,19 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
                     {needsDiscount && (
                         <div className="nc-prices">
                             <div className="field">
-                                <label htmlFor="ec-orig">Precio original (S/)</label>
+                                <label htmlFor="ec-orig">{t("campaigns.newForm.originalPrice")}</label>
                                 <input id="ec-orig" className={"input" + (err("original") ? " input-error" : "")} type="number" min="0" step="0.5" placeholder="48"
                                        value={originalPrice} onChange={e => setOriginalPrice(e.target.value)} disabled={uploading}/>
-                                {err("original") && <span className="field-error">Mayor a 0</span>}
+                                {err("original") && <span className="field-error">{t("campaigns.newForm.errorGreaterZero")}</span>}
                             </div>
                             <div className="field">
-                                <label htmlFor="ec-final">Precio final (S/)</label>
+                                <label htmlFor="ec-final">{t("campaigns.newForm.finalPrice")}</label>
                                 <input id="ec-final" className={"input" + (err("final") ? " input-error" : "")} type="number" min="0" step="0.5" placeholder="24"
                                        value={finalPrice} onChange={e => setFinalPrice(e.target.value)} disabled={uploading}/>
-                                {err("final") && <span className="field-error">Menor al original</span>}
+                                {err("final") && <span className="field-error">{t("campaigns.newForm.errorSmallerOriginal")}</span>}
                             </div>
                             <div className="field">
-                                <span className="nc-group-label">Descuento</span>
+                                <span className="nc-group-label">{t("campaigns.newForm.discount")}</span>
                                 <div className={"nc-discount-box" + (discountPct ? " active" : "")}>
                                     {promotionType === "FIXED_AMOUNT"
                                         ? (savings(origNum, finalNum) > 0 ? `−S/${savings(origNum, finalNum)}` : "—")
@@ -218,8 +218,8 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
                                 {discountPct !== null && (
                                     <span className="nc-discount-save">
                                         {promotionType === "FIXED_AMOUNT"
-                                            ? `Equivale a ${discountPct}%`
-                                            : `Ahorro S/${savings(origNum, finalNum)}`}
+                                            ? t("campaigns.newForm.equivalentTo", { value: discountPct })
+                                            : t("campaigns.newForm.savings", { value: savings(origNum, finalNum) })}
                                     </span>
                                 )}
                             </div>
@@ -228,7 +228,7 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
 
                     <div className="nc-row2">
                         <div className="field">
-                            <span className="nc-group-label">Vigencia</span>
+                            <span className="nc-group-label">{t("campaigns.newForm.validity")}</span>
                             <div className="nc-vigencia-box">
                                 <Icon name="clock" size={13}/>
                                 <span className="nc-vigencia-val">{expiresLabel}</span>
@@ -238,38 +238,37 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
 
                     <div className="nc-row2">
                         <div className="field">
-                            <label htmlFor="ec-start">Inicio {campaignId ? <span className="nc-optional">(Heredado de la campaña)</span> : <span className="nc-optional">opcional</span>}</label>
+                            <label htmlFor="ec-start">{t("campaigns.start")} {campaignId ? <span className="nc-optional">{t("couponsManagement.editModal.inherited")}</span> : <span className="nc-optional">{t("common.optional")}</span>}</label>
                             <DatePicker id="ec-start" value={campaignId ? "" : startDate} onChange={setStartDate} disabled={!!campaignId || uploading}/>
                         </div>
                         <div className="field">
-                            <label htmlFor="ec-end">Fin {campaignId ? <span className="nc-optional">(Heredado de la campaña)</span> : <span className="nc-optional">opcional</span>}</label>
+                            <label htmlFor="ec-end">{t("campaigns.end")} {campaignId ? <span className="nc-optional">{t("couponsManagement.editModal.inherited")}</span> : <span className="nc-optional">{t("common.optional")}</span>}</label>
                             <DatePicker id="ec-end" value={campaignId ? "" : endDate} onChange={setEndDate} min={campaignId ? undefined : endMin} disabled={!!campaignId || uploading}/>
                             {err("endPast") && <span className="field-error">{t("campaign.errors.datePast")}</span>}
                         </div>
                     </div>
 
                     <div className="field">
-                        <label htmlFor="ec-desc">Descripción <span className="nc-optional">opcional</span></label>
+                        <label htmlFor="ec-desc">{t("campaigns.newForm.description")} <span className="nc-optional">{t("common.optional")}</span></label>
                         <textarea id="ec-desc" className="input" rows={2} value={description}
                                   onChange={e => setDescription(e.target.value)} disabled={uploading}/>
                     </div>
 
                     {campaigns.length > 0 && (
                         <div className="field">
-                            <label htmlFor="ec-campaign">Campaña <span className="nc-optional">opcional</span></label>
+                            <label htmlFor="ec-campaign">{t("couponsManagement.editModal.campaign")} <span className="nc-optional">{t("common.optional")}</span></label>
                             <Select id="ec-campaign" value={campaignId}
                                     options={[
-                                        { value: "", label: "Sin campaña" },
+                                        { value: "", label: t("couponsManagement.editModal.noCampaign") },
                                         ...assignable.map(c => ({ value: c.uuid ?? "", label: c.name })),
                                     ]}
                                     onChange={setCampaignId} disabled={uploading}/>
                         </div>
                     )}
-
                     {/* Restricciones */}
                     <div className="nc-restr">
                         <div className="nc-restr-head">
-                            <div className="nc-restr-title">Restricciones de uso</div>
+                            <div className="nc-restr-title">{t("campaigns.newForm.useRestrictions")}</div>
                         </div>
                         <div className="nc-restr-chips">
                             {PRESET_RESTRICTIONS.map(p => {
@@ -278,14 +277,14 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
                                     <button type="button" key={p} className="nc-restr-chip" aria-pressed={on}
                                             onClick={() => togglePreset(p)} disabled={uploading}>
                                         {on && <Icon name="check" size={10}/>}
-                                        {p}
+                                        {t(`couponRestrictions.${p}`, { defaultValue: p })}
                                     </button>
                                 );
                             })}
                         </div>
                         <div className="nc-restr-add-row">
                             <input className="input nc-restr-input"
-                                   placeholder="Agrega una restricción personalizada..."
+                                   placeholder={t("campaigns.newForm.customRestrictionPlaceholder")}
                                    aria-label="Restricción personalizada"
                                    value={customRestriction}
                                    onChange={e => setCustomRestriction(e.target.value)}
@@ -294,7 +293,7 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
                             <button type="button" className="btn btn-sm nc-noshrink"
                                     disabled={!customRestriction.trim() || uploading}
                                     onClick={addCustomRestriction}>
-                                <Icon name="plus" size={13}/> Añadir
+                                <Icon name="plus" size={13}/> {t("campaigns.newForm.addButton")}
                             </button>
                         </div>
                         {customList.length > 0 && (
@@ -311,22 +310,22 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
                             </div>
                         )}
                     </div>
-
+ 
                     {/* Términos y condiciones */}
                     <div className="nc-terms">
-                        <div className="nc-terms-title">Términos y condiciones</div>
+                        <div className="nc-terms-title">{t("campaigns.newForm.terms")}</div>
                         <textarea className="input" rows={3}
-                                  aria-label="Términos y condiciones"
-                                  placeholder="El cupón es válido únicamente durante el período indicado. Solo puede ser canjeado una vez por cliente. El establecimiento se reserva el derecho de modificar o cancelar la oferta sin previo aviso..."
+                                  aria-label={t("campaigns.newForm.terms")}
+                                  placeholder={t("campaigns.newForm.termsPlaceholder")}
                                   value={terms}
                                   onChange={e => setTerms(e.target.value)} disabled={uploading}/>
                     </div>
                 </div>
 
                 <div className="cm-edit-actions">
-                    <button type="button" className="btn" onClick={onClose} disabled={loading || uploading}>Cancelar</button>
+                    <button type="button" className="btn" onClick={onClose} disabled={loading || uploading}>{t("common.cancel")}</button>
                     <button type="button" className="btn btn-brand" onClick={save} disabled={loading || uploading}>
-                        <Icon name="check" size={14}/> {loading ? "Guardando…" : (uploading ? "Subiendo..." : "Guardar cambios")}
+                        <Icon name="check" size={14}/> {loading ? t("couponsManagement.editModal.saving") : (uploading ? t("campaigns.newForm.uploading") : t("common.save"))}
                     </button>
                 </div>
             </div>
