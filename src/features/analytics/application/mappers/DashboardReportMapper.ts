@@ -38,22 +38,22 @@ export function toReportSnapshot(
         meta: { businessName, period: t(`dashboard.period.${range}`) },
         kpis: [
             /* cupones vistos = "Abrieron el cupon" (ver el detalle del cupon) */
-            { ...toKpi("dashboard.kpi.views", kpis.views), value: String(f.views.count) },
+            { ...toKpi(t("dashboard.kpi.views"), kpis.views), value: String(f.views.count) },
             /* redimidos = "Canjearon en el local" (mismo dato del funnel) */
             {
-                label: "dashboard.kpi.redeemed",
+                label: t("dashboard.kpi.redeemed"),
                 value: String(f.redemptions.count),
                 delta: "",
                 trend: "up",
                 spark: redeemedSpark.length ? redeemedSpark : [0, 0],
             },
-            toKpi("dashboard.kpi.reserved", kpis.reservations),
-            toKpi("dashboard.kpi.conversion", kpis.conversionRate),
+            toKpi(t("dashboard.kpi.reserved"), kpis.reservations),
+            toKpi(t("dashboard.kpi.conversion"), kpis.conversionRate),
         ],
         funnel: [
-            { label: "dashboard.funnel.views", value: f.views.count, pct: stepPct(f.views.count) },
-            { label: "dashboard.funnel.reserved", value: f.reservations.count, pct: stepPct(f.reservations.count) },
-            { label: "dashboard.funnel.redeemed", value: f.redemptions.count, pct: stepPct(f.redemptions.count) },
+            { label: t("dashboard.funnel.views"), value: f.views.count, pct: stepPct(f.views.count) },
+            { label: t("dashboard.funnel.reserved"), value: f.reservations.count, pct: stepPct(f.reservations.count) },
+            { label: t("dashboard.funnel.redeemed"), value: f.redemptions.count, pct: stepPct(f.redemptions.count) },
         ],
         topCampaigns: topCampaigns.map(c => ({
             name: c.name,

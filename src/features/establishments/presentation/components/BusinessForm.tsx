@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useId } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Business, BusinessHours } from "@/shared/types.ts";
 import { establishmentApi } from "@/features/establishments/infrastructure/api/establishmentApi.ts";
@@ -18,6 +19,19 @@ const sanitizeRuc = (val: string) => val.replace(/\D/g, "").slice(0, 9);
 
 const sanitizePhone = (val: string) => val.replace(/\D/g, "").slice(0, 9);
 
+const translateDay = (day: string, t: any) => {
+    switch (day.toLowerCase()) {
+        case "lunes": return t("days.mon");
+        case "martes": return t("days.tue");
+        case "miércoles": case "miercoles": return t("days.wed");
+        case "jueves": return t("days.thu");
+        case "viernes": return t("days.fri");
+        case "sábado": case "sabado": return t("days.sat");
+        case "domingo": return t("days.sun");
+        default: return day;
+    }
+};
+
 interface BusinessFormProps {
     initial?: Business | null;
     submitLabel: string;
@@ -26,6 +40,7 @@ interface BusinessFormProps {
 }
 
 export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: BusinessFormProps) {
+    const { t } = useTranslation();
     const fid = useId();
     const logoRef   = useRef<HTMLInputElement>(null);
     const photosRef = useRef<HTMLInputElement>(null);
@@ -142,12 +157,12 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                 <div className="bf-error-box">
                     <Icon name="close" size={15}/>
                     <div className="bf-error-text">
-                        <strong>Completa los campos obligatorios:</strong>
+                        <strong>{t("businessForm.requiredFields")}</strong>
                         <ul className="bf-error-list">
-                            {errors.name        && <li>Nombre del establecimiento</li>}
-                            {errors.category    && <li>Categoría</li>}
-                            {errors.description && <li>Descripción</li>}
-                            {errors.address     && <li>Dirección</li>}
+                            {errors.name        && <li>{t("businessForm.name")}</li>}
+                            {errors.category    && <li>{t("businessForm.category")}</li>}
+                            {errors.description && <li>{t("businessForm.description")}</li>}
+                            {errors.address     && <li>{t("businessForm.address")}</li>}
                             {errors.district    && <li>Distrito</li>}
                         </ul>
                     </div>
@@ -158,25 +173,25 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                 {/* izquierda: informacion + horarios */}
                 <div className="bf-col">
                     <div className="card bf-card">
-                        <div className="eyebrow bf-eyebrow">Información del negocio</div>
+                        <div className="eyebrow bf-eyebrow">{t("businessForm.businessInfo")}</div>
                         <div className="bf-fields">
                             <div className="field">
-                                <label htmlFor={`${fid}-name`}>Nombre del establecimiento <Req/></label>
+                                <label htmlFor={`${fid}-name`}>{t("businessForm.name")} <Req/></label>
                                 <input id={`${fid}-name`} className={inputCls("name")} placeholder="Ej. Tanta Miraflores"
                                        value={name} onChange={e => setName(e.target.value)}/>
-                                {err("name") && <ErrMsg>Campo obligatorio</ErrMsg>}
+                                {err("name") && <ErrMsg>{t("campaigns.newForm.required")}</ErrMsg>}
                             </div>
                             <div className="field">
-                                <label htmlFor={`${fid}-desc`}>Descripción <Req/></label>
-                                <textarea id={`${fid}-desc`} className={inputCls("description")} rows={3} placeholder="Describe tu negocio, especialidades, ambiente..."
+                                <label htmlFor={`${fid}-desc`}>{t("businessForm.description")} <Req/></label>
+                                <textarea id={`${fid}-desc`} className={inputCls("description")} rows={3} placeholder={t("businessForm.descPlaceholder")}
                                           value={description} onChange={e => setDescription(e.target.value)}/>
-                                {err("description") && <ErrMsg>Campo obligatorio</ErrMsg>}
+                                {err("description") && <ErrMsg>{t("campaigns.newForm.required")}</ErrMsg>}
                             </div>
                             <div className="field">
-                                <span className="bf-group-label">Categoría <Req/></span>
+                                <span className="bf-group-label">{t("businessForm.category")} <Req/></span>
                                 <div className="bf-chips">
                                     {categories.length === 0 ? (
-                                        <span className="bf-hint">Cargando categorías…</span>
+                                        <span className="bf-hint">{t("businessForm.loadingCategories")}</span>
                                     ) : categories.map(c => (
                                         <button type="button" key={c.id}
                                                 className={"chip " + (categoryId === c.id ? "active" : "")}
@@ -185,42 +200,42 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                         </button>
                                     ))}
                                 </div>
-                                {err("category") && <ErrMsg>Selecciona una categoría</ErrMsg>}
+                                {err("category") && <ErrMsg>{t("businessForm.categoryRequired")}</ErrMsg>}
                             </div>
                             <div className="field">
-                                <label>Dirección y ubicación <Req/></label>
+                                <label>{t("businessForm.address")} <Req/></label>
                                 <AddressPicker
                                     value={addrValue}
                                     onChange={setAddrValue}
                                     error={submitted && (errors.address || errors.district)}
                                 />
-                                {submitted && errors.address && <ErrMsg>Ingresa una dirección</ErrMsg>}
-                                {submitted && !errors.address && errors.district && <ErrMsg>No se detectó el distrito</ErrMsg>}
+                                {submitted && errors.address && <ErrMsg>{t("businessForm.addressRequired")}</ErrMsg>}
+                                {submitted && !errors.address && errors.district && <ErrMsg>{t("businessForm.districtRequired")}</ErrMsg>}
                             </div>
                             <div className="bf-row2">
                                 <div className="field">
-                                    <label htmlFor={`${fid}-ruc`}>RUC</label>
+                                    <label htmlFor={`${fid}-ruc`}>{t("businessForm.ruc")}</label>
                                     <input id={`${fid}-ruc`} className="input" placeholder="20123456789"
                                            inputMode="numeric" maxLength={9}
                                            value={ruc} onChange={e => setRuc(sanitizeRuc(e.target.value))}/>
                                 </div>
                                 <div className="field">
-                                    <label htmlFor={`${fid}-phone`}>Teléfono</label>
+                                    <label htmlFor={`${fid}-phone`}>{t("businessForm.phone")}</label>
                                     <input id={`${fid}-phone`} className={inputCls("phone")} placeholder="999888777"
                                            inputMode="tel" maxLength={9}
                                            value={phone} onChange={e => setPhone(sanitizePhone(e.target.value))}/>
-                                    <span className="bf-hint">Debe ingresar exactamente 9 dígitos</span>
-                                    {err("phone") && <span className="field-error">El teléfono debe tener exactamente 9 dígitos</span>}
+                                    <span className="bf-hint">{t("businessForm.phoneHint")}</span>
+                                    {err("phone") && <span className="field-error">{t("businessForm.phoneError")}</span>}
                                 </div>
                             </div>
                             <div className="bf-row2">
                                 <div className="field">
-                                    <label htmlFor={`${fid}-email`}>Correo</label>
+                                    <label htmlFor={`${fid}-email`}>{t("businessForm.email")}</label>
                                     <input id={`${fid}-email`} className="input" type="email" placeholder="contacto@negocio.com"
                                            value={email} onChange={e => setEmail(e.target.value)}/>
                                 </div>
                                 <div className="field">
-                                    <label htmlFor={`${fid}-web`}>Sitio web</label>
+                                    <label htmlFor={`${fid}-web`}>{t("businessForm.website")}</label>
                                     <input id={`${fid}-web`} className="input" placeholder="negocio.com"
                                            value={website} onChange={e => setWebsite(e.target.value)}/>
                                 </div>
@@ -230,13 +245,13 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
 
                     {/* horarios */}
                     <div className="card bf-card">
-                        <div className="eyebrow bf-eyebrow">Horarios de atención</div>
+                        <div className="eyebrow bf-eyebrow">{t("businessForm.hours")}</div>
                         <div className="bf-hours">
                             {hours.map((h, i) => (
                                 <div key={h.day} className={"bf-hours-row" + (h.closed ? " closed" : "") + (i < hours.length - 1 ? " divided" : "")}>
-                                    <span className="bf-day">{h.day}</span>
+                                    <span className="bf-day">{translateDay(h.day, t)}</span>
                                     {h.closed ? (
-                                        <span className="bf-closed-text">Cerrado</span>
+                                        <span className="bf-closed-text">{t("businessForm.closed")}</span>
                                     ) : (
                                         <div className="bf-time-range">
                                             <TimePicker className="bf-time" aria-label={`${h.day} apertura`}
@@ -248,7 +263,7 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                     )}
                                     <button type="button" onClick={() => toggleClosed(i)}
                                             className={"chip bf-hours-toggle " + (h.closed ? "active" : "")}>
-                                        {h.closed ? "Abrir" : "Cerrado"}
+                                        {h.closed ? t("businessForm.open") : t("businessForm.closed")}
                                     </button>
                                 </div>
                             ))}
@@ -259,29 +274,27 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                 {/* derecha: identidad visual */}
                 <div className="bf-side">
                     <div className="card bf-card">
-                        <div className="eyebrow bf-eyebrow">Identidad visual</div>
-
+                        <div className="eyebrow bf-eyebrow">{t("businessForm.visualIdentity")}</div>
+ 
                         {/* logo */}
-                        <input ref={logoRef} type="file" accept="image/*" aria-label="Subir logo del negocio" className="bf-hidden-input" onChange={handleLogo}/>
+                        <input ref={logoRef} type="file" accept="image/*" aria-label={t("businessForm.logoUploadAria")} className="bf-hidden-input" onChange={handleLogo}/>
                         <div className="bf-logo-row">
-                            <button type="button" onClick={() => logoRef.current?.click()} aria-label="Subir logo del negocio" className="bf-logo-btn">
+                            <button type="button" onClick={() => logoRef.current?.click()} aria-label={t("businessForm.logoUploadAria")} className="bf-logo-btn">
                                 {logo
                                     ? <img src={logo} alt="Logo"/>
-                                    : <div className="bf-logo-placeholder"><Icon name="image" size={20}/><div>Logo</div></div>}
+                                    : <div className="bf-logo-placeholder"><Icon name="image" size={20}/><div>{t("businessForm.logoText")}</div></div>}
                             </button>
                             <div className="bf-logo-info">
-                                <div className="bf-logo-name">Logo del negocio</div>
-                                <div className="bf-logo-hint">Cuadrado · JPG o PNG</div>
+                                <div className="bf-logo-name">{t("businessForm.logoLabel")}</div>
+                                <div className="bf-logo-hint">{t("businessForm.logoHint")}</div>
                                 <button type="button" className="btn btn-sm" onClick={() => logoRef.current?.click()}>
-                                    <Icon name="image" size={12}/> {logo ? "Cambiar" : "Subir logo"}
+                                    <Icon name="image" size={12}/> {logo ? t("businessForm.changeLogo") : t("businessForm.uploadLogo")}
                                 </button>
                             </div>
-                        </div>
-
-                        {/* fotos */}
-                        <input ref={photosRef} type="file" accept="image/*" multiple aria-label="Subir fotos del establecimiento" className="bf-hidden-input" onChange={handlePhotos}/>
+                        </div>                          {/* fotos */}
+                        <input ref={photosRef} type="file" accept="image/*" multiple aria-label={t("businessForm.photosUploadAria")} className="bf-hidden-input" onChange={handlePhotos}/>
                         <div className="field">
-                            <span className="bf-group-label">Fotos del establecimiento</span>
+                            <span className="bf-group-label">{t("businessForm.photosLabel")}</span>
                             <div className="bf-photos-grid">
                                 {photos.map((p, i) => (
                                     <div key={p} className="bf-photo">
@@ -289,27 +302,27 @@ export function BusinessForm({ initial, submitLabel, onSubmit, onCancel }: Busin
                                         <button type="button" onClick={() => removePhoto(i)} aria-label={`Quitar foto ${i + 1}`} className="bf-photo-remove">
                                             <Icon name="close" size={11}/>
                                         </button>
-                                        {i === 0 && <span className="bf-photo-cover">Portada</span>}
+                                        {i === 0 && <span className="bf-photo-cover">{t("businessForm.photoCover")}</span>}
                                     </div>
                                 ))}
                                 <button type="button" onClick={() => photosRef.current?.click()} className="bf-photo-add">
                                     <Icon name="plus" size={16}/>
-                                    <span>Agregar</span>
+                                    <span>{t("businessForm.photoAdd")}</span>
                                 </button>
                             </div>
-                            <span className="bf-hint">La primera foto será la portada en el mapa.</span>
-                            {uploading && <span className="bf-hint"><Icon name="image" size={11}/> Subiendo imagen…</span>}
+                            <span className="bf-hint">{t("businessForm.photosHint")}</span>
+                            {uploading && <span className="bf-hint"><Icon name="image" size={11}/> {t("businessForm.uploading")}</span>}
                             {uploadError && <ErrMsg>{uploadError}</ErrMsg>}
                         </div>
                     </div>
-
+ 
                     {/* acciones */}
                     <div className="card bf-actions">
                         <button type="button" className="btn btn-brand btn-lg bf-fullbtn" onClick={handleSubmit} disabled={uploading}>
-                            {uploading ? "Subiendo imagen…" : submitLabel} <Icon name="arrowRight" size={15}/>
+                            {uploading ? t("businessForm.uploading") : submitLabel} <Icon name="arrowRight" size={15}/>
                         </button>
                         <button type="button" className="btn bf-fullbtn" onClick={onCancel}>
-                            Cancelar
+                            {t("common.cancel")}
                         </button>
                     </div>
                 </div>

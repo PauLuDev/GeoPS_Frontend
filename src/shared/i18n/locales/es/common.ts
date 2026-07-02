@@ -8,6 +8,8 @@ export const common = {
         seeAll: "Ver todo",
         loading: "Cargando…",
         search: "Buscar",
+        optional: "opcional",
+        openMenu: "Abrir menú",
     },
     cat: {
         all: "Todo",

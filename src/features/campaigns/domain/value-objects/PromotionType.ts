@@ -1,9 +1,9 @@
 import type { TFunction } from "i18next";
 
 /* tipo de promocion de un cupon */
-export type PromotionType = "PERCENTAGE" | "FIXED_AMOUNT" | "BUY_X_GET_Y";
+export type PromotionType = "PERCENTAGE" | "FIXED_AMOUNT";
 
-/* solo se ofrecen descuento % y monto fijo; 2x1 (BUY_X_GET_Y) queda en el tipo por compatibilidad pero no se muestra */
+/* solo se ofrecen descuento % y monto fijo */
 export const PROMOTION_TYPES: { id: PromotionType; labelKey: string }[] = [
     { id: "PERCENTAGE",   labelKey: "promotionTypes.percentage" },
     { id: "FIXED_AMOUNT", labelKey: "promotionTypes.fixedAmount" },
@@ -11,12 +11,15 @@ export const PROMOTION_TYPES: { id: PromotionType; labelKey: string }[] = [
 
 export const DEFAULT_PROMOTION_TYPE: PromotionType = "PERCENTAGE";
 
-/* etiqueta legible del tipo de promocion (sin depender de i18n, para compatibilidad) */
-export function promotionLabel(type: PromotionType): string {
+/* etiqueta legible y traducible del tipo de promocion */
+export function promotionLabel(type: PromotionType, t?: TFunction): string {
+    if (t) {
+        if (type === "PERCENTAGE") return t("promotionTypes.percentage");
+        if (type === "FIXED_AMOUNT") return t("promotionTypes.fixedAmount");
+    }
     const map: Record<PromotionType, string> = {
         PERCENTAGE: "Descuento %",
         FIXED_AMOUNT: "Monto fijo",
-        BUY_X_GET_Y: "2x1",
     };
     return map[type] ?? type;
 }

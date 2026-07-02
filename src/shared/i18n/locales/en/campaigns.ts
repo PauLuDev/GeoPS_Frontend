@@ -81,6 +81,10 @@ export const campaigns = {
             equivalentTo: "Equivalent to {{value}}%",
             stock: "Stock (units)",
             minStock: "Minimum 1 unit",
+            errorGreaterZero: "Greater than 0",
+            errorSmallerOriginal: "Less than original",
+            discountAmount: "Discount amount (S/)",
+            discountPercent: "Discount (%)",
             validity: "Validity",
             description: "Description",
             descCouponPlaceholder: "Additional coupon context...",
@@ -130,4 +134,34 @@ export const campaigns = {
             conversion: "Conversion",
         },
     },
+    limitModal: {
+        title: "Plan limit reached",
+        subtitle: "{{planName}} plan limit",
+        text: "Your {{planName}} plan allows up to {{planLimit}} active campaigns at once and you already have {{activeCampaigns}}. Upgrade your plan to create more campaigns, or end/delete an active campaign.",
+    },
+    errors: {
+        cannotCreateTitle: "Could not create campaign",
+        cannotCreateDefault: "Could not create campaign due to an unknown reason.",
+        serverError: "Server error ({{status}}): {{message}}",
+        unknownError: "Unknown error occurred while processing the request."
+    },
+    promotionTypes: {
+        percentage: "Discount %",
+        fixedAmount: "Fixed amount",
+    },
+    couponsEditor: {
+        title: "Campaign coupons",
+        emptyCampaign: "This campaign has no coupons yet.",
+        confirmDelete: "Delete?",
+        yes: "Yes",
+        no: "No",
+        removeFromCampaign: "Remove from campaign",
+        deleteCoupon: "Delete coupon",
+        unassigned: "No campaign",
+        emptyUnassigned: "No free coupons to add.",
+        add: "Add",
+        errorDelete: "Could not delete coupon.",
+        errorRemove: "Could not remove coupon from campaign.",
+        errorAdd: "Could not add coupon to campaign."
+    }
 } as const;

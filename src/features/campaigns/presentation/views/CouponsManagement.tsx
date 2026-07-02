@@ -165,7 +165,7 @@ export function CouponsManagement({ registeredCoupons, campaigns, onReload }: Co
                                     <div className="cm-info">
                                         <div className="cm-title">{c.title}</div>
                                         <div className="cm-meta">
-                                            <span className="cm-cat-tag">{promotionLabel(c.promotionType)}</span>
+                                            <span className="cm-cat-tag">{promotionLabel(c.promotionType, t)}</span>
                                             <span className="cm-sep">·</span>
                                             <span className="cm-discount">{c.discount}</span>
                                             <span className="cm-sep">·</span>

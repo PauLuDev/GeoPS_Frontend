@@ -276,7 +276,7 @@ export function CampaignsList({
                                                 <div className="cg-coupon-name">
                                                     {cp.id === bestCoupon && <Icon name="star" size={12}/>}
                                                     {cp.title}
-                                                    <span className="cd-cat-tag">{promotionLabel(cp.promotionType)}</span>
+                                                    <span className="cd-cat-tag">{promotionLabel(cp.promotionType, t)}</span>
                                                 </div>
                                                 <div className="cg-coupon-metrics mono">
                                                     <span>{cp.views.toLocaleString()} {t("campaigns.metrics.views")}</span>

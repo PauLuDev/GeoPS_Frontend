@@ -31,7 +31,7 @@ const rangeLabels: Record<HourlyRange, string> = {
 };
 
 export function MerchantDashboard({ onNew, establishments, coupons = [] }: DashboardProps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [exportOpen, setExportOpen] = useState(false);
     const [range, setRange] = useState<HourlyRange>("today");
     const exportRef = useRef<HTMLDivElement>(null);
@@ -107,7 +107,7 @@ export function MerchantDashboard({ onNew, establishments, coupons = [] }: Dashb
     /* foto del reporte que usan la vista y la exportacion */
     const report = useMemo(
         () => (stats ? toReportSnapshot(stats, establishmentName, range, t) : null),
-        [stats, establishmentName, range, t],
+        [stats, establishmentName, range, t, i18n.language],
     );
 
     /* reporte de la campana elegida (KPIs + funnel + export). el back no expone
@@ -135,7 +135,7 @@ export function MerchantDashboard({ onNew, establishments, coupons = [] }: Dashb
             topCampaigns: [],
             hourly: [],
         };
-    }, [selectedCampaign, establishmentName, t]);
+    }, [selectedCampaign, establishmentName, t, i18n.language]);
 
     /* reporte activo segun el modo (lo usan exportacion y el boton) */
     const activeReport = mode === "campaigns" ? campaignReport : report;

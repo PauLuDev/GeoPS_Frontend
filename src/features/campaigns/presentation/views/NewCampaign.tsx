@@ -314,7 +314,7 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                         <div className="nc-coupon-info">
                                             <div className="nc-coupon-title">{rc.title}</div>
                                             <div className="nc-coupon-meta">
-                                                <span className="nc-cat-tag">{promotionLabel(rc.promotionType)}</span>
+                                                <span className="nc-cat-tag">{promotionLabel(rc.promotionType, t)}</span>
                                                 <span className="nc-sep">·</span>
                                                 −{rc.discount}
                                                 <span className="nc-sep">·</span>
@@ -408,7 +408,7 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                     <label htmlFor={`${uid}-c-promo`}>{t("campaigns.newForm.couponType")}</label>
                                     <Select id={`${uid}-c-promo`}
                                             value={couponDraft.promotionType}
-                                            options={PROMOTION_TYPES.map(p => ({ value: p.id, label: t(`promotionTypes.${p.id === "PERCENTAGE" ? "percentage" : "fixedAmount"}`, { defaultValue: p.label }) }))}
+                                            options={PROMOTION_TYPES.map(p => ({ value: p.id, label: t(p.labelKey) }))}
                                             onChange={v => setCouponDraft(d => ({ ...d, promotionType: v as PromotionType }))}/>
                                 </div>
 

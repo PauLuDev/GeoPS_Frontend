@@ -32,18 +32,39 @@ export const establishments = {
         viewPlans: "View plans",
     },
     businessForm: {
-        businessInfo: "Business info",
+        businessInfo: "Business details",
         visualIdentity: "Visual identity",
         hours: "Operating hours",
         name: "Establishment name",
         description: "Description",
         category: "Category",
-        categoryRequired: "Select a category",
+        categoryRequired: "Please select a category",
         address: "Address & location",
-        addressRequired: "Enter an address",
-        districtRequired: "District was not detected",
-        ruc: "Tax ID",
+        addressRequired: "Please enter an address",
+        districtRequired: "District not detected",
+        ruc: "RUC",
         phone: "Phone",
+        requiredFields: "Complete the required fields:",
+        descPlaceholder: "Describe your business, specialties, atmosphere...",
+        loadingCategories: "Loading categories…",
+        phoneHint: "Must enter exactly 9 digits",
+        phoneError: "The phone must have exactly 9 digits",
+        email: "Email",
+        website: "Website",
+        closed: "Closed",
+        open: "Open",
+        logoUploadAria: "Upload business logo",
+        logoText: "Logo",
+        logoLabel: "Business logo",
+        logoHint: "Square · JPG or PNG",
+        changeLogo: "Change",
+        uploadLogo: "Upload logo",
+        photosUploadAria: "Upload business photos",
+        photosLabel: "Business photos",
+        photoCover: "Cover",
+        photoAdd: "Add",
+        photosHint: "The first photo will be used as the cover on the map.",
+        uploading: "Uploading image…"
     },
     couponsManagement: {
         title: "Coupons",
@@ -74,6 +95,20 @@ export const establishments = {
             confirmText2: "? This action cannot be undone.",
             deleting: "Deleting…",
             deleteBtn: "Delete"
+        },
+        editModal: {
+            title: "Edit coupon",
+            inherited: "(Inherited from campaign)",
+            campaign: "Campaign",
+            noCampaign: "No campaign",
+            saving: "Saving…",
+            quitar: "Remove",
+            cambiar: "Change",
+            subirLogo: "Upload image from your device"
+        },
+        newCouponForm: {
+            registerFirst: "Register an establishment first",
+            belongsToEst: "A coupon always belongs to one of your establishments."
         }
     }
 } as const;

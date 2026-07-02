@@ -325,6 +325,28 @@
   .geops-app .cm-actions .btn { padding: 6px 9px; }
 }
 
+.geops-app .cm-metrics {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  flex-wrap: wrap;
+}
+.geops-app .cm-metrics span {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-sunken);
+  padding: 3px 8px;
+  border-radius: 6px;
+  gap: 4px;
+}
+.geops-app .cm-metrics strong {
+  color: var(--ink-2);
+}
+
+
 /* coupon edit modal */
 .geops-app .geops-dialog.cm-edit-modal { width: min(480px, calc(100vw - 24px)); }
 .geops-app .cm-edit-body { padding: 24px; }

@@ -81,6 +81,10 @@ export const campaigns = {
             equivalentTo: "Equivale a {{value}}%",
             stock: "Stock (unidades)",
             minStock: "Mínimo 1 unidad",
+            errorGreaterZero: "Mayor a 0",
+            errorSmallerOriginal: "Menor al original",
+            discountAmount: "Monto de descuento (S/)",
+            discountPercent: "Descuento (%)",
             validity: "Vigencia",
             description: "Descripción",
             descCouponPlaceholder: "Contexto adicional del cupón...",
@@ -130,4 +134,34 @@ export const campaigns = {
             conversion: "Conversión",
         },
     },
+    limitModal: {
+        title: "Límite del plan alcanzado",
+        subtitle: "Límite del plan {{planName}}",
+        text: "Tu plan {{planName}} permite hasta {{planLimit}} campañas activas a la vez y ya tienes {{activeCampaigns}}. Mejora tu plan para crear más campañas, o finaliza/elimina una campaña activa.",
+    },
+    errors: {
+        cannotCreateTitle: "No se pudo crear la campaña",
+        cannotCreateDefault: "No se pudo crear la campaña por un motivo indeterminado.",
+        serverError: "Error del servidor ({{status}}): {{message}}",
+        unknownError: "Error desconocido al procesar la solicitud."
+    },
+    promotionTypes: {
+        percentage: "Descuento %",
+        fixedAmount: "Monto fijo",
+    },
+    couponsEditor: {
+        title: "Cupones de la campaña",
+        emptyCampaign: "Esta campaña aún no tiene cupones.",
+        confirmDelete: "¿Eliminar?",
+        yes: "Sí",
+        no: "No",
+        removeFromCampaign: "Quitar de la campaña",
+        deleteCoupon: "Eliminar cupón",
+        unassigned: "Sin campaña",
+        emptyUnassigned: "No hay cupones libres para agregar.",
+        add: "Agregar",
+        errorDelete: "No se pudo eliminar el cupón.",
+        errorRemove: "No se pudo quitar el cupón de la campaña.",
+        errorAdd: "No se pudo agregar el cupón a la campaña."
+    }
 } as const;

@@ -133,7 +133,7 @@ export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
                                         {isBest && <Icon name="star" size={13}/>}
                                         <span className="cd-coupon-name">{cp.title}</span>
                                     </div>
-                                    <div><span className="cd-cat-tag">{promotionLabel(cp.promotionType)}</span></div>
+                                    <div><span className="cd-cat-tag">{promotionLabel(cp.promotionType, t)}</span></div>
                                     <div className="mono tnum">{fmt(cpViews)}</div>
                                     <div className="mono tnum">{fmt(cpReserved)}</div>
                                     <div className="mono tnum">{fmt(cpRedeemed)}</div>

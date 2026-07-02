@@ -44,6 +44,27 @@ export const establishments = {
         districtRequired: "No se detectó el distrito",
         ruc: "RUC",
         phone: "Teléfono",
+        requiredFields: "Completa los campos obligatorios:",
+        descPlaceholder: "Describe tu negocio, especialidades, ambiente...",
+        loadingCategories: "Cargando categorías…",
+        phoneHint: "Debe ingresar exactamente 9 dígitos",
+        phoneError: "El teléfono debe tener exactamente 9 dígitos",
+        email: "Correo",
+        website: "Sitio web",
+        closed: "Cerrado",
+        open: "Abrir",
+        logoUploadAria: "Subir logo del negocio",
+        logoText: "Logo",
+        logoLabel: "Logo del negocio",
+        logoHint: "Cuadrado · JPG o PNG",
+        changeLogo: "Cambiar",
+        uploadLogo: "Subir logo",
+        photosUploadAria: "Subir fotos del establecimiento",
+        photosLabel: "Fotos del establecimiento",
+        photoCover: "Portada",
+        photoAdd: "Agregar",
+        photosHint: "La primera foto será la portada en el mapa.",
+        uploading: "Subiendo imagen…"
     },
     couponsManagement: {
         title: "Cupones",
@@ -74,6 +95,20 @@ export const establishments = {
             confirmText2: "? Esta acción no se puede deshacer.",
             deleting: "Eliminando…",
             deleteBtn: "Eliminar"
+        },
+        editModal: {
+            title: "Editar cupón",
+            inherited: "(Heredado de la campaña)",
+            campaign: "Campaña",
+            noCampaign: "Sin campaña",
+            saving: "Guardando…",
+            quitar: "Quitar",
+            cambiar: "Cambiar",
+            subirLogo: "Subir imagen desde tu dispositivo"
+        },
+        newCouponForm: {
+            registerFirst: "Registra un establecimiento primero",
+            belongsToEst: "Un cupón siempre pertenece a un establecimiento tuyo."
         }
     }
 } as const;
