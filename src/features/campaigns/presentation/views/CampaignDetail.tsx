@@ -1,9 +1,13 @@
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/features/campaigns/domain/value-objects/CampaignStatus.ts";
 import { ratePct, redemptionRate, bestCouponId } from "@/features/campaigns/domain/value-objects/Performance.ts";
 import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
 import { useCampaignAnalytics } from "@/features/analytics/presentation/hooks/useCampaignAnalytics.ts";
+import { useCouponMetrics } from "@/features/analytics/presentation/hooks/useCouponMetrics.ts";
+import { CouponAnalytics } from "@/features/analytics/domain/entities/CouponAnalytics.ts";
 
 interface CampaignDetailProps {
     campaign: Campaign;
@@ -11,6 +15,7 @@ interface CampaignDetailProps {
 }
 
 export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
+    const { t } = useTranslation();
     const { data: analytics, loading: analyticsLoading } = useCampaignAnalytics(c.uuid);
     const a = analytics?.analytics;
 
@@ -18,20 +23,32 @@ export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
     const reserved   = a?.reservationsCount ?? c.reserved;
     const redeemed   = a?.redemptionsCount ?? c.redeemed;
 
+    /* metricas reales de cada cupon desde analytics */
+    const { metrics: couponMetrics, loading: couponMetricsLoading } = useCouponMetrics(c.establishmentId);
+    const metricsByCoupon = useMemo(() => {
+        const map = new Map<string, CouponAnalytics>();
+        couponMetrics.forEach(m => map.set(m.couponId, m));
+        return map;
+    }, [couponMetrics]);
+    const getCouponMetrics = (cp: typeof c.coupons[0]) => metricsByCoupon.get(cp.uuid ?? cp.id) ?? null;
+
     const bestId = bestCouponId(c.coupons);
     const best = c.coupons.find(cp => cp.id === bestId) ?? null;
 
-    /* cupones ordenados por tasa de canje (mejor primero) */
-    const ranked = [...c.coupons].sort(
-        (a, b) => redemptionRate(b.views, b.redeemed) - redemptionRate(a.views, a.redeemed)
-    );
+    /* cupones ordenados por tasa de canje real (mejor primero) */
+    const ranked = [...c.coupons].sort((a, b) => {
+        const ma = getCouponMetrics(a);
+        const mb = getCouponMetrics(b);
+        return redemptionRate(mb?.viewsCount ?? b.views, mb?.redemptionsCount ?? b.redeemed)
+             - redemptionRate(ma?.viewsCount ?? a.views, ma?.redemptionsCount ?? a.redeemed);
+    });
 
     const fmt = (n: number) => analyticsLoading ? "—" : n.toLocaleString("es-PE");
     const kpis = [
-        { label: "Cupones vistos", value: fmt(views) },
-        { label: "Reservados",     value: fmt(reserved) },
-        { label: "Redimidos",      value: fmt(redeemed) },
-        { label: "Tasa de canje",  value: analyticsLoading ? "—" : ratePct(views, redeemed), highlight: true },
+        { label: t("campaignDetail.kpi.views"), value: fmt(views) },
+        { label: t("campaignDetail.kpi.reserved"), value: fmt(reserved) },
+        { label: t("campaignDetail.kpi.redeemed"), value: fmt(redeemed) },
+        { label: t("campaignDetail.kpi.conversion"), value: analyticsLoading ? "—" : ratePct(views, redeemed), highlight: true },
     ];
 
     return (
@@ -39,7 +56,7 @@ export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
             <header className="md-head">
                 <div>
                     <button type="button" className="btn btn-sm back-btn" onClick={onBack}>
-                        <Icon name="arrowLeft" size={14}/> Volver a campañas
+                        <Icon name="arrowLeft" size={14}/> {t("campaignDetail.back")}
                     </button>
                     <h1 className="page-title cd-detail-title">
                         {c.name}
@@ -49,7 +66,10 @@ export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
                         </span>
                     </h1>
                     <p className="page-subtitle">
-                        {c.category} · #GEO-{(1000 + c.id).toString()} · {c.coupons.length} cupón{c.coupons.length !== 1 ? "es" : ""}
+                        {c.category} · #GEO-{(1000 + c.id).toString()} · {t("campaignDetail.couponsCount", {
+                            count: c.coupons.length,
+                            label: c.coupons.length === 1 ? t("campaigns.coupon") : t("campaigns.coupons"),
+                        })}
                     </p>
                 </div>
             </header>
@@ -67,13 +87,15 @@ export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
             {/* mejor cupon destacado automaticamente */}
             {best && (
                 <div className="cd-best card">
-                    <div className="cd-best-badge"><Icon name="star" size={14}/> Mejor cupón</div>
+                    <div className="cd-best-badge"><Icon name="star" size={14}/> {t("campaignDetail.bestCoupon")}</div>
                     <div className="cd-best-main">
                         <div className="cd-best-name">{best.title}</div>
                         <div className="cd-best-sub">
-                            Lidera con <strong>{ratePct(best.views, best.redeemed)}</strong> de canje
-                            ({best.redeemed.toLocaleString("es-PE")} de {best.views.toLocaleString("es-PE")} vistos).
-                            Considera replicar su estrategia.
+                            {t("campaignDetail.bestCouponText", {
+                                rate: ratePct(best.views, best.redeemed),
+                                redeemed: best.redeemed.toLocaleString("es-PE"),
+                                views: best.views.toLocaleString("es-PE"),
+                            })}
                         </div>
                     </div>
                 </div>
@@ -81,21 +103,30 @@ export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
 
             {/* desglose por cupon */}
             <div className="card cd-table-card">
-                <div className="eyebrow cd-table-eyebrow">Desglose por cupón</div>
+                <div className="eyebrow cd-table-eyebrow">{t("campaignDetail.breakdownTitle")}</div>
                 {ranked.length === 0 ? (
                     <div className="cl-empty">
                         <div className="cl-empty-icon"><Icon name="ticket" size={32}/></div>
-                        <div className="cl-empty-title">Esta campaña aún no tiene cupones</div>
+                        <div className="cl-empty-title">{t("campaignDetail.noCoupons")}</div>
                     </div>
                 ) : (
                     <div className="cd-table">
                         <div className="cd-thead">
-                            <div>Cupón</div><div>Tipo</div><div>Vistos</div>
-                            <div>Reservados</div><div>Redimidos</div><div>Canje</div>
+                            <div>{t("campaignDetail.table.coupon")}</div>
+                            <div>{t("campaignDetail.table.type")}</div>
+                            <div>{t("campaignDetail.table.views")}</div>
+                            <div>{t("campaignDetail.table.reserved")}</div>
+                            <div>{t("campaignDetail.table.redeemed")}</div>
+                            <div>{t("campaignDetail.table.conversion")}</div>
                         </div>
                         {ranked.map(cp => {
-                            const rate = redemptionRate(cp.views, cp.redeemed);
+                            const m = getCouponMetrics(cp);
+                            const cpViews = m?.viewsCount ?? cp.views;
+                            const cpReserved = m?.reservationsCount ?? cp.reserved;
+                            const cpRedeemed = m?.redemptionsCount ?? cp.redeemed;
+                            const rate = redemptionRate(cpViews, cpRedeemed);
                             const isBest = cp.id === bestId;
+                            const fmt = (n: number) => couponMetricsLoading ? "—" : n.toLocaleString("es-PE");
                             return (
                                 <div key={cp.id} className={"cd-trow" + (isBest ? " cd-trow-best" : "")}>
                                     <div className="cd-coupon-cell">
@@ -103,11 +134,11 @@ export function CampaignDetail({ campaign: c, onBack }: CampaignDetailProps) {
                                         <span className="cd-coupon-name">{cp.title}</span>
                                     </div>
                                     <div><span className="cd-cat-tag">{promotionLabel(cp.promotionType)}</span></div>
-                                    <div className="mono tnum">{cp.views.toLocaleString("es-PE")}</div>
-                                    <div className="mono tnum">{cp.reserved.toLocaleString("es-PE")}</div>
-                                    <div className="mono tnum">{cp.redeemed.toLocaleString("es-PE")}</div>
+                                    <div className="mono tnum">{fmt(cpViews)}</div>
+                                    <div className="mono tnum">{fmt(cpReserved)}</div>
+                                    <div className="mono tnum">{fmt(cpRedeemed)}</div>
                                     <div className="cd-rate-cell">
-                                        <span className="mono cd-rate-val">{ratePct(cp.views, cp.redeemed)}</span>
+                                        <span className="mono cd-rate-val">{couponMetricsLoading ? "—" : ratePct(cpViews, cpRedeemed)}</span>
                                         <div className="cd-rate-bar">
                                             <div className="cd-rate-fill" style={{ width: `${Math.min(rate * 100 * 3, 100)}%` }}/>
                                         </div>

@@ -65,8 +65,8 @@ export function RedeemView() {
         <div className="md rd-page">
             <header className="md-head">
                 <div>
-                    <h1 className="page-title">Canjear cupón</h1>
-                    <p className="page-subtitle">Ingresa el código que muestra el cliente para validar y redimir su cupón.</p>
+                    <h1 className="page-title">{t("redeem.title")}</h1>
+                    <p className="page-subtitle">{t("redeem.subtitle")}</p>
                 </div>
             </header>
 
@@ -74,16 +74,16 @@ export function RedeemView() {
                 {/* formulario de canje */}
                 <div className="card rd-card">
                     <form onSubmit={onSubmit}>
-                        <label htmlFor="rd-code" className="rd-label">Código de reserva</label>
+                        <label htmlFor="rd-code" className="rd-label">{t("redeem.codeLabel")}</label>
                         <input id="rd-code" className="input rd-input mono"
-                               placeholder="Pega el código del cliente"
+                               placeholder={t("redeem.codePlaceholder")}
                                value={code} autoComplete="off" autoFocus
                                onChange={e => { setCode(e.target.value); if (result) setResult(null); }}/>
                         <p className="rd-hint">
-                            <Icon name="qr" size={12}/> Ingresa el código de canje que muestra el cliente en su cupón reservado.
+                            <Icon name="qr" size={12}/> {t("redeem.codeHint")}
                         </p>
                         <button type="submit" className="btn btn-brand rd-submit" disabled={!code.trim() || loading}>
-                            <Icon name="check" size={15}/> {loading ? "Validando…" : "Validar y canjear"}
+                            <Icon name="check" size={15}/> {loading ? t("redeem.validating") : t("redeem.validate")}
                         </button>
                     </form>
 
@@ -91,44 +91,44 @@ export function RedeemView() {
                     {result?.kind === "success" && (
                         <div className="rd-result rd-ok scale-in">
                             <div className="rd-result-icon ok"><Icon name="check" size={22}/></div>
-                            <div className="rd-result-title">¡Cupón canjeado!</div>
+                            <div className="rd-result-title">{t("redeem.successTitle")}</div>
                             <div className="rd-result-coupon">
                                 <strong>{result.coupon.title}</strong>
                                 <span className="rd-result-disc">−{result.coupon.discount}</span>
                             </div>
-                            <div className="rd-result-sub">Validado y marcado como redimido.</div>
+                            <div className="rd-result-sub">{t("redeem.successSub")}</div>
                         </div>
                     )}
                     {result?.kind === "already" && (
                         <div className="rd-result rd-warn scale-in">
                             <div className="rd-result-icon warn"><Icon name="clock" size={22}/></div>
-                            <div className="rd-result-title">Este código ya fue canjeado</div>
-                            <div className="rd-result-sub">Cada cupón solo puede redimirse una vez.</div>
+                            <div className="rd-result-title">{t("redeem.alreadyTitle")}</div>
+                            <div className="rd-result-sub">{t("redeem.alreadySub")}</div>
                         </div>
                     )}
                     {result?.kind === "notfound" && (
                         <div className="rd-result rd-err scale-in">
                             <div className="rd-result-icon err"><Icon name="close" size={22}/></div>
-                            <div className="rd-result-title">Código no válido</div>
-                            <div className="rd-result-sub">No encontramos ningún cupón con ese código. Revisa que esté bien escrito.</div>
+                            <div className="rd-result-title">{t("redeem.notFoundTitle")}</div>
+                            <div className="rd-result-sub">{t("redeem.notFoundSub")}</div>
                         </div>
                     )}
                     {result?.kind === "error" && (
                         <div className="rd-result rd-err scale-in">
                             <div className="rd-result-icon err"><Icon name="close" size={22}/></div>
-                            <div className="rd-result-title">No se pudo validar</div>
-                            <div className="rd-result-sub">Ocurrió un problema al validar el código: {mapApiError(result.error, t).message}. Intenta de nuevo.</div>
+                            <div className="rd-result-title">{t("redeem.errorTitle")}</div>
+                            <div className="rd-result-sub">{t("redeem.errorSub", { message: mapApiError(result.error, t).message })}</div>
                         </div>
                     )}
                 </div>
 
                 {/* historial de canjes de la sesion */}
                 <div className="card rd-history">
-                    <div className="eyebrow">Canjeados hoy</div>
+                    <div className="eyebrow">{t("redeem.today")}</div>
                     {history.length === 0 ? (
                         <div className="rd-history-empty">
                             <Icon name="ticket" size={28} className="rd-history-empty-icon"/>
-                            <div>Aún no has canjeado cupones.</div>
+                            <div>{t("redeem.emptyToday")}</div>
                         </div>
                     ) : (
                         <div className="rd-history-list">

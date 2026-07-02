@@ -175,14 +175,14 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
         <div className="md nc-page">
             <header className="md-head">
                 <div>
-                    <h1 className="page-title">Nueva campaña</h1>
-                    <p className="page-subtitle">Completa los datos y agrega al menos un cupón para publicar.</p>
+                    <h1 className="page-title">{t("campaigns.newForm.title")}</h1>
+                    <p className="page-subtitle">{t("campaigns.newForm.subtitle")}</p>
                 </div>
                 <div className="btn-row">
                     <button type="button" className="btn btn-brand" onClick={handlePublish}
                             disabled={coupons.length === 0}
-                            title={coupons.length === 0 ? "Agrega al menos un cupón para publicar" : undefined}>
-                        Publicar campaña <Icon name="arrowRight" size={14}/>
+                            title={coupons.length === 0 ? t("campaigns.newForm.errorAddAtLeastOne") : undefined}>
+                        {t("campaigns.newForm.publish")} <Icon name="arrowRight" size={14}/>
                     </button>
                 </div>
             </header>
@@ -191,13 +191,13 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                 <div className="nc-error-box">
                     <Icon name="close" size={15}/>
                     <div className="nc-error-text">
-                        <strong>Campos obligatorios sin completar:</strong>
+                        <strong>{t("campaigns.newForm.requiredFields")}</strong>
                         <ul className="nc-error-list">
-                            {errors.name     && <li>Nombre de la campaña</li>}
-                            {errors.category && <li>Tipo de campaña</li>}
-                            {errors.start    && <li>Fecha de inicio</li>}
-                            {errors.end      && <li>{errors.endBeforeStart ? t("campaign.errors.endBeforeStart") : errors.endPast ? t("campaign.errors.datePast") : "Fecha de fin"}</li>}
-                            {errors.coupons  && <li>Agrega al menos un cupón</li>}
+                            {errors.name     && <li>{t("campaigns.newForm.campaignName")}</li>}
+                            {errors.category && <li>{t("campaigns.newForm.campaignType")}</li>}
+                            {errors.start    && <li>{t("campaigns.newForm.startDate")}</li>}
+                            {errors.end      && <li>{errors.endBeforeStart ? t("campaign.errors.endBeforeStart") : errors.endPast ? t("campaign.errors.datePast") : t("campaigns.newForm.fields.end")}</li>}
+                            {errors.coupons  && <li>{t("campaigns.newForm.errorAddAtLeastOne")}</li>}
                         </ul>
                     </div>
                 </div>
@@ -209,63 +209,63 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
 
                     {/* 1. info basica */}
                     <div className="card nc-card">
-                        <div className="eyebrow nc-eyebrow">1. Información básica</div>
+                        <div className="eyebrow nc-eyebrow">{t("campaigns.newForm.basicInfo")}</div>
                         <div className="nc-fields">
                             <div className="field">
-                                <label htmlFor={`${uid}-name`}>Nombre de la campaña <Req/></label>
+                                <label htmlFor={`${uid}-name`}>{t("campaigns.newForm.campaignName")} <Req/></label>
                                 <input id={`${uid}-name`} className={fieldCls(cerr("name"))}
-                                       placeholder='Ej. "Día de la Madre", "Navidad 2026"'
+                                       placeholder={t("campaigns.newForm.campaignNamePlaceholder")}
                                        value={name} onChange={e => setName(e.target.value)}/>
-                                {cerr("name") && <ErrMsg>Campo obligatorio</ErrMsg>}
+                                {cerr("name") && <ErrMsg>{t("campaigns.newForm.required")}</ErrMsg>}
                             </div>
                             <div className="field">
-                                <label htmlFor={`${uid}-desc`}>Descripción de la campaña</label>
+                                <label htmlFor={`${uid}-desc`}>{t("campaigns.newForm.campaignDesc")}</label>
                                 <textarea id={`${uid}-desc`} className="input" rows={2}
-                                          placeholder="Describe brevemente de qué trata esta campaña..."
+                                          placeholder={t("campaigns.newForm.descPlaceholder")}
                                           value={description} onChange={e => setDescription(e.target.value)}/>
                             </div>
                             <div className="field">
-                                <span className="nc-group-label">Tipo de campaña <Req/></span>
+                                <span className="nc-group-label">{t("campaigns.newForm.campaignType")} <Req/></span>
                                 <div className="nc-chips">
                                     {CAMPAIGN_TYPES.map(c => (
                                         <button type="button" key={c.id}
                                                 className={"chip " + (!usingCustom && category === c.id ? "active" : "")}
                                                 onClick={() => { setCategory(c.id); setUsingCustom(false); }}>
-                                            <Icon name={c.icon} size={13}/> {c.id}
+                                            <Icon name={c.icon} size={13}/> {t(`campaignTypes.${c.id}`, { defaultValue: c.id })}
                                         </button>
                                     ))}
                                     <button type="button"
                                             className={"chip " + (usingCustom ? "active" : "")}
                                             onClick={() => { setUsingCustom(true); setCategory(""); }}>
-                                        <Icon name="plus" size={13}/> Otra ocasión
+                                        <Icon name="plus" size={13}/> {t("campaigns.newForm.otherOccasion")}
                                     </button>
                                 </div>
                                 {usingCustom && (
                                     <input className="input nc-custom-type"
-                                           placeholder="Escribe el tipo de campaña..."
+                                           placeholder={t("campaigns.newForm.customTypePlaceholder")}
                                            aria-label="Tipo de campaña personalizado"
                                            value={customType}
                                            onChange={e => setCustomType(e.target.value)}/>
                                 )}
-                                {cerr("category") && <ErrMsg>Selecciona o escribe un tipo de campaña</ErrMsg>}
+                                {cerr("category") && <ErrMsg>{t("campaigns.newForm.customTypeError")}</ErrMsg>}
                             </div>
                         </div>
                     </div>
 
                     {/* 2. vigencia */}
                     <div className="card nc-card">
-                        <div className="eyebrow nc-eyebrow">2. Vigencia</div>
+                        <div className="eyebrow nc-eyebrow">{t("campaigns.newForm.durationTitle")}</div>
                         <div className="nc-row2">
                             <div className="field">
-                                <label htmlFor={`${uid}-start`}>Fecha de inicio <Req/></label>
+                                <label htmlFor={`${uid}-start`}>{t("campaigns.newForm.startDate")} <Req/></label>
                                 <DatePicker id={`${uid}-start`} value={startDate} onChange={setStartDate} min={today} error={cerr("start") || errors.startPast}/>
-                                {cerr("start") && !errors.startPast && <ErrMsg>Obligatorio</ErrMsg>}
+                                {cerr("start") && !errors.startPast && <ErrMsg>{t("campaigns.newForm.required")}</ErrMsg>}
                                 {errors.startPast && <ErrMsg>{t("campaign.errors.datePast")}</ErrMsg>}
                             </div>
                             <div className="field">
-                                <label htmlFor={`${uid}-end`}>Fecha de fin <Req/></label>
+                                <label htmlFor={`${uid}-end`}>{t("campaigns.newForm.endDate")} <Req/></label>
                                 <DatePicker id={`${uid}-end`} value={endDate} onChange={setEndDate} min={endMin} error={cerr("end") || errors.endPast}/>
-                                {cerr("end") && !errors.endBeforeStart && !errors.endPast && <ErrMsg>Obligatorio</ErrMsg>}
+                                {cerr("end") && !errors.endBeforeStart && !errors.endPast && <ErrMsg>{t("campaigns.newForm.required")}</ErrMsg>}
                                 {errors.endBeforeStart && <ErrMsg>{t("campaign.errors.endBeforeStart")}</ErrMsg>}
                                 {errors.endPast && <ErrMsg>{t("campaign.errors.datePast")}</ErrMsg>}
                             </div>
@@ -273,7 +273,7 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                         {startDate && endDate && !endInvalid && (
                             <div className="nc-duration">
                                 <Icon name="clock" size={12}/>
-                                Duración: <strong className="nc-duration-val">{expiresLabel}</strong>
+                                {t("campaigns.newForm.duration")} <strong className="nc-duration-val">{expiresLabel}</strong>
                             </div>
                         )}
                     </div>
@@ -281,27 +281,27 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                     {/* 3. cupones */}
                     <div className="card nc-card">
                         <div className="nc-cupones-head">
-                            <div className="eyebrow">3. Cupones</div>
+                            <div className="eyebrow">{t("campaigns.newForm.couponsTitle")}</div>
                             {coupons.length > 0 && (
                                 <span className="nc-count">
-                                    {coupons.length} {coupons.length > 1 ? "cupones" : "cupón"}
+                                    {coupons.length} {coupons.length > 1 ? t("campaigns.newForm.couponPlural") : t("campaigns.newForm.couponSingular")}
                                 </span>
                             )}
                         </div>
                         <p className="nc-cupones-hint">
-                            Selecciona de tus cupones registrados o crea uno nuevo. Puedes agregar varios.
+                            {t("campaigns.newForm.couponsHint")}
                         </p>
 
                         {/* mis cupones registrados (catalogo seleccionable) */}
                         <div className="nc-catalog-head">
-                            <span className="nc-group-label">Mis cupones registrados</span>
+                            <span className="nc-group-label">{t("campaigns.newForm.myRegisteredCoupons")}</span>
                         </div>
                         <div className="nc-catalog">
                             {registeredLoading && (
-                                <div className="nc-catalog-empty">Cargando tus cupones…</div>
+                                <div className="nc-catalog-empty">{t("campaigns.newForm.loadingRegistered")}</div>
                             )}
                             {!registeredLoading && registeredCoupons.length === 0 && (
-                                <div className="nc-catalog-empty">Aún no tienes cupones registrados. Crea uno nuevo abajo.</div>
+                                <div className="nc-catalog-empty">{t("campaigns.newForm.emptyRegistered")}</div>
                             )}
                             {registeredCoupons.map(rc => {
                                 const added = coupons.some(c => c.id === rc.id);
@@ -326,13 +326,13 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                         </div>
                                         {added ? (
                                             <button type="button" className="btn btn-sm nc-catalog-btn added"
-                                                    title="Quitar de la campaña" aria-label="Quitar de la campaña"
+                                                    title={t("campaigns.newForm.removeFromCampaign")} aria-label={t("campaigns.newForm.removeFromCampaign")}
                                                     onClick={() => removeCoupon(rc.id)}>
-                                                <Icon name="check" size={13}/> Agregado <Icon name="close" size={12}/>
+                                                <Icon name="check" size={13}/> {t("campaigns.newForm.added")} <Icon name="close" size={12}/>
                                             </button>
                                         ) : (
                                             <button type="button" className="btn btn-brand btn-sm nc-catalog-btn" onClick={() => addFromCatalog(rc)}>
-                                                <Icon name="plus" size={13}/> Agregar
+                                                <Icon name="plus" size={13}/> {t("campaigns.newForm.add")}
                                             </button>
                                         )}
                                     </div>
@@ -357,11 +357,11 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                                 S/{c.finalPrice}
                                                 <span className="nc-strike">S/{c.originalPrice}</span>
                                                 <span className="nc-sep">·</span>
-                                                {c.stock} uds.
+                                                {c.stock} {t("campaigns.newForm.units")}
                                             </div>
                                         </div>
-                                        <button type="button" className="btn btn-icon btn-sm nc-coupon-remove" title="Eliminar cupón"
-                                                aria-label="Eliminar cupón" onClick={() => removeCoupon(c.id)}>
+                                        <button type="button" className="btn btn-icon btn-sm nc-coupon-remove" title={t("campaigns.newForm.removeCoupon")}
+                                                aria-label={t("campaigns.newForm.removeCoupon")} onClick={() => removeCoupon(c.id)}>
                                             <Icon name="close" size={14}/>
                                         </button>
                                     </div>
@@ -369,72 +369,67 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                             </div>
                         )}
 
-                        <div className="nc-catalog-divider"><span>o crea uno nuevo</span></div>
-
-                        {/* formulario inline de nuevo cupon */}
+                        <div className="nc-catalog-divider"><span>{t("campaigns.newForm.orCreateNew")}</span></div>
                         {addingCoupon ? (
                             <div className="nc-coupon-form">
-                                <div className="nc-form-title">Datos del cupón</div>
-
+                                <div className="nc-form-title">{t("campaigns.newForm.couponData")}</div>
                                 {/* a) imagen */}
                                 <div className="field nc-mb12">
-                                    <span className="nc-group-label">Imagen del cupón</span>
-                                    <input ref={fileRef} type="file" accept="image/*" aria-label="Imagen del cupón" className="nc-hidden-input" onChange={handleImageUpload} disabled={uploading}/>
+                                    <span className="nc-group-label">{t("campaigns.newForm.couponImage")}</span>
+                                    <input ref={fileRef} type="file" accept="image/*" aria-label={t("campaigns.newForm.couponImage")} className="nc-hidden-input" onChange={handleImageUpload} disabled={uploading}/>
                                     {couponDraft.imageUrl ? (
                                         <div className="nc-img-preview">
                                             <img src={couponDraft.imageUrl} alt="Cupón"/>
                                             <button type="button" className="nc-img-remove" disabled={uploading}
                                                     onClick={() => { setCouponDraft(d => ({ ...d, imageUrl: "" })); if (fileRef.current) fileRef.current.value = ""; }}>
-                                                <Icon name="close" size={12}/> Quitar
+                                                <Icon name="close" size={12}/> {t("common.delete")}
                                             </button>
                                         </div>
                                     ) : (
                                         <button type="button" className="nc-img-upload" onClick={() => fileRef.current?.click()} disabled={uploading}>
                                             <Icon name="image" size={22}/>
-                                            {uploading ? "Subiendo..." : "Subir imagen desde tu dispositivo"}
-                                            <span className="nc-img-hint">JPG, PNG · máx. recomendado 1 MB</span>
+                                            {uploading ? t("campaigns.newForm.uploading") : t("campaigns.newForm.uploadFromDevice")}
+                                            <span className="nc-img-hint">{t("campaigns.newForm.imageSpecs")}</span>
                                         </button>
                                     )}
-                                    {uploading && <span className="nc-img-hint"><Icon name="image" size={11}/> Subiendo imagen…</span>}
+                                    {uploading && <span className="nc-img-hint"><Icon name="image" size={11}/> {t("campaigns.newForm.uploading")}</span>}
                                     {uploadError && <span className="field-error"><Icon name="close" size={11}/> {uploadError}</span>}
                                 </div>
-
                                 {/* b) nombre */}
                                 <div className="field nc-mb12">
-                                    <label htmlFor={`${uid}-c-title`}>Nombre del cupón <Req/></label>
+                                    <label htmlFor={`${uid}-c-title`}>{t("campaigns.newForm.couponName")} <Req/></label>
                                     <input id={`${uid}-c-title`} className={fieldCls(derr("title"))} placeholder='Ej. "Sushi rolls al mediodía"'
                                            value={couponDraft.title}
                                            onChange={e => setCouponDraft(d => ({ ...d, title: e.target.value }))}/>
-                                    {derr("title") && <ErrMsg>Obligatorio</ErrMsg>}
+                                    {derr("title") && <ErrMsg>{t("campaigns.newForm.required")}</ErrMsg>}
                                 </div>
-
                                 {/* b.2) tipo de promocion */}
                                 <div className="field nc-mb12">
-                                    <label htmlFor={`${uid}-c-promo`}>Tipo de cupón</label>
+                                    <label htmlFor={`${uid}-c-promo`}>{t("campaigns.newForm.couponType")}</label>
                                     <Select id={`${uid}-c-promo`}
                                             value={couponDraft.promotionType}
-                                            options={PROMOTION_TYPES.map(p => ({ value: p.id, label: p.label }))}
+                                            options={PROMOTION_TYPES.map(p => ({ value: p.id, label: t(`promotionTypes.${p.id === "PERCENTAGE" ? "percentage" : "fixedAmount"}`, { defaultValue: p.label }) }))}
                                             onChange={v => setCouponDraft(d => ({ ...d, promotionType: v as PromotionType }))}/>
                                 </div>
 
                                 {/* c) precios -> descuento auto */}
                                 <div className="nc-prices">
                                     <div className="field">
-                                        <label htmlFor={`${uid}-c-orig`}>Precio original (S/) <Req/></label>
+                                        <label htmlFor={`${uid}-c-orig`}>{t("campaigns.newForm.originalPrice")} <Req/></label>
                                         <input id={`${uid}-c-orig`} className={fieldCls(derr("original"))} type="number" min="0" step="0.5" placeholder="48"
                                                value={couponDraft.originalPrice}
                                                onChange={e => setCouponDraft(d => ({ ...d, originalPrice: e.target.value }))}/>
                                         {derr("original") && <ErrMsg>Mayor a 0</ErrMsg>}
                                     </div>
                                     <div className="field">
-                                        <label htmlFor={`${uid}-c-final`}>Precio final (S/) <Req/></label>
+                                        <label htmlFor={`${uid}-c-final`}>{t("campaigns.newForm.finalPrice")} <Req/></label>
                                         <input id={`${uid}-c-final`} className={fieldCls(derr("final"))} type="number" min="0" step="0.5" placeholder="24"
                                                value={couponDraft.finalPrice}
                                                onChange={e => setCouponDraft(d => ({ ...d, finalPrice: e.target.value }))}/>
                                         {derr("final") && <ErrMsg>Menor al original</ErrMsg>}
                                     </div>
                                     <div className="field">
-                                        <span className="nc-group-label">Descuento</span>
+                                        <span className="nc-group-label">{t("campaigns.newForm.discount")}</span>
                                         <div className={"nc-discount-box" + (discountPct ? " active" : "")}>
                                             {couponDraft.promotionType === "FIXED_AMOUNT"
                                                 ? (savings(origNum, finalNum) > 0 ? `−S/${savings(origNum, finalNum)}` : "—")
@@ -443,8 +438,8 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                         {discountPct !== null && (
                                             <span className="nc-discount-save">
                                                 {couponDraft.promotionType === "FIXED_AMOUNT"
-                                                    ? `Equivale a ${discountPct}%`
-                                                    : `Ahorro S/${savings(origNum, finalNum)}`}
+                                                    ? t("campaigns.newForm.equivalentTo", { value: discountPct })
+                                                    : t("campaigns.newForm.savings", { value: savings(origNum, finalNum) })}
                                             </span>
                                         )}
                                     </div>
@@ -453,26 +448,25 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                 {/* d) stock + vigencia */}
                                 <div className="nc-row2-sm">
                                     <div className="field">
-                                        <label htmlFor={`${uid}-c-stock`}>Stock (unidades) <Req/></label>
+                                        <label htmlFor={`${uid}-c-stock`}>{t("campaigns.newForm.stock")} <Req/></label>
                                         <input id={`${uid}-c-stock`} className={fieldCls(derr("stock"))} type="number" min="1" step="1" placeholder="30"
                                                value={couponDraft.stock}
                                                onChange={e => setCouponDraft(d => ({ ...d, stock: e.target.value }))}/>
-                                        {derr("stock") && <ErrMsg>Mínimo 1 unidad</ErrMsg>}
+                                        {derr("stock") && <ErrMsg>{t("campaigns.newForm.minStock")}</ErrMsg>}
                                     </div>
                                     <div className="field">
-                                        <span className="nc-group-label">Vigencia</span>
+                                        <span className="nc-group-label">{t("campaigns.newForm.validity")}</span>
                                         <div className="nc-vigencia-box">
                                             <Icon name="clock" size={13}/>
                                             <span className="nc-vigencia-val">{expiresLabel}</span>
                                         </div>
                                     </div>
                                 </div>
-
                                 {/* e) descripcion */}
                                 <div className="field nc-mb16">
-                                    <label htmlFor={`${uid}-c-desc`}>Descripción</label>
+                                    <label htmlFor={`${uid}-c-desc`}>{t("campaigns.newForm.description")}</label>
                                     <textarea id={`${uid}-c-desc`} className="input" rows={2}
-                                              placeholder="Contexto adicional del cupón..."
+                                              placeholder={t("campaigns.newForm.descCouponPlaceholder")}
                                               value={couponDraft.description}
                                               onChange={e => setCouponDraft(d => ({ ...d, description: e.target.value }))}/>
                                 </div>
@@ -480,10 +474,10 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                 {/* f) restricciones */}
                                 <div className="nc-restr">
                                     <div className="nc-restr-head">
-                                        <div className="nc-restr-title">Restricciones de uso</div>
+                                        <div className="nc-restr-title">{t("campaigns.newForm.useRestrictions")}</div>
                                         {totalRestrictions > 0 && (
                                             <span className="nc-count">
-                                                {totalRestrictions} seleccionada{totalRestrictions > 1 ? "s" : ""}
+                                                {totalRestrictions === 1 ? t("campaigns.newForm.selectionSingular") : t("campaigns.newForm.selectionPlural", { count: totalRestrictions })}
                                             </span>
                                         )}
                                     </div>
@@ -494,14 +488,14 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                                 <button type="button" key={p} className="nc-restr-chip" aria-pressed={on}
                                                         onClick={() => togglePreset(p)}>
                                                     {on && <Icon name="check" size={10}/>}
-                                                    {p}
+                                                    {t(`couponRestrictions.${p}`, { defaultValue: p })}
                                                 </button>
                                             );
                                         })}
                                     </div>
                                     <div className="nc-restr-add-row">
                                         <input className="input nc-restr-input"
-                                               placeholder="Agrega una restricción personalizada..."
+                                               placeholder={t("campaigns.newForm.customRestrictionPlaceholder")}
                                                aria-label="Restricción personalizada"
                                                value={couponDraft.customRestriction}
                                                onChange={e => setCouponDraft(d => ({ ...d, customRestriction: e.target.value }))}
@@ -509,7 +503,7 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                         <button type="button" className="btn btn-sm nc-noshrink"
                                                 disabled={!couponDraft.customRestriction.trim()}
                                                 onClick={addCustomRestriction}>
-                                            <Icon name="plus" size={13}/> Añadir
+                                            <Icon name="plus" size={13}/> {t("campaigns.newForm.addButton")}
                                         </button>
                                     </div>
                                     {couponDraft.customList.length > 0 && (
@@ -527,36 +521,33 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                                     )}
                                 </div>
 
-                                {/* g) terminos */}
                                 <div className="nc-terms">
-                                    <div className="nc-terms-title">Términos y condiciones</div>
+                                    <div className="nc-terms-title">{t("campaigns.newForm.terms")}</div>
                                     <textarea className="input" rows={3}
-                                              aria-label="Términos y condiciones"
-                                              placeholder="El cupón es válido únicamente durante el período indicado. Solo puede ser canjeado una vez por cliente. El establecimiento se reserva el derecho de modificar o cancelar la oferta sin previo aviso..."
+                                              aria-label={t("campaigns.newForm.terms")}
+                                              placeholder={t("campaigns.newForm.termsPlaceholder")}
                                               value={couponDraft.terms}
                                               onChange={e => setCouponDraft(d => ({ ...d, terms: e.target.value }))}/>
                                 </div>
-
                                 <div className="nc-form-actions">
                                     <button type="button" className="btn" disabled={uploading}
                                             onClick={() => { setAddingCoupon(false); setCouponDraft(EMPTY_DRAFT); setCouponSubmit(false); }}>
-                                        Cancelar
+                                        {t("campaigns.newForm.cancel")}
                                     </button>
                                     <button type="button" className="btn btn-brand nc-grow" onClick={addCoupon} disabled={uploading}>
-                                        {uploading ? "Subiendo..." : "Agregar cupón"}
+                                        {uploading ? t("campaigns.newForm.uploading") : t("campaigns.newForm.addCouponButton")}
                                     </button>
                                 </div>
                             </div>
                         ) : (
                             <button type="button" className={"nc-add-coupon" + (cerr("coupons") ? " error" : "")}
                                     onClick={() => { setAddingCoupon(true); setCouponSubmit(false); }}>
-                                <Icon name="plus" size={14}/> Agregar cupón
+                                <Icon name="plus" size={14}/> {t("campaigns.newForm.addCouponButton")}
                             </button>
                         )}
-
                         {cerr("coupons") && !addingCoupon && (
                             <div className="nc-coupons-err">
-                                <Icon name="close" size={12}/> Agrega al menos un cupón para publicar
+                                <Icon name="close" size={12}/> {t("campaigns.newForm.errorAddAtLeastOne")}
                             </div>
                         )}
                     </div>
@@ -564,18 +555,16 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
 
                 {/* derecha: sidebar */}
                 <div className="nc-side">
-
-                    {/* vista previa cliente, usa la CouponCard real */}
                     <div className="card nc-preview-card">
                         <div className="nc-preview-head">
-                            <div className="eyebrow">Vista previa — cliente</div>
-                            <span className="badge badge-line">mapa</span>
+                            <div className="eyebrow">{t("campaigns.newForm.clientPreview")}</div>
+                            <span className="badge badge-line">{t("campaigns.newForm.previewBadge")}</span>
                         </div>
                         <div className="nc-preview-body">
                             {coupons.length === 0 ? (
                                 <div className="nc-preview-empty">
                                     <div className="nc-preview-empty-icon"><Icon name="ticket" size={28}/></div>
-                                    <div>Los cupones aparecerán aquí</div>
+                                    <div>{t("campaigns.newForm.couponsEmptyPreview")}</div>
                                 </div>
                             ) : (
                                 <div className="nc-preview-list">
@@ -593,18 +582,17 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                             )}
                         </div>
                     </div>
-
                     {/* resumen */}
                     <div className="card nc-summary">
-                        <div className="eyebrow nc-summary-eyebrow">Resumen</div>
+                        <div className="eyebrow nc-summary-eyebrow">{t("campaigns.newForm.summary")}</div>
                         <div className="nc-summary-rows">
                             {[
-                                { label: "Nombre",   value: name.trim() || "—" },
-                                { label: "Tipo",     value: finalType || "—" },
-                                { label: "Inicio",   value: startDate ? fmtDate(startDate) : "—" },
-                                { label: "Fin",      value: endDate   ? fmtDate(endDate)   : "—" },
-                                { label: "Vigencia", value: endDate ? expiresLabel : "—" },
-                                { label: "Cupones",  value: coupons.length > 0 ? `${coupons.length} ${coupons.length > 1 ? "cupones" : "cupón"}` : "—" },
+                                { label: t("campaigns.newForm.fields.name"),   value: name.trim() || "—" },
+                                { label: t("campaigns.newForm.fields.type"),     value: finalType || "—" },
+                                { label: t("campaigns.newForm.fields.start"),   value: startDate ? fmtDate(startDate, i18n.language) : "—" },
+                                { label: t("campaigns.newForm.fields.end"),      value: endDate   ? fmtDate(endDate, i18n.language)   : "—" },
+                                { label: t("campaigns.newForm.fields.validity"), value: endDate ? expiresLabel : "—" },
+                                { label: t("campaigns.newForm.fields.coupons"),  value: coupons.length > 0 ? `${coupons.length} ${coupons.length > 1 ? t("campaigns.newForm.couponPlural") : t("campaigns.newForm.couponSingular")}` : "—" },
                             ].map(row => (
                                 <div key={row.label} className="nc-summary-row">
                                     <span className="nc-summary-label">{row.label}</span>
@@ -656,7 +644,8 @@ function ErrMsg({ children }: { children: React.ReactNode }) {
 }
 
 /* formateo de fecha para la UI (presentacion) */
-function fmtDate(dt: string): string {
+function fmtDate(dt: string, lang: string): string {
     if (!dt) return "—";
-    return new Date(dt).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
+    const loc = lang.startsWith("en") ? "en-US" : "es-PE";
+    return new Date(dt).toLocaleDateString(loc, { day: "2-digit", month: "short", year: "numeric" });
 }

@@ -140,8 +140,8 @@ export function AccountView({ establishmentCount = 0 }: AccountViewProps) {
         <div className="md plans-page">
             <header className="md-head">
                 <div>
-                    <div className="eyebrow">Mi negocio</div>
-                    <h1 className="page-title">Suscripción</h1>
+                    <div className="eyebrow">{t("establishments.eyebrow")}</div>
+                    <h1 className="page-title">{t("merchant.navSubscription")}</h1>
                     <p className="page-subtitle">
                         {(me?.email ?? me?.username ?? "")} · {t("account.coversAll", { count: establishmentCount })}
                     </p>

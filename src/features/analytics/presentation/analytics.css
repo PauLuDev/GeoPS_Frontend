@@ -102,6 +102,7 @@
 .geops-app .funnel-value { font-size: 13px; font-weight: 500; }
 .geops-app .funnel-pct { color: var(--ink-3); font-weight: 400; }
 
+.geops-app .md-section { margin-bottom: 14px; }
 .geops-app .md-top-card { padding: 18px; }
 .geops-app .md-top-list { display: flex; flex-direction: column; gap: 8px; }
 .geops-app .md-top-row { display: grid; grid-template-columns: 4px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; background: var(--bg-sunken); border-radius: 10px; }
