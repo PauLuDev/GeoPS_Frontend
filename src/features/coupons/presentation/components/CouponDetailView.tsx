@@ -3,6 +3,7 @@ import {useTranslation} from "react-i18next";
 import {Icon} from "@/shared/ui/components/Icon.tsx";
 import {Coupon} from "@/shared/types.ts";
 import {ReviewsSection} from "@/features/comments/presentation/components/ReviewsSection.tsx";
+import { mapApiError } from "@/shared/api/errorMapper.ts";
 
 interface CouponDetailViewProps {
     c: Coupon;
@@ -224,7 +225,7 @@ export function CouponDetailView({ c, isReserved, hasBeenReservedBefore, onReser
                                 try {
                                     await onReserve();
                                 } catch (err) {
-                                    triggerToast("No se pudo realizar la reserva. Es posible que ya hayas reservado este cupón.");
+                                    triggerToast(mapApiError(err, t).message);
                                 } finally {
                                     setReserving(false);
                                 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { redeemByCode, RedeemOutcome } from "@/features/coupons/application/redeemCode.ts";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
+import { mapApiError } from "@/shared/api/errorMapper.ts";
 
 interface Redemption {
     couponId: string;
@@ -32,6 +34,7 @@ function saveHistory(list: Redemption[]) {
 }
 
 export function RedeemView() {
+    const { t } = useTranslation();
     const [code, setCode] = useState("");
     const [result, setResult] = useState<RedeemOutcome | null>(null);
     const [loading, setLoading] = useState(false);
@@ -114,7 +117,7 @@ export function RedeemView() {
                         <div className="rd-result rd-err scale-in">
                             <div className="rd-result-icon err"><Icon name="close" size={22}/></div>
                             <div className="rd-result-title">No se pudo validar</div>
-                            <div className="rd-result-sub">Ocurrió un problema al validar el código: {result.message}. Intenta de nuevo.</div>
+                            <div className="rd-result-sub">Ocurrió un problema al validar el código: {mapApiError(result.error, t).message}. Intenta de nuevo.</div>
                         </div>
                     )}
                 </div>

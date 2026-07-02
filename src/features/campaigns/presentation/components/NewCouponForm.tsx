@@ -18,12 +18,7 @@ interface NewCouponFormProps {
 
 /* form de cupon suelto -> se crea sin campana (campaignId null) con sus propias fechas */
 export function NewCouponForm({ establishments, onCreated, onCancel }: NewCouponFormProps) {
-    const { create, loading, error: rawError } = useCoupons();
-    const error = rawError
-        ? rawError.includes("402") || rawError.includes("403") || rawError.includes("400")
-            ? "Has alcanzado el límite de cupones de tu plan. Mejora tu plan para crear más."
-            : "No se pudo crear el cupón. Intenta de nuevo."
-        : null;
+    const { create, loading, error } = useCoupons();
 
     const [establishmentId, setEstablishmentId] = useState(establishments[0]?.id ?? "");
 
@@ -158,7 +153,7 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
             {submitted && !isValid && (
                 <div className="nc-coupons-err"><Icon name="close" size={12}/> Completa los campos obligatorios</div>
             )}
-            {error && <div className="nc-coupons-err"><Icon name="close" size={12}/> {error}</div>}
+            {error && <div className="nc-coupons-err"><Icon name="close" size={12}/> {error.message}</div>}
 
             <div className="nc-fields">
                 {establishments.length > 1 && (

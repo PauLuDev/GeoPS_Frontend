@@ -18,7 +18,7 @@ export type RedeemOutcome =
     | { kind: "success"; coupon: RedeemedCoupon }
     | { kind: "already" }
     | { kind: "notfound" }
-    | { kind: "error"; message: string };
+    | { kind: "error"; error: unknown };
 
 /* el codigo va tal cual lo muestra el cliente, solo sin espacios de mas */
 const cleanCode = (s: string): string => s.trim();
@@ -37,8 +37,7 @@ export async function redeemByCode(input: string): Promise<RedeemOutcome> {
         if (e instanceof ApiError) {
             if (e.status === 404) return { kind: "notfound" };
             if (e.status === 409 || e.status === 400) return { kind: "already" };
-            return { kind: "error", message: `error ${e.status}` };
         }
-        return { kind: "error", message: e instanceof Error ? e.message : "error de red" };
+        return { kind: "error", error: e };
     }
 }

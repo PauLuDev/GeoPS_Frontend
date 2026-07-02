@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Business } from "@/shared/types.ts";
 import { useAutoRefresh } from "@/shared/hooks/useAutoRefresh.ts";
 import { discoverNearbyCoupons, Discovery } from "../../application/use-cases/DiscoverNearbyCoupons.ts";
+import { mapApiError, AppError } from "@/shared/api/errorMapper.ts";
 
 const EMPTY: Discovery = { coupons: [], businessByName: {} };
 
@@ -11,9 +13,10 @@ const EMPTY: Discovery = { coupons: [], businessByName: {} };
  * tiempo para que aparezcan los cupones nuevos sin recargar la pagina
  */
 export function useNearbyCoupons(lat: number, lng: number, radius: number) {
+    const { t } = useTranslation();
     const [data, setData] = useState<Discovery>(EMPTY);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<AppError | null>(null);
 
     useEffect(() => {
         let alive = true;
@@ -22,10 +25,10 @@ export function useNearbyCoupons(lat: number, lng: number, radius: number) {
         setError(null);
         discoverNearbyCoupons(lat, lng, radius)
             .then(d => { if (alive) setData(d); })
-            .catch(e => { if (alive) setError(e instanceof Error ? e.message : "no se pudieron cargar los cupones"); })
+            .catch(e => { if (alive) setError(mapApiError(e, t)); })
             .finally(() => { if (alive) setLoading(false); });
         return () => { alive = false; };
-    }, [lat, lng, radius]);
+    }, [lat, lng, radius, t]);
 
     /* refresco silencioso (sin spinner ni vaciar la lista) para el auto-refresh */
     const refresh = useCallback(() => {

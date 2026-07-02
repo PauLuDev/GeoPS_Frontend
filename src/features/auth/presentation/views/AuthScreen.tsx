@@ -99,7 +99,7 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                         )}
 
                         {error && (
-                            <div className="auth-error">{error}</div>
+                            <div className="auth-error">{error.message}</div>
                         )}
 
                         <button type="submit" className="btn btn-brand auth-fullbtn auth-submit" disabled={loading}>

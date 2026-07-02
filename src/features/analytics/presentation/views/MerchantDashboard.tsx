@@ -253,7 +253,7 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
             ) : loading ? (
                 <div className="card md-state">Cargando métricas…</div>
             ) : error ? (
-                <div className="card md-state">No se pudieron cargar las métricas: {error}</div>
+                <div className="card md-state">No se pudieron cargar las métricas: {error.message}</div>
             ) : !report ? (
                 <div className="card md-state">Aún no hay métricas para este rango.</div>
             ) : (

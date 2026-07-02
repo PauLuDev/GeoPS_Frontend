@@ -148,7 +148,7 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
         <Modal onClose={onClose} ariaLabel="Editar cupón" className="cm-edit-modal">
             <div className="cm-edit-body">
                 <h3 className="cm-edit-title">Editar cupón</h3>
-                {error && <div className="nc-coupons-err"><Icon name="close" size={12}/> {error}</div>}
+                {error && <div className="nc-coupons-err"><Icon name="close" size={12}/> {error.message}</div>}
 
                 <div className="cm-edit-fields">
                     {/* Imagen del cupón */}
