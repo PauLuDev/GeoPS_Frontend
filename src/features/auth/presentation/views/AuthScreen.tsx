@@ -31,6 +31,9 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
     const [password, setPassword] = useState("");
     const [isOwner, setIsOwner] = useState(false);
     const isSignup = mode === "signup";
+    /* registro como negocio -> se oculta la card promo y la blanca queda centrada.
+       al apagar el switch vuelve al layout de dos cards */
+    const soloCard = isSignup && isOwner;
 
     const submit = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -58,7 +61,7 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                 </svg>
             </div>
 
-            <div className={"auth-col-pair" + (isSignup ? " auth-signup" : "")}>
+            <div className={"auth-col-pair" + (isSignup ? " auth-signup" : "") + (soloCard ? " auth-solo" : "")}>
                 <div className="card scale-in auth-card">
                     <div className="auth-brand-row">
                         <div className="brand"><BrandMark /><span>GeoPS</span></div>
@@ -97,7 +100,12 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                            sale de los claims del token, no de este toggle */}
                         {isSignup && (
                             <button type="button" className="auth-role-toggle" aria-pressed={isOwner}
-                                onClick={() => setIsOwner(v => !v)}>
+                                onClick={() => {
+                                    const next = !isOwner;
+                                    setIsOwner(next);
+                                    /* al desactivar "soy dueño de un negocio" se vuelve al login */
+                                    if (!next) setMode("signin");
+                                }}>
                                 <div className="auth-role-icon"><Icon name="store" size={14} /></div>
                                 <div className="auth-role-text">
                                     <div className="auth-role-title">{t("auth.ownerTitle")}</div>
@@ -126,8 +134,9 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                     </div>
                 </div>
 
-                {/* panel promocional */}
-                <div className="scale-in auth-promo-panel auth-promo-delay">
+                {/* panel promocional -> se colapsa (animado) al registrarse como negocio.
+                   sin scale-in: su opacity/transform los controla la transicion de colapso */}
+                <div className="auth-promo-panel" aria-hidden={soloCard}>
                     <div>
                         <div className="eyebrow auth-promo-eyebrow">{t("auth.promoEyebrow")}</div>
                         <h3 className="auth-promo-title">
