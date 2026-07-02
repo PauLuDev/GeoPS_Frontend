@@ -23,6 +23,12 @@ export const es = {
         500: "Tuvimos un problema en el servidor. Intenta de nuevo.",
         503: "El servicio no está disponible. Intenta más tarde.",
     },
+    campaign: {
+        errors: {
+            datePast: "La fecha no puede ser anterior a hoy.",
+            endBeforeStart: "La fecha de fin debe ser posterior a la de inicio.",
+        },
+    },
     cat: {
         all: "Todo",
         food: "Comida",

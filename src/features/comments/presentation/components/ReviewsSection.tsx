@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
+import { useProfile } from "@/features/auth/presentation/hooks/useProfile.ts";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Comment } from "../../domain/entities/Comment.ts";
 import { CommentStats } from "../../domain/entities/CommentStats.ts";
@@ -12,7 +13,6 @@ import { ReviewForm } from "./ReviewForm.tsx";
 interface ReviewsSectionProps {
     targetId: string;
     targetType: TargetType;
-    userName?: string;
     /** valores denormalizados a mostrar mientras no llega el promedio real */
     fallbackRating?: number;
     fallbackCount?: number;
@@ -25,9 +25,20 @@ function fmtDate(iso: string, locale: string): string {
     return d.toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
 }
 
+/* construye el nombre visible del autor a partir del perfil */
+function buildUserName(profile: { firstName?: string | null; lastName?: string | null } | null, fallback?: string): string {
+    const first = profile?.firstName?.trim() ?? "";
+    const last = profile?.lastName?.trim() ?? "";
+    if (first && last && last !== first) return `${first} ${last}`;
+    if (first) return first;
+    return fallback?.trim() || "Invitado";
+}
+
 /* seccion de resenas reutilizable -> promedio + formulario + lista (negocio o campana) */
-export function ReviewsSection({ targetId, targetType, userName = getCurrentUser()?.username ?? "Invitado", fallbackRating, fallbackCount }: ReviewsSectionProps) {
+export function ReviewsSection({ targetId, targetType, fallbackRating, fallbackCount }: ReviewsSectionProps) {
     const { t, i18n } = useTranslation();
+    const { profile } = useProfile();
+    const me = getCurrentUser();
     const dateLocale = i18n.language.startsWith("en") ? "en-US" : "es-PE";
     const { list, average, post, edit, remove } = useComments();
     const [reviews, setReviews] = useState<Comment[]>([]);
@@ -35,6 +46,10 @@ export function ReviewsSection({ targetId, targetType, userName = getCurrentUser
     const [editingId, setEditingId]   = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [editedId, setEditedId]     = useState<string | null>(null);
+
+    /* datos del autor: nombre desde el perfil (firstName + lastName) y avatar */
+    const userName = useMemo(() => buildUserName(profile, me?.username), [profile, me]);
+    const userUrl  = profile?.avatarUrl ?? undefined;
 
     /* al cambiar de target, limpia para no mostrar las del anterior */
     const [prevId, setPrevId] = useState(targetId);
@@ -54,7 +69,7 @@ export function ReviewsSection({ targetId, targetType, userName = getCurrentUser
     }, [targetId, list, average]);
 
     const handlePost = async (content: string, rating: number): Promise<boolean> => {
-        const id = await post({ targetId, targetType, userName, content, rating });
+        const id = await post({ targetId, targetType, userName, userUrl, content, rating });
         if (!id) return false;
         await refresh();
         return true;

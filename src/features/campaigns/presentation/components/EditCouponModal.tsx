@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Select } from "@/shared/ui/components/Select.tsx";
 import { DatePicker } from "@/shared/ui/components/DatePicker.tsx";
@@ -10,7 +11,7 @@ import { useCoupons } from "@/features/coupons/presentation/hooks/useCoupons.ts"
 import { uploadImage } from "@/shared/cloudinary.ts";
 import { PRESET_RESTRICTIONS } from "@/features/campaigns/domain/value-objects/CouponRestrictions.ts";
 import { calcDiscountPct, savings } from "@/features/campaigns/domain/value-objects/Discount.ts";
-import { durationLabel } from "@/features/campaigns/domain/value-objects/Duration.ts";
+import { durationLabel, todayISO } from "@/features/campaigns/domain/value-objects/Duration.ts";
 
 interface EditCouponModalProps {
     coupon: CampaignCoupon;
@@ -23,6 +24,7 @@ interface EditCouponModalProps {
 /* edita un cupon en el back (PUT /coupons/{id}); el stock no se edita.
    tambien permite reasignar la campana (PATCH /coupons/{id}/campaign), o dejarlo sin campana */
 export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: EditCouponModalProps) {
+    const { t } = useTranslation();
     const { update, changeCampaign, loading, error } = useCoupons();
 
     /* solo las campanas del mismo establecimiento que el cupon (si se conoce) */
@@ -57,12 +59,15 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
 
     const needsDiscount = promotionType !== "BUY_X_GET_Y";
     const discountPct = calcDiscountPct(origNum, finalNum);
+    const today = todayISO();
+    const endMin = startDate && startDate >= today ? startDate : today;
 
     const errors = {
         title: !title.trim(),
         original: needsDiscount && (!originalPrice || isNaN(origNum) || origNum <= 0),
         final: needsDiscount && (!finalPrice || isNaN(finalNum) || finalNum < 0 || finalNum >= origNum),
         dates: !!startDate && !!endDate && endDate < startDate,
+        endPast: !!endDate && endDate < today,
     };
     const isValid = !Object.values(errors).some(Boolean);
     const err = (f: keyof typeof errors) => submitted && errors[f];
@@ -238,7 +243,8 @@ export function EditCouponModal({ coupon, campaigns = [], onSaved, onClose }: Ed
                         </div>
                         <div className="field">
                             <label htmlFor="ec-end">Fin {campaignId ? <span className="nc-optional">(Heredado de la campaña)</span> : <span className="nc-optional">opcional</span>}</label>
-                            <DatePicker id="ec-end" value={campaignId ? "" : endDate} onChange={setEndDate} min={startDate || undefined} disabled={!!campaignId || uploading}/>
+                            <DatePicker id="ec-end" value={campaignId ? "" : endDate} onChange={setEndDate} min={campaignId ? undefined : endMin} disabled={!!campaignId || uploading}/>
+                            {err("endPast") && <span className="field-error">{t("campaign.errors.datePast")}</span>}
                         </div>
                     </div>
 

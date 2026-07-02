@@ -23,6 +23,12 @@ export const en = {
         500: "We had a server problem. Please try again.",
         503: "The service is unavailable. Please try again later.",
     },
+    campaign: {
+        errors: {
+            datePast: "The date cannot be in the past.",
+            endBeforeStart: "The end date must be after the start date.",
+        },
+    },
     cat: {
         all: "All",
         food: "Food",
