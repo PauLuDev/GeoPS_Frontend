@@ -38,8 +38,8 @@ export function useAuth(repository?: IAuthRepository) {
     const signIn = (email: string, password: string, roles: Role[]) =>
         run(() => signInUseCase(repoRef.current, email, password, roles));
 
-    const signUp = (name: string, email: string, password: string, roles: Role[]) =>
-        run(() => signUpUseCase(repoRef.current, name, email, password, roles));
+    const signUp = (name: string, lastName: string, email: string, password: string, roles: Role[]) =>
+        run(() => signUpUseCase(repoRef.current, name, lastName, email, password, roles));
 
     const signOut = async () => {
         await signOutUseCase(repoRef.current);

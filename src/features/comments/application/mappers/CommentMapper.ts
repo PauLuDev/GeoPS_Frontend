@@ -4,6 +4,7 @@ import { CommentStatus } from "../../domain/value-objects/CommentStatus.ts";
 import { TargetType } from "../../domain/value-objects/TargetType.ts";
 import { NewComment } from "../../domain/repositories/ICommentRepository.ts";
 import { CommentResponse, AverageRatingResponse, CreateCommentResource } from "../dtos/CommentResource.ts";
+import { normalizeAvatarUrl } from "@/shared/utils/avatar.ts";
 
 /* DTO (snake_case) -> entidad de dominio */
 export function toComment(r: CommentResponse): Comment {
@@ -13,7 +14,7 @@ export function toComment(r: CommentResponse): Comment {
         targetType: r.target_type as TargetType,
         userId: r.user_id,
         userName: r.user_name,
-        userUrl: r.user_url,
+        userUrl: normalizeAvatarUrl(r.user_url),
         content: r.content,
         rating: r.rating,
         status: r.status as CommentStatus,

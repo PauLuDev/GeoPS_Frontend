@@ -9,6 +9,7 @@ interface LocationModalProps {
     onSelect: (loc: UserLocation) => void;
     onClose?: () => void;
     onPickOnMap?: () => void;
+    onUseCurrentLocation?: () => void;
     isFirst?: boolean;
     currentName?: string;
 }
@@ -39,7 +40,7 @@ function highlight(text: string, q: string) {
     return <>{text.slice(0, idx)}<strong className="lm-hl">{text.slice(idx, idx + q.length)}</strong>{text.slice(idx + q.length)}</>;
 }
 
-export function LocationModal({ onSelect, onClose, onPickOnMap, isFirst = false, currentName }: LocationModalProps) {
+export function LocationModal({ onSelect, onClose, onPickOnMap, onUseCurrentLocation, isFirst = false, currentName }: LocationModalProps) {
     const { t } = useTranslation();
     const [query, setQuery] = useState("");
     const [osm, setOsm] = useState<ReturnType<typeof parseNominatim>[]>([]);
@@ -84,7 +85,7 @@ export function LocationModal({ onSelect, onClose, onPickOnMap, isFirst = false,
         onSelect({ lat: p.lat, lng: p.lng, name: p.name, source: "manual" });
 
     return (
-        <Modal onClose={() => onClose?.()} ariaLabel="Seleccionar ubicación" className="lm-modal" dismissable={!isFirst}>
+        <Modal onClose={() => onClose?.()} ariaLabel={t("location.selectAria", { defaultValue: "Seleccionar ubicación" })} className="lm-modal" dismissable={!isFirst}>
 
                 <div className="lm-header">
                     <div className="lm-header-top">
@@ -132,6 +133,12 @@ export function LocationModal({ onSelect, onClose, onPickOnMap, isFirst = false,
                             </button>
                         )}
                     </div>
+                    {onUseCurrentLocation && (
+                        <button type="button" className="lm-gps-btn" onClick={onUseCurrentLocation}>
+                            <Icon name="location" size={16}/>
+                            <span>{t("location.useCurrent", { defaultValue: "Usar mi ubicación actual" })}</span>
+                        </button>
+                    )}
                     {onPickOnMap && (
                         <button type="button" className="lm-pick-btn" onClick={onPickOnMap}>
                             <Icon name="flag" size={16}/>
