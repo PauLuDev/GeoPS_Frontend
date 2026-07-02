@@ -54,7 +54,7 @@ interface NewCampaignProps {
 }
 
 export function NewCampaign({ onDone }: NewCampaignProps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const uid = useId();
     const fileRef = useRef<HTMLInputElement>(null);
 

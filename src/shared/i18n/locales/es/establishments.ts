@@ -30,6 +30,10 @@ export const establishments = {
         limitText_other: "Tu plan permite hasta {{max}} establecimientos y ya tienes {{count}}. Mejora tu plan para registrar más, o elimina uno existente.",
         limitUnderstood: "Entendido",
         viewPlans: "Ver planes",
+        limitModal: {
+            close: "Entendido",
+            action: "Ver planes",
+        },
     },
     businessForm: {
         businessInfo: "Información del negocio",

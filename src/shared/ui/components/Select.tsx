@@ -12,10 +12,11 @@ interface SelectProps {
     onChange: (value: string) => void;
     id?: string;
     placeholder?: string;
+    disabled?: boolean;
 }
 
 /* dropdown estilizado (reemplazo del select nativo) -> se ve como el menu de exportar/filtros */
-export function Select({ value, options, onChange, id, placeholder = "Selecciona" }: SelectProps) {
+export function Select({ value, options, onChange, id, placeholder = "Selecciona", disabled }: SelectProps) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -33,6 +34,7 @@ export function Select({ value, options, onChange, id, placeholder = "Selecciona
     return (
         <div className="ui-select" ref={ref}>
             <button type="button" id={id} className="input ui-select-btn" aria-haspopup="listbox" aria-expanded={open}
+                    disabled={disabled}
                     onClick={() => setOpen(o => !o)}>
                 <span className={current ? "" : "ui-select-ph"}>{current?.label ?? placeholder}</span>
                 <Icon name="chevronDown" size={14}/>

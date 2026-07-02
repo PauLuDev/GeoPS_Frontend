@@ -35,7 +35,7 @@ export function toReportSnapshot(
     const redeemedSpark = performanceData.map(p => p.redeemed);
 
     return {
-        meta: { businessName, period: t(`dashboard.period.${range}`) },
+        meta: { businessName, period: t(`dashboard.range.${range}`), range },
         kpis: [
             /* cupones vistos = "Abrieron el cupon" (ver el detalle del cupon) */
             { ...toKpi(t("dashboard.kpi.views"), kpis.views), value: String(f.views.count) },

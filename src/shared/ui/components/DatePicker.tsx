@@ -8,6 +8,7 @@ interface DatePickerProps {
     placeholder?: string;
     min?: string;             // yyyy-MM-dd (no deja elegir antes)
     error?: boolean;          // pinta el borde de rojo igual que los demas inputs
+    disabled?: boolean;
 }
 
 const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
@@ -21,7 +22,7 @@ const display = (iso: string) => {
 };
 
 /* date picker propio (calendario estilizado, sin el nativo del navegador) */
-export function DatePicker({ value, onChange, id, placeholder = "dd/mm/aaaa", min, error = false }: DatePickerProps) {
+export function DatePicker({ value, onChange, id, placeholder = "dd/mm/aaaa", min, error = false, disabled }: DatePickerProps) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -69,7 +70,7 @@ export function DatePicker({ value, onChange, id, placeholder = "dd/mm/aaaa", mi
 
     return (
         <div className="ui-select ui-date" ref={ref}>
-            <button type="button" id={id} className={"input ui-select-btn" + (error ? " input-error" : "")} onClick={() => setOpen(o => !o)}>
+            <button type="button" id={id} className={"input ui-select-btn" + (error ? " input-error" : "")} disabled={disabled} onClick={() => setOpen(o => !o)}>
                 <span className={value ? "" : "ui-select-ph"}>{value ? display(value) : placeholder}</span>
                 <Icon name="clock" size={14}/>
             </button>

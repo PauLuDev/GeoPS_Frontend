@@ -7,6 +7,7 @@ import { campaigns } from "./es/campaigns.ts";
 import { redeem } from "./es/redeem.ts";
 import { establishments } from "./es/establishments.ts";
 import { billing } from "./es/billing.ts";
+import { errors } from "./es/errors.ts";
 
 export const es = {
     ...common,
@@ -18,4 +19,8 @@ export const es = {
     ...redeem,
     ...establishments,
     ...billing,
+    errors: {
+        ...errors.errors,
+        ...campaigns.campaigns.errors,
+    },
 } as const;

@@ -30,6 +30,10 @@ export const establishments = {
         limitText_other: "Your plan allows up to {{max}} establishments and you already have {{count}}. Upgrade your plan to register more, or delete an existing one.",
         limitUnderstood: "Understood",
         viewPlans: "View plans",
+        limitModal: {
+            close: "Understood",
+            action: "View plans",
+        },
     },
     businessForm: {
         businessInfo: "Business details",

@@ -125,7 +125,7 @@ export function MerchantDashboard({ onNew, establishments, coupons = [] }: Dashb
             { label: t("dashboard.kpi.conversion"), value: `${a.conversionRate.toFixed(1)}%`, delta: "", trend: "up", spark: flat },
         ];
         return {
-            meta: { businessName: `${establishmentName} · ${selectedCampaign.name}`, period: t("dashboard.period.historic") },
+            meta: { businessName: `${establishmentName} · ${selectedCampaign.name}`, period: t("dashboard.period.historic"), range: "historic" },
             kpis,
             funnel: [
                 { label: t("dashboard.funnel.views"), value: a.viewsCount, pct: pct(a.viewsCount) },
@@ -160,9 +160,9 @@ export function MerchantDashboard({ onNew, establishments, coupons = [] }: Dashb
         setExportOpen(false);
         if (!activeReport) return;
         const mod = await import("@/features/analytics/application/exportReport.ts");
-        if (which === "pdf")   mod.exportReportPDF(activeReport);
-        if (which === "excel") mod.exportReportExcel(activeReport);
-        if (which === "csv")   mod.exportReportCSV(activeReport);
+        if (which === "pdf")   mod.exportReportPDF(activeReport, t);
+        if (which === "excel") mod.exportReportExcel(activeReport, t);
+        if (which === "csv")   mod.exportReportCSV(activeReport, t);
     };
 
     return (
