@@ -4,7 +4,6 @@ import { CouponResource } from "../dtos/CouponResource.ts";
 /* arma la etiqueta de descuento segun el tipo de promocion */
 export function discountLabel(c: CouponResource): string {
     if (c.promotionType === "FIXED_AMOUNT") return `S/${c.discountValue}`;
-    if (c.promotionType === "BUY_X_GET_Y") return `${c.buyQuantity ?? 2}x${c.getQuantity ?? 1}`;
     return `${c.discountValue}%`;
 }
 

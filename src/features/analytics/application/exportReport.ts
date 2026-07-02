@@ -29,8 +29,63 @@ function download(blob: Blob, filename: string) {
     URL.revokeObjectURL(url);
 }
 
+/* helper para obtener textos localizados en base al traductor o al fallback */
+function getLocaleTxt(t?: any) {
+    const isEn = t ? t("dashboard.range.today") === "Today" : false;
+    const es: Record<string, string> = {
+        title: "GeoPS · Reporte de analíticas",
+        generated: "Generado el",
+        metric: "Métrica",
+        value: "Valor",
+        delta: "Variación",
+        funnel: "Embudo de conversión",
+        users: "Usuarios",
+        pct: "%",
+        topCampaigns: "Top campañas activas",
+        campaign: "Campaña",
+        views: "Vistas",
+        conversion: "Conversión",
+        stock: "Stock",
+        hour: "Hora",
+        day: "Día",
+        reserved: "Reservados",
+        redeemed: "Redimidos",
+        sheetSummary: "Resumen",
+        sheetFunnel: "Funnel",
+        sheetTop: "Top campañas",
+        sheetHourly: "Por hora",
+        sheetDaily: "Por día",
+    };
+    const en: Record<string, string> = {
+        title: "GeoPS · Analytics Report",
+        generated: "Generated on",
+        metric: "Metric",
+        value: "Value",
+        delta: "Variation",
+        funnel: "Conversion Funnel",
+        users: "Users",
+        pct: "%",
+        topCampaigns: "Top Active Campaigns",
+        campaign: "Campaign",
+        views: "Views",
+        conversion: "Conversion",
+        stock: "Stock",
+        hour: "Hour",
+        day: "Day",
+        reserved: "Reserved",
+        redeemed: "Redeemed",
+        sheetSummary: "Summary",
+        sheetFunnel: "Funnel",
+        sheetTop: "Top Campaigns",
+        sheetHourly: "Hourly",
+        sheetDaily: "Daily",
+    };
+    return (key: string) => (isEn ? en[key] : es[key]);
+}
+
 /* pdf */
-export function exportReportPDF(report: ReportSnapshot) {
+export function exportReportPDF(report: ReportSnapshot, t?: any) {
+    const txt = getLocaleTxt(t);
     const { meta, kpis, funnel, topCampaigns, hourly } = report;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const W = doc.internal.pageSize.getWidth();
@@ -42,19 +97,19 @@ export function exportReportPDF(report: ReportSnapshot) {
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
-    doc.text("GeoPS · Reporte de analíticas", M, 34);
+    doc.text(txt("title"), M, 34);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.text(`${meta.businessName}  ·  ${meta.period}`, M, 54);
 
     doc.setTextColor(...INK);
     doc.setFontSize(9);
-    doc.text(`Generado el ${stamp()}`, M, 90);
+    doc.text(`${txt("generated")} ${stamp()}`, M, 90);
 
     /* KPIs */
     autoTable(doc, {
         startY: 105,
-        head: [["Métrica", "Valor", "Variación"]],
+        head: [[txt("metric"), txt("value"), txt("delta")]],
         body: kpis.map(k => [k.label, k.value, k.delta]),
         theme: "grid",
         headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
@@ -64,7 +119,7 @@ export function exportReportPDF(report: ReportSnapshot) {
 
     /* Funnel */
     autoTable(doc, {
-        head: [["Embudo de conversión", "Usuarios", "%"]],
+        head: [[txt("funnel"), txt("users"), txt("pct")]],
         body: funnel.map(f => [f.label, f.value.toLocaleString("es-PE"), `${f.pct}%`]),
         theme: "grid",
         headStyles: { fillColor: INK, textColor: 255, fontStyle: "bold" },
@@ -72,25 +127,30 @@ export function exportReportPDF(report: ReportSnapshot) {
         margin: { left: M, right: M },
     });
 
-    /* top campanas */
-    autoTable(doc, {
-        head: [["Top campañas activas", "Vistas", "Conversión", "Stock"]],
-        body: topCampaigns.map(c => [c.name, c.views.toLocaleString("es-PE"), c.rate, c.stock]),
-        theme: "grid",
-        headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
-        styles: { fontSize: 10, cellPadding: 6 },
-        margin: { left: M, right: M },
-    });
+    /* top campanas (solo si hay datos) */
+    if (topCampaigns && topCampaigns.length > 0) {
+        autoTable(doc, {
+            head: [[txt("topCampaigns"), txt("views"), txt("conversion"), txt("stock")]],
+            body: topCampaigns.map(c => [c.name, c.views.toLocaleString("es-PE"), c.rate, c.stock]),
+            theme: "grid",
+            headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
+            styles: { fontSize: 10, cellPadding: 6 },
+            margin: { left: M, right: M },
+        });
+    }
 
-    /* Rendimiento por hora */
-    autoTable(doc, {
-        head: [["Hora", "Reservados", "Redimidos"]],
-        body: hourly.map(h => [h.hour, String(h.reserved), String(h.redeemed)]),
-        theme: "striped",
-        headStyles: { fillColor: INK, textColor: 255, fontStyle: "bold" },
-        styles: { fontSize: 9, cellPadding: 4 },
-        margin: { left: M, right: M },
-    });
+    /* Rendimiento por hora/día (solo si hay datos) */
+    if (hourly && hourly.length > 0) {
+        const timeHeader = meta.range === "today" ? txt("hour") : txt("day");
+        autoTable(doc, {
+            head: [[timeHeader, txt("reserved"), txt("redeemed")]],
+            body: hourly.map(h => [h.hour, String(h.reserved), String(h.redeemed)]),
+            theme: "striped",
+            headStyles: { fillColor: INK, textColor: 255, fontStyle: "bold" },
+            styles: { fontSize: 9, cellPadding: 4 },
+            margin: { left: M, right: M },
+        });
+    }
 
     /* pie de pagina */
     const pages = doc.getNumberOfPages();
@@ -106,7 +166,8 @@ export function exportReportPDF(report: ReportSnapshot) {
 }
 
 /* csv */
-export function exportReportCSV(report: ReportSnapshot) {
+export function exportReportCSV(report: ReportSnapshot, t?: any) {
+    const txt = getLocaleTxt(t);
     const { meta, kpis, funnel, topCampaigns, hourly } = report;
     const esc = (v: string | number) => {
         const s = String(v);
@@ -114,25 +175,30 @@ export function exportReportCSV(report: ReportSnapshot) {
     };
     const rows: (string | number)[][] = [];
 
-    rows.push(["GeoPS - Reporte de analíticas"]);
+    rows.push([txt("title")]);
     rows.push([meta.businessName, meta.period]);
-    rows.push([`Generado el ${stamp()}`]);
+    rows.push([`${txt("generated")} ${stamp()}`]);
     rows.push([]);
 
-    rows.push(["Métrica", "Valor", "Variación"]);
+    rows.push([txt("metric"), txt("value"), txt("delta")]);
     kpis.forEach(k => rows.push([k.label, k.value, k.delta]));
     rows.push([]);
 
-    rows.push(["Embudo de conversión", "Usuarios", "%"]);
+    rows.push([txt("funnel"), txt("users"), txt("pct")]);
     funnel.forEach(f => rows.push([f.label, f.value, `${f.pct}%`]));
     rows.push([]);
 
-    rows.push(["Top campañas", "Vistas", "Conversión", "Stock"]);
-    topCampaigns.forEach(c => rows.push([c.name, c.views, c.rate, c.stock]));
-    rows.push([]);
+    if (topCampaigns && topCampaigns.length > 0) {
+        rows.push([txt("campaign"), txt("views"), txt("conversion"), txt("stock")]);
+        topCampaigns.forEach(c => rows.push([c.name, c.views, c.rate, c.stock]));
+        rows.push([]);
+    }
 
-    rows.push(["Hora", "Reservados", "Redimidos"]);
-    hourly.forEach(h => rows.push([h.hour, h.reserved, h.redeemed]));
+    if (hourly && hourly.length > 0) {
+        const timeHeader = meta.range === "today" ? txt("hour") : txt("day");
+        rows.push([timeHeader, txt("reserved"), txt("redeemed")]);
+        hourly.forEach(h => rows.push([h.hour, h.reserved, h.redeemed]));
+    }
 
     const csv = rows.map(r => r.map(esc).join(",")).join("\n");
     /* BOM para que Excel respete los acentos */
@@ -140,40 +206,47 @@ export function exportReportCSV(report: ReportSnapshot) {
 }
 
 /* excel */
-export function exportReportExcel(report: ReportSnapshot) {
+export function exportReportExcel(report: ReportSnapshot, t?: any) {
+    const txt = getLocaleTxt(t);
     const wb = XLSX.utils.book_new();
 
     const resumen = XLSX.utils.aoa_to_sheet([
-        ["GeoPS — Reporte de analíticas"],
+        [txt("title")],
         [report.meta.businessName, report.meta.period],
-        [`Generado el ${stamp()}`],
+        [`${txt("generated")} ${stamp()}`],
         [],
-        ["Métrica", "Valor", "Variación"],
+        [txt("metric"), txt("value"), txt("delta")],
         ...report.kpis.map(k => [k.label, k.value, k.delta]),
     ]);
     resumen["!cols"] = [{ wch: 22 }, { wch: 14 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, resumen, "Resumen");
+    XLSX.utils.book_append_sheet(wb, resumen, txt("sheetSummary"));
 
     const funnel = XLSX.utils.aoa_to_sheet([
-        ["Embudo de conversión", "Usuarios", "%"],
+        [txt("funnel"), txt("users"), txt("pct")],
         ...report.funnel.map(f => [f.label, f.value, f.pct]),
     ]);
     funnel["!cols"] = [{ wch: 22 }, { wch: 12 }, { wch: 8 }];
-    XLSX.utils.book_append_sheet(wb, funnel, "Funnel");
+    XLSX.utils.book_append_sheet(wb, funnel, txt("sheetFunnel"));
 
-    const top = XLSX.utils.aoa_to_sheet([
-        ["Campaña", "Vistas", "Conversión", "Stock"],
-        ...report.topCampaigns.map(c => [c.name, c.views, c.rate, c.stock]),
-    ]);
-    top["!cols"] = [{ wch: 22 }, { wch: 10 }, { wch: 12 }, { wch: 10 }];
-    XLSX.utils.book_append_sheet(wb, top, "Top campañas");
+    if (report.topCampaigns && report.topCampaigns.length > 0) {
+        const top = XLSX.utils.aoa_to_sheet([
+            [txt("campaign"), txt("views"), txt("conversion"), txt("stock")],
+            ...report.topCampaigns.map(c => [c.name, c.views, c.rate, c.stock]),
+        ]);
+        top["!cols"] = [{ wch: 22 }, { wch: 10 }, { wch: 12 }, { wch: 10 }];
+        XLSX.utils.book_append_sheet(wb, top, txt("sheetTop"));
+    }
 
-    const hourly = XLSX.utils.aoa_to_sheet([
-        ["Hora", "Reservados", "Redimidos"],
-        ...report.hourly.map(h => [h.hour, h.reserved, h.redeemed]),
-    ]);
-    hourly["!cols"] = [{ wch: 10 }, { wch: 12 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, hourly, "Por hora");
+    if (report.hourly && report.hourly.length > 0) {
+        const timeHeader = report.meta.range === "today" ? txt("hour") : txt("day");
+        const sheetName = report.meta.range === "today" ? txt("sheetHourly") : txt("sheetDaily");
+        const hourly = XLSX.utils.aoa_to_sheet([
+            [timeHeader, txt("reserved"), txt("redeemed")],
+            ...report.hourly.map(h => [h.hour, h.reserved, h.redeemed]),
+        ]);
+        hourly["!cols"] = [{ wch: 10 }, { wch: 12 }, { wch: 12 }];
+        XLSX.utils.book_append_sheet(wb, hourly, sheetName);
+    }
 
     XLSX.writeFile(wb, `GeoPS-reporte-${fileStamp()}.xlsx`);
 }

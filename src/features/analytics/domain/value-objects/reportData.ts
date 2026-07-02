@@ -33,6 +33,7 @@ export interface ReportHour {
 export interface ReportMeta {
     businessName: string;
     period: string;
+    range?: HourlyRange | "historic";
 }
 
 /* foto completa del reporte, lista para pintar o exportar */

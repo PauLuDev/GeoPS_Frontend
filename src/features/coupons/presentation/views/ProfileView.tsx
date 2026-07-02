@@ -214,7 +214,7 @@ export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, th
                     <div className="profile-stats">
                         {[
                             { label: t("profile.statSaved"), value: reservedCount, sub: reservedCount === 0 ? t("profile.statSavedEmpty") : t("profile.statSavedCount", { count: reservedCount }) },
-                            { label: t("profile.statSavings"), value: `S/ ${savings}`, sub: savings === 0 ? t("profile.statSavingsEmpty") : t("profile.statSavingsOk"), mono: true },
+                            { label: t("profile.statSavings"), value: `S/ ${savings.toFixed(2)}`, sub: savings === 0 ? t("profile.statSavingsEmpty") : t("profile.statSavingsOk"), mono: true },
                             { label: t("profile.statSpots"), value: locales, sub: locales === 0 ? t("profile.statSpotsEmpty") : t("profile.statSpotsCount", { count: locales }), mono: true },
                         ].map((s) => (
                             <div key={s.label} className="ps-card">

@@ -6,6 +6,8 @@ export const auth = {
         subtitleSignin: "Tus cupones cercanos te están esperando.",
         name: "Nombre",
         namePlaceholder: "Tu nombre",
+        lastName: "Apellido",
+        lastNamePlaceholder: "Tu apellido",
         email: "Correo",
         emailPlaceholder: "tu@email.com",
         password: "Contraseña",
