@@ -3,16 +3,22 @@ import {useTranslation} from "react-i18next";
 import {Coupon} from "@/shared/types.ts";
 import { CategoryResource } from "@/features/establishments/application/dtos/EstablishmentResource.ts";
 import { Icon } from "@/shared/ui/components/Icon";
+import { FilterDropdown } from "@/features/coupons/presentation/components/FilterDropdown.tsx";
+import { RADIUS_OPTIONS } from "@/features/coupons/domain/value-objects/filterConfig.ts";
 
 interface CategoriesViewProps {
     coupons: Coupon[];
     categories: CategoryResource[];
+    radius: number;
+    onRadiusChange: (r: number) => void;
+    loading?: boolean;
     onPick: (catName: string) => void;
     onOpenCoupon?: (c: Coupon) => void;
 }
 
-export function CategoriesView({ coupons, categories, onPick, onOpenCoupon }: CategoriesViewProps) {
+export function CategoriesView({ coupons, categories, radius, onRadiusChange, loading = false, onPick, onOpenCoupon }: CategoriesViewProps) {
     const { t } = useTranslation();
+    const radiusText = radius === Infinity ? t("map.radiusAll") : radius >= 1000 ? `${radius / 1000}km` : `${radius}m`;
     const counts = useMemo(() => {
         const m: Record<string, number> = {};
         coupons.forEach(c => { m[c.category] = (m[c.category] || 0) + 1; });
@@ -44,6 +50,24 @@ export function CategoriesView({ coupons, categories, onPick, onOpenCoupon }: Ca
                         <div className="mono cat-stat-num accent">S/{totalDiscount}</div>
                     </div>
                 </div>
+            </div>
+
+            <div className="cat-filter-row">
+                <FilterDropdown
+                    label={t("map.radius")}
+                    display={radiusText}
+                    items={RADIUS_OPTIONS.map((o) => ({
+                        key: o.label,
+                        label: o.value === Infinity ? t("map.radiusAll") : o.label,
+                        active: radius === o.value,
+                        onSelect: () => onRadiusChange(o.value),
+                    }))}
+                />
+                <span className="cat-filter-hint">
+                    {loading
+                        ? t("map.loadingCoupons")
+                        : t("categories.radiusHint", { value: radiusText })}
+                </span>
             </div>
 
             <div className="cat-grid stagger">

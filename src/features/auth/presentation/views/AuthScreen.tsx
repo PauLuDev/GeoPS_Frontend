@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { BackgroundGrid } from "@/shared/ui/components/BackgroundGrid.tsx";
 import { BrandMark } from "@/shared/ui/components/BrandMark.tsx";
+import { LanguageSwitcher } from "@/shared/ui/components/LanguageSwitcher.tsx";
 import { useAuth } from "@/features/auth/presentation/hooks/useAuth.ts";
 import { Role, isOwner as rolesHaveOwner } from "@/features/auth/domain/value-objects/Role.ts";
 
@@ -41,6 +42,7 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
 
     return (
         <div className="auth-root">
+            <div className="auth-lang"><LanguageSwitcher /></div>
             <BackgroundGrid />
             <div className="auth-bg" aria-hidden="true">
                 <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" className="auth-bg-svg">
@@ -55,7 +57,7 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                 </svg>
             </div>
 
-            <div className="auth-col-pair">
+            <div className={"auth-col-pair" + (isSignup ? " auth-signup" : "")}>
                 <div className="card scale-in auth-card">
                     <div className="auth-brand-row">
                         <div className="brand"><BrandMark /><span>GeoPS</span></div>
@@ -99,7 +101,7 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                         )}
 
                         {error && (
-                            <div className="auth-error">{error}</div>
+                            <div className="auth-error">{error.message}</div>
                         )}
 
                         <button type="submit" className="btn btn-brand auth-fullbtn auth-submit" disabled={loading}>

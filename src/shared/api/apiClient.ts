@@ -3,6 +3,17 @@ import { getToken } from "./tokenStore";
 /* cliente http hacia el api-gateway, mete el token y maneja errores */
 const BASE_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
 
+function extractBackendMessage(body: unknown): string | undefined {
+    if (!body) return undefined;
+    if (typeof body === "string") return body.trim() || undefined;
+    if (typeof body === "object") {
+        const b = body as Record<string, unknown>;
+        const msg = b.message ?? b.error ?? b.detail;
+        if (typeof msg === "string" && msg.trim()) return msg.trim();
+    }
+    return undefined;
+}
+
 export class ApiError extends Error {
     constructor(public status: number, message: string, public body?: unknown) {
         super(message);
@@ -35,7 +46,8 @@ async function request<T>(method: string, path: string, body?: unknown, opts: Re
     if (!res.ok) {
         let errBody: unknown;
         try { errBody = await res.json(); } catch { /* respuesta sin cuerpo JSON */ }
-        throw new ApiError(res.status, `${method} ${path} -> ${res.status}`, errBody);
+        const backendMsg = extractBackendMessage(errBody);
+        throw new ApiError(res.status, backendMsg ?? `${method} ${path} -> ${res.status}`, errBody);
     }
 
     if (res.status === 204) return undefined as T;

@@ -955,6 +955,9 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                     <CategoriesView
                         coupons={coupons}
                         categories={categories}
+                        radius={radius}
+                        onRadiusChange={setRadius}
+                        loading={couponsLoading}
                         onPick={(catName) => {
                             setActiveCategory(catName);
                             setTab("map");

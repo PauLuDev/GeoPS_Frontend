@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plan } from "../../domain/entities/Plan.ts";
 import { Subscription } from "../../domain/entities/Subscription.ts";
 import { CurrentSubscription } from "../../domain/entities/CurrentSubscription.ts";
@@ -8,14 +9,16 @@ import { getPlans } from "../../application/use-cases/GetPlans.ts";
 import { subscribeToPlan } from "../../application/use-cases/SubscribeToPlan.ts";
 import { getMySubscriptions } from "../../application/use-cases/GetMySubscriptions.ts";
 import { cancelRenewal } from "../../application/use-cases/CancelRenewal.ts";
+import { mapApiError, AppError } from "@/shared/api/errorMapper.ts";
 
 /**
  * hook de presentacion: planes, suscripcion y estado del usuario
  */
 export function useBilling(repository?: IBillingRepository) {
+    const { t } = useTranslation();
     const repoRef = useRef<IBillingRepository>(repository ?? new HttpBillingRepository());
     const [loading, setLoading] = useState(false);
-    const [error, setError]     = useState<string | null>(null);
+    const [error, setError]     = useState<AppError | null>(null);
 
     const run = async <T>(action: () => Promise<T>): Promise<T | null> => {
         setLoading(true);
@@ -23,7 +26,7 @@ export function useBilling(repository?: IBillingRepository) {
         try {
             return await action();
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Error en billing");
+            setError(mapApiError(e, t));
             return null;
         } finally {
             setLoading(false);

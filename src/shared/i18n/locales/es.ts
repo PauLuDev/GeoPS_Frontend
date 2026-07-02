@@ -12,6 +12,25 @@ export const es = {
         done: "Listo",
         saving: "Guardando…",
     },
+    errors: {
+        network: "No se pudo conectar con el servidor. Revisa tu conexión.",
+        default: "Ocurrió un error inesperado. Intenta de nuevo.",
+        400: "La solicitud no es válida.",
+        401: "Tu sesión expiró. Inicia sesión de nuevo.",
+        403: "No tienes permiso para hacer esto.",
+        404: "No encontramos lo que buscabas.",
+        409: "Este recurso ya existe o está en uso.",
+        422: "Algunos datos no son válidos. Revísalos.",
+        429: "Demasiadas solicitudes. Espera un momento.",
+        500: "Tuvimos un problema en el servidor. Intenta de nuevo.",
+        503: "El servicio no está disponible. Intenta más tarde.",
+    },
+    campaign: {
+        errors: {
+            datePast: "La fecha no puede ser anterior a hoy.",
+            endBeforeStart: "La fecha de fin debe ser posterior a la de inicio.",
+        },
+    },
     cat: {
         all: "Todo",
         food: "Comida",
@@ -328,6 +347,7 @@ export const es = {
         headingEm: "hoy",
         headingPost: "?",
         intro: "Cupones activos en tu zona, agrupados por categoría. Toca una para ver los locales en el mapa.",
+        radiusHint: "Mostrando comercios en un radio de {{value}}",
         activeCoupons: "Cupones activos",
         potentialSavings: "Ahorro potencial",
         noOffers: "Sin ofertas activas",

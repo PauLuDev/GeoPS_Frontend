@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Select } from "@/shared/ui/components/Select.tsx";
 import { DatePicker } from "@/shared/ui/components/DatePicker.tsx";
@@ -8,7 +9,7 @@ import { useCoupons } from "@/features/coupons/presentation/hooks/useCoupons.ts"
 import { uploadImage } from "@/shared/cloudinary.ts";
 import { PRESET_RESTRICTIONS } from "@/features/campaigns/domain/value-objects/CouponRestrictions.ts";
 import { calcDiscountPct, savings } from "@/features/campaigns/domain/value-objects/Discount.ts";
-import { durationLabel } from "@/features/campaigns/domain/value-objects/Duration.ts";
+import { durationLabel, todayISO } from "@/features/campaigns/domain/value-objects/Duration.ts";
 
 interface NewCouponFormProps {
     establishments: Business[];
@@ -18,12 +19,8 @@ interface NewCouponFormProps {
 
 /* form de cupon suelto -> se crea sin campana (campaignId null) con sus propias fechas */
 export function NewCouponForm({ establishments, onCreated, onCancel }: NewCouponFormProps) {
-    const { create, loading, error: rawError } = useCoupons();
-    const error = rawError
-        ? rawError.includes("402") || rawError.includes("403") || rawError.includes("400")
-            ? "Has alcanzado el límite de cupones de tu plan. Mejora tu plan para crear más."
-            : "No se pudo crear el cupón. Intenta de nuevo."
-        : null;
+    const { t } = useTranslation();
+    const { create, loading, error } = useCoupons();
 
     const [establishmentId, setEstablishmentId] = useState(establishments[0]?.id ?? "");
 
@@ -61,6 +58,8 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
     const needsDiscount = promotionType !== "BUY_X_GET_Y";
     const discountPct = calcDiscountPct(origNum, finalNum);
     const expiresLabel = durationLabel(startDate, endDate) || "—";
+    const today = todayISO();
+    const endMin = startDate && startDate >= today ? startDate : today;
 
     const errors = {
         establishment: !establishmentId,
@@ -69,7 +68,10 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
         final: needsDiscount && (!finalPrice || isNaN(finalNum) || finalNum < 0 || finalNum >= origNum),
         stock: isNaN(stockNum) || stockNum < 1,
         start: !startDate,
+        startPast: !!startDate && startDate < today,
         end: !endDate || (!!startDate && endDate < startDate),
+        endPast: !!endDate && endDate < today,
+        endBeforeStart: !!startDate && !!endDate && endDate < startDate,
     };
     const isValid = !Object.values(errors).some(Boolean);
     const err = (f: keyof typeof errors) => submitted && errors[f];
@@ -158,7 +160,7 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
             {submitted && !isValid && (
                 <div className="nc-coupons-err"><Icon name="close" size={12}/> Completa los campos obligatorios</div>
             )}
-            {error && <div className="nc-coupons-err"><Icon name="close" size={12}/> {error}</div>}
+            {error && <div className="nc-coupons-err"><Icon name="close" size={12}/> {error.message}</div>}
 
             <div className="nc-fields">
                 {establishments.length > 1 && (
@@ -261,11 +263,16 @@ export function NewCouponForm({ establishments, onCreated, onCancel }: NewCoupon
                 <div className="nc-row2">
                     <div className="field">
                         <label htmlFor="ncf-start">Inicio</label>
-                        <DatePicker id="ncf-start" value={startDate} onChange={setStartDate} error={err("start")} disabled={uploading}/>
+                        <DatePicker id="ncf-start" value={startDate} onChange={setStartDate} min={today} error={err("start") || errors.startPast} disabled={uploading}/>
+                        {err("start") && !errors.startPast && <span className="field-error">Obligatorio</span>}
+                        {err("startPast") && <span className="field-error">{t("campaign.errors.datePast")}</span>}
                     </div>
                     <div className="field">
                         <label htmlFor="ncf-end">Fin</label>
-                        <DatePicker id="ncf-end" value={endDate} onChange={setEndDate} min={startDate || undefined} error={err("end")} disabled={uploading}/>
+                        <DatePicker id="ncf-end" value={endDate} onChange={setEndDate} min={endMin} error={err("end") || errors.endPast} disabled={uploading}/>
+                        {err("end") && !errors.endBeforeStart && !errors.endPast && <span className="field-error">Obligatorio</span>}
+                        {err("endBeforeStart") && <span className="field-error">{t("campaign.errors.endBeforeStart")}</span>}
+                        {err("endPast") && <span className="field-error">{t("campaign.errors.datePast")}</span>}
                     </div>
                 </div>
 

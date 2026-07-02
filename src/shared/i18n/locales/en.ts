@@ -12,6 +12,25 @@ export const en = {
         done: "Done",
         saving: "Saving…",
     },
+    errors: {
+        network: "Could not connect to the server. Please check your connection.",
+        default: "An unexpected error occurred. Please try again.",
+        400: "The request is not valid.",
+        401: "Your session expired. Please sign in again.",
+        403: "You don't have permission to do this.",
+        404: "We couldn't find what you're looking for.",
+        409: "This resource already exists or is in use.",
+        422: "Some data is invalid. Please review it.",
+        429: "Too many requests. Please wait a moment.",
+        500: "We had a server problem. Please try again.",
+        503: "The service is unavailable. Please try again later.",
+    },
+    campaign: {
+        errors: {
+            datePast: "The date cannot be in the past.",
+            endBeforeStart: "The end date must be after the start date.",
+        },
+    },
     cat: {
         all: "All",
         food: "Food",
@@ -328,6 +347,7 @@ export const en = {
         headingEm: "today",
         headingPost: "?",
         intro: "Active coupons in your area, grouped by category. Tap one to see the spots on the map.",
+        radiusHint: "Showing businesses within {{value}}",
         activeCoupons: "Active coupons",
         potentialSavings: "Potential savings",
         noOffers: "No active offers",

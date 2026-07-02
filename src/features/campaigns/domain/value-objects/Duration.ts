@@ -35,3 +35,14 @@ export function isRangeValid(startISO: string, endISO: string): boolean {
     if (!startISO || !endISO) return false;
     return endISO > startISO;
 }
+
+/* fecha de hoy en formato ISO local (yyyy-MM-dd) */
+export function todayISO(): string {
+    return new Date().toLocaleDateString("en-CA");
+}
+
+/* la fecha es hoy o futura? */
+export function isFutureOrToday(iso: string): boolean {
+    if (!iso) return false;
+    return iso >= todayISO();
+}

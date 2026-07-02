@@ -1,5 +1,5 @@
 import { Campaign } from "../../domain/entities/Campaign.ts";
-import { daysDiff, isRangeValid } from "../../domain/value-objects/Duration.ts";
+import { daysDiff, isRangeValid, isFutureOrToday } from "../../domain/value-objects/Duration.ts";
 import { deriveStatus } from "../../domain/value-objects/CampaignStatus.ts";
 import { CampaignDraftInput, CampaignErrors } from "../dtos/CampaignDraft.ts";
 
@@ -8,13 +8,18 @@ import { CampaignDraftInput, CampaignErrors } from "../dtos/CampaignDraft.ts";
  */
 
 export function validateCampaign(draft: CampaignDraftInput): CampaignErrors {
-    const endInvalid = !!draft.endDate && !!draft.startDate && !isRangeValid(draft.startDate, draft.endDate);
+    const hasStart = !!draft.startDate;
+    const hasEnd = !!draft.endDate;
+    const endBeforeStart = hasStart && hasEnd && !isRangeValid(draft.startDate, draft.endDate);
     return {
-        name:     !draft.name.trim(),
-        category: !draft.category.trim(),
-        start:    !draft.startDate,
-        end:      !draft.endDate || endInvalid,
-        coupons:  draft.coupons.length === 0,
+        name:           !draft.name.trim(),
+        category:       !draft.category.trim(),
+        start:          !hasStart,
+        startPast:      hasStart && !isFutureOrToday(draft.startDate),
+        end:            !hasEnd || endBeforeStart,
+        endPast:        hasEnd && !isFutureOrToday(draft.endDate),
+        endBeforeStart,
+        coupons:        draft.coupons.length === 0,
     };
 }
 

@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CouponReservation } from "../../domain/entities/CouponReservation.ts";
 import { ICouponRepository } from "../../domain/repositories/ICouponRepository.ts";
 import { HttpCouponRepository } from "../../infrastructure/repositories/HttpCouponRepository.ts";
 import { useAutoRefresh } from "@/shared/hooks/useAutoRefresh.ts";
+import { mapApiError, AppError } from "@/shared/api/errorMapper.ts";
 
 /*
  hook de presentacion: reservas reales del cliente
  expone los ids reservados, el codigo de canje de cada uno y la accion de reservar
 */
 export function useReservations(userId: string, repository?: ICouponRepository) {
+    const { t } = useTranslation();
     const repoRef = useRef<ICouponRepository>(repository ?? new HttpCouponRepository());
     const [reservations, setReservations] = useState<CouponReservation[]>([]);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<AppError | null>(null);
 
     const [historyIds, setHistoryIds] = useState<Set<string>>(() => {
         try {
@@ -27,10 +30,10 @@ export function useReservations(userId: string, repository?: ICouponRepository) 
         try {
             setReservations(await repoRef.current.getReservations(userId));
         } catch (e) {
-            setError(e instanceof Error ? e.message : "no se pudieron cargar las reservas");
+            setError(mapApiError(e, t));
             setReservations([]);
         }
-    }, [userId]);
+    }, [userId, t]);
 
     useEffect(() => { void reload(); }, [reload]);
 
