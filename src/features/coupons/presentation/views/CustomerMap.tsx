@@ -164,7 +164,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                 async (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
-                    let districtName = "Ubicación actual";
+                    let districtName = t("location.currentLocation", { defaultValue: "Ubicación actual" });
                     try {
                         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`);
                         const data = await r.json();
@@ -384,7 +384,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
         const c = pickCenter;
         if (!c) return;
         const knownName = pickCenterName;
-        const loc: UserLocation = { lat: c.lat, lng: c.lng, name: knownName || "Punto en el mapa", source: "manual" };
+        const loc: UserLocation = { lat: c.lat, lng: c.lng, name: knownName || t("location.mapPoint", { defaultValue: "Punto en el mapa" }), source: "manual" };
         hasManualSelectionRef.current = true;
         setViewCenter(loc);
         try { localStorage.setItem("geops_viewcenter", JSON.stringify(loc)); } catch { /* ignore */ }
@@ -679,16 +679,11 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                             </div>
 
                             <div className="map-hud">
-                                <div className={"hud-dot" + (!isExploring && userLocation.source === "gps" ? " gps" : "")} />
+                                <div className={"hud-dot" + (shareLocation && !isExploring && userLocation.source === "gps" ? " gps" : "")} />
                                 <span className="mono hud-coords">{hudCoords}</span>
                                 <span className="hud-sep">·</span>
                                 <span className="hud-name">{viewCenter.name}</span>
-                                {!isExploring && userLocation.source === "gps" && <span className="hud-gps-badge">GPS</span>}
-                                {isExploring && (
-                                    <button type="button" className="hud-recenter" onClick={returnToMe}>
-                                        <Icon name="location" size={12}/> {t("map.backToMe", { defaultValue: "Volver a mí" })}
-                                    </button>
-                                )}
+                                {shareLocation && !isExploring && userLocation.source === "gps" && <span className="hud-gps-badge">GPS</span>}
                             </div>
 
                             <div className="map-tools">
@@ -922,7 +917,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                                 {savedGroups.reserved.length > 0 && (
                                                     <div className="rp-saved-group">
                                                         <div className="rp-saved-group-head">
-                                                            Reservados <span className="rp-saved-count">{savedGroups.reserved.length}</span>
+                                                            {t("map.groupReserved", { defaultValue: "Reservados" })} <span className="rp-saved-count">{savedGroups.reserved.length}</span>
                                                         </div>
                                                         {savedGroups.reserved.map(renderCouponCard)}
                                                     </div>
@@ -930,7 +925,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                                 {savedGroups.redeemed.length > 0 && (
                                                     <div className="rp-saved-group">
                                                         <div className="rp-saved-group-head">
-                                                            Redimidos <span className="rp-saved-count">{savedGroups.redeemed.length}</span>
+                                                            {t("map.groupRedeemed", { defaultValue: "Redimidos" })} <span className="rp-saved-count">{savedGroups.redeemed.length}</span>
                                                         </div>
                                                         {savedGroups.redeemed.map(renderCouponCard)}
                                                     </div>
@@ -1029,7 +1024,8 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                     onSelect={handleSelectLocation}
                     onClose={() => setShowLocationModal(false)}
                     onPickOnMap={startPickOnMap}
-                    isFirst={userLocation.source === "default"}
+                    onUseCurrentLocation={() => { void requestGpsAndSync(); }}
+                    isFirst={viewCenter.source === "default"}
                     currentName={viewCenter.name}
                 />
             )}

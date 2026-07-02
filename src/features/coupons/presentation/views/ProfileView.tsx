@@ -34,7 +34,6 @@ interface ProfileForm {
     firstName: string;
     lastName: string;
     avatarUrl?: string;
-    district: string;   // solo local (el back no lo guarda)
 }
 
 export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, theme = "light", onThemeChange, onSignOut, shareLocation = false, onShareLocationChange, profileData, onProfileSaved }: ProfileViewProps) {
@@ -48,7 +47,6 @@ export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, th
         firstName: me?.username ?? "",
         lastName: "",
         avatarUrl: undefined,
-        district: (() => { try { return localStorage.getItem("geops_profile_district") ?? ""; } catch { return ""; } })(),
     });
     const [draft, setDraft] = useState(profile);
     const [uploading, setUploading] = useState(false);
@@ -65,7 +63,6 @@ export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, th
             firstName: profileData.firstName ?? "",
             lastName: profileData.lastName ?? "",
             avatarUrl: profileData.avatarUrl ?? undefined,
-            district: (() => { try { return localStorage.getItem("geops_profile_district") ?? ""; } catch { return ""; } })(),
         };
         setProfile(next);
         if (!editMode) setDraft(next);
@@ -74,7 +71,6 @@ export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, th
 
     const saveProfile = async () => {
         if (!draft.firstName.trim()) return;
-        try { localStorage.setItem("geops_profile_district", draft.district); } catch { /* ignore */ }
         if (draft.profileId) {
             setSaving(true);
             try {
@@ -154,7 +150,7 @@ export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, th
         <div className="pv-root">
             <div className="profile-head">
                 {editMode ? (
-                    <label className="profile-avatar pv-avatar pv-avatar-edit" title="Cambiar foto">
+                    <label className="profile-avatar pv-avatar pv-avatar-edit" title={t("profile.changePhoto", { defaultValue: "Cambiar foto" })}>
                         {draft.avatarUrl ? <img src={draft.avatarUrl} alt=""/> : <span>{initials}</span>}
                         <input ref={fileRef} type="file" accept="image/*" hidden onChange={handlePhoto}/>
                         <span className="pv-avatar-overlay">
@@ -205,14 +201,8 @@ export function ProfileView({ reservedCount, reservedCoupons = EMPTY_COUPONS, th
                                onChange={e => setDraft(d => ({ ...d, lastName: e.target.value }))}
                                placeholder={t("profile.lastNamePlaceholder", { defaultValue: "Apellido" })}/>
                     </div>
-                    <div className="field pv-field-full">
-                        <label htmlFor="pf-district">{t("profile.district")}</label>
-                        <input id="pf-district" className="input" value={draft.district}
-                               onChange={e => setDraft(d => ({ ...d, district: e.target.value }))}
-                               placeholder={t("profile.districtPlaceholder")}/>
-                    </div>
                     {uploading && (
-                        <div className="field pv-field-full"><span className="bf-hint"><Icon name="image" size={11}/> Subiendo foto…</span></div>
+                        <div className="field pv-field-full"><span className="bf-hint"><Icon name="image" size={11}/> {t("profile.uploadingPhoto", { defaultValue: "Subiendo foto…" })}</span></div>
                     )}
                 </div>
             )}
