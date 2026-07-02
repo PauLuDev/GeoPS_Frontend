@@ -1,0 +1,21 @@
+export const redeem = {
+    redeem: {
+        title: "Redeem coupon",
+        subtitle: "Enter the code shown by the customer to validate and redeem their coupon.",
+        codeLabel: "Reservation code",
+        codePlaceholder: "Paste the customer's code",
+        codeHint: "Enter the redemption code shown by the customer on their reserved coupon.",
+        validate: "Validate and redeem",
+        validating: "Validating…",
+        successTitle: "Coupon redeemed!",
+        successSub: "Validated and marked as redeemed.",
+        alreadyTitle: "This code was already redeemed",
+        alreadySub: "Each coupon can only be redeemed once.",
+        notFoundTitle: "Invalid code",
+        notFoundSub: "We couldn't find any coupon with that code. Make sure it's written correctly.",
+        errorTitle: "Could not validate",
+        errorSub: "A problem occurred while validating the code: {{message}}. Try again.",
+        today: "Redeemed today",
+        emptyToday: "You haven't redeemed any coupons yet.",
+    },
+} as const;
