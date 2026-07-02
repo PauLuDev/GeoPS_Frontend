@@ -337,6 +337,7 @@ export const es = {
         headingEm: "hoy",
         headingPost: "?",
         intro: "Cupones activos en tu zona, agrupados por categoría. Toca una para ver los locales en el mapa.",
+        radiusHint: "Mostrando comercios en un radio de {{value}}",
         activeCoupons: "Cupones activos",
         potentialSavings: "Ahorro potencial",
         noOffers: "Sin ofertas activas",
