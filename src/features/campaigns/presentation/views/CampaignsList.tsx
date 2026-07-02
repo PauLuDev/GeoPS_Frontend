@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Select } from "@/shared/ui/components/Select.tsx";
@@ -7,9 +7,11 @@ import { EditCampaign } from "@/features/campaigns/domain/repositories/ICampaign
 import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
 import { CampaignCouponsEditor } from "@/features/campaigns/presentation/components/CampaignCouponsEditor.tsx";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/features/campaigns/domain/value-objects/CampaignStatus.ts";
-import { bestCampaignId, bestCouponId, ratePct, redemptionRate } from "@/features/campaigns/domain/value-objects/Performance.ts";
+import { bestCouponId, ratePct, redemptionRate } from "@/features/campaigns/domain/value-objects/Performance.ts";
 import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
 import { filterCampaigns, countByStatus, StatusFilter } from "@/features/campaigns/application/use-cases/ListCampaigns.ts";
+import { listCampaignAnalytics } from "@/features/analytics/application/use-cases/ListCampaignAnalytics.ts";
+import { CampaignStats } from "@/features/analytics/domain/entities/CampaignAnalytics.ts";
 
 const FILTER_OPTIONS: { label: string; value: StatusFilter }[] = [
     { label: "Todas",       value: "all"       },
@@ -50,6 +52,41 @@ export function CampaignsList({
     const [editStart, setEditStart] = useState("");
     const [editEnd, setEditEnd]     = useState("");
 
+    /* métricas reales de analytics, superpuestas a las campañas del marketing-service */
+    const [metrics, setMetrics] = useState<Map<string, CampaignStats>>(new Map());
+    const [metricsLoading, setMetricsLoading] = useState(false);
+
+    useEffect(() => {
+        setMetricsLoading(true);
+        let alive = true;
+        const load = async () => {
+            try {
+                const lists = selectedEstId === "all"
+                    ? await Promise.all(establishments.map(e => listCampaignAnalytics(e.id).catch(() => [])))
+                    : [await listCampaignAnalytics(selectedEstId).catch(() => [])];
+                if (!alive) return;
+                const next = new Map<string, CampaignStats>();
+                lists.flat().forEach(c => { next.set(c.id, c.analytics); });
+                setMetrics(next);
+            } finally {
+                if (alive) setMetricsLoading(false);
+            }
+        };
+        void load();
+        return () => { alive = false; };
+    }, [selectedEstId, establishments]);
+
+    /* helpers para leer métricas reales o fallback a la campaña */
+    const campaignMetrics = (c: Campaign) => {
+        const m = c.uuid ? metrics.get(c.uuid) : undefined;
+        return {
+            views: m?.viewsCount ?? c.views,
+            reserved: m?.reservationsCount ?? c.reserved,
+            redeemed: m?.redemptionsCount ?? c.redeemed,
+        };
+    };
+    const fmtMetric = (n: number) => metricsLoading ? "—" : n.toLocaleString("es-PE");
+
     const openEdit = (c: Campaign) => {
         setToEdit(c);
         setEditName(c.name);
@@ -81,7 +118,19 @@ export function CampaignsList({
         : campaigns.filter(c => c.establishmentId === selectedEstId);
 
     const visible = filterCampaigns(byEstablishment, filter, search);
-    const bestId = bestCampaignId(byEstablishment);   // mejor campana por tasa de canje
+
+    /* mejor campana por tasa de canje, usando métricas reales */
+    const bestId = useMemo(() => {
+        let best: number | null = null;
+        let bestRate = -1;
+        for (const c of byEstablishment) {
+            const { views, redeemed } = campaignMetrics(c);
+            if (views <= 0) continue;
+            const r = redemptionRate(views, redeemed);
+            if (r > bestRate) { bestRate = r; best = c.id; }
+        }
+        return best;
+    }, [byEstablishment, metrics]);
 
     const live      = countByStatus(byEstablishment, "live");
     const draft     = countByStatus(byEstablishment, "draft");
@@ -158,6 +207,7 @@ export function CampaignsList({
                             const ranked = [...c.coupons].sort(
                                 (a, b) => redemptionRate(b.views, b.redeemed) - redemptionRate(a.views, a.redeemed)
                             );
+                            const { views, reserved, redeemed } = campaignMetrics(c);
                             return (
                                 <div key={c.id} className={"cg-card" + (c.id === bestId ? " cg-card-best" : "")}>
                                     {/* cabecera -> la campana (ocasion) en grande */}
@@ -184,10 +234,10 @@ export function CampaignsList({
                                             </div>
                                         </div>
                                         <div className="cg-metrics">
-                                            <span><strong className="mono">{c.views.toLocaleString()}</strong> vistos</span>
-                                            <span><strong className="mono">{c.reserved.toLocaleString()}</strong> reservados</span>
-                                            <span><strong className="mono">{c.redeemed.toLocaleString()}</strong> redimidos</span>
-                                            <span className="cg-metric-rate"><strong className="mono">{c.views > 0 ? ratePct(c.views, c.redeemed) : "—"}</strong> canje</span>
+                                            <span><strong className="mono">{fmtMetric(views)}</strong> vistos</span>
+                                            <span><strong className="mono">{fmtMetric(reserved)}</strong> reservados</span>
+                                            <span><strong className="mono">{fmtMetric(redeemed)}</strong> redimidos</span>
+                                            <span className="cg-metric-rate"><strong className="mono">{metricsLoading ? "—" : (views > 0 ? ratePct(views, redeemed) : "—")}</strong> canje</span>
                                         </div>
                                         <div className="ct-actions ct-actions-menu" onClick={e => e.stopPropagation()}>
                                             <button type="button" className="btn btn-icon btn-sm" aria-label="Acciones"
