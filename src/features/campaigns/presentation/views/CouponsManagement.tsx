@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 import { Modal } from "@/shared/ui/components/Modal.tsx";
 import { Select } from "@/shared/ui/components/Select.tsx";
@@ -9,6 +9,9 @@ import { EditCouponModal } from "@/features/campaigns/presentation/components/Ed
 import { useEstablishments } from "@/features/establishments/presentation/hooks/useEstablishments.ts";
 import { useCoupons } from "@/features/coupons/presentation/hooks/useCoupons.ts";
 import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
+import { useCouponMetrics } from "@/features/analytics/presentation/hooks/useCouponMetrics.ts";
+import { CouponAnalytics } from "@/features/analytics/domain/entities/CouponAnalytics.ts";
+import { ratePct } from "@/features/campaigns/domain/value-objects/Performance.ts";
 
 interface CouponsManagementProps {
     /* fuente unica compartida con la vista de campanas (evita estados duplicados) */
@@ -34,6 +37,17 @@ export function CouponsManagement({ registeredCoupons, campaigns, onReload }: Co
     useEffect(() => {
         if (selectedEstId !== "all" && !establishments.some(e => e.id === selectedEstId)) setSelectedEstId("all");
     }, [establishments, selectedEstId]);
+
+    /* metricas reales de analytics para los cupones visibles */
+    const metricsIds = selectedEstId === "all" ? establishments.map(e => e.id) : [selectedEstId];
+    const { metrics: couponMetrics, loading: metricsLoading } = useCouponMetrics(metricsIds);
+    const metricsByCoupon = useMemo(() => {
+        const map = new Map<string, CouponAnalytics>();
+        couponMetrics.forEach(m => map.set(m.couponId, m));
+        return map;
+    }, [couponMetrics]);
+    const getMetrics = (c: CampaignCoupon) => metricsByCoupon.get(c.uuid ?? c.id) ?? null;
+    const fmtMetric = (n?: number) => metricsLoading ? "—" : (n ?? 0).toLocaleString("es-PE");
 
     const handleCreated = () => {
         setCreating(false);
@@ -135,35 +149,44 @@ export function CouponsManagement({ registeredCoupons, campaigns, onReload }: Co
                     </div>
                 ) : (
                     <div className="cm-list">
-                        {filtered.map(c => (
-                            <div key={c.id} className="cm-row">
-                                <div className="cm-thumb">
-                                    {c.imageUrl ? (
-                                        <img src={c.imageUrl} alt={c.title}/>
-                                    ) : (
-                                        <span className="cm-thumb-disc">{c.discount}</span>
-                                    )}
-                                </div>
-                                <div className="cm-info">
-                                    <div className="cm-title">{c.title}</div>
-                                    <div className="cm-meta">
-                                        <span className="cm-cat-tag">{promotionLabel(c.promotionType)}</span>
-                                        <span className="cm-sep">·</span>
-                                        <span className="cm-discount">{c.discount}</span>
-                                        <span className="cm-sep">·</span>
-                                        <span>Stock: {c.stock}</span>
+                        {filtered.map(c => {
+                            const m = getMetrics(c);
+                            return (
+                                <div key={c.id} className="cm-row">
+                                    <div className="cm-thumb">
+                                        {c.imageUrl ? (
+                                            <img src={c.imageUrl} alt={c.title}/>
+                                        ) : (
+                                            <span className="cm-thumb-disc">{c.discount}</span>
+                                        )}
+                                    </div>
+                                    <div className="cm-info">
+                                        <div className="cm-title">{c.title}</div>
+                                        <div className="cm-meta">
+                                            <span className="cm-cat-tag">{promotionLabel(c.promotionType)}</span>
+                                            <span className="cm-sep">·</span>
+                                            <span className="cm-discount">{c.discount}</span>
+                                            <span className="cm-sep">·</span>
+                                            <span>Stock: {c.stock}</span>
+                                        </div>
+                                        <div className="cm-metrics">
+                                            <span><strong>{fmtMetric(m?.viewsCount)}</strong> vistos</span>
+                                            <span><strong>{fmtMetric(m?.reservationsCount)}</strong> reservados</span>
+                                            <span><strong>{fmtMetric(m?.redemptionsCount)}</strong> redimidos</span>
+                                            <span><strong>{metricsLoading ? "—" : (m && m.viewsCount > 0 ? ratePct(m.viewsCount, m.redemptionsCount) : "—")}</strong> canje</span>
+                                        </div>
+                                    </div>
+                                    <div className="cm-actions">
+                                        <button type="button" className="btn btn-sm" title="Editar" onClick={() => setEditing(c)}>
+                                            <Icon name="edit" size={13}/> <span className="cm-btn-label">Editar</span>
+                                        </button>
+                                        <button type="button" className="btn btn-sm est-del-btn" title="Eliminar" onClick={() => setToDelete(c)}>
+                                            <Icon name="trash" size={13}/> <span className="cm-btn-label">Eliminar</span>
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="cm-actions">
-                                    <button type="button" className="btn btn-sm" title="Editar" onClick={() => setEditing(c)}>
-                                        <Icon name="edit" size={13}/> <span className="cm-btn-label">Editar</span>
-                                    </button>
-                                    <button type="button" className="btn btn-sm est-del-btn" title="Eliminar" onClick={() => setToDelete(c)}>
-                                        <Icon name="trash" size={13}/> <span className="cm-btn-label">Eliminar</span>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

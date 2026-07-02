@@ -176,6 +176,7 @@ export function BusinessLayout({ onSwitchRole, mapEngine = "osm", theme = "light
                     <MerchantDashboard
                         onNew={handleNew}
                         establishments={establishments.map(e => ({ id: e.id, name: e.name }))}
+                        coupons={registeredCoupons}
                     />
                 )}
                 {view === "campaigns" && (

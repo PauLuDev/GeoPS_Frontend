@@ -10,11 +10,16 @@ import { HourlyRange, RANGE_TO_TIMEFRAME, periodLabel, ReportSnapshot, ReportKpi
 import { listCampaignAnalytics } from "@/features/analytics/application/use-cases/ListCampaignAnalytics.ts";
 import { CampaignAnalytics } from "@/features/analytics/domain/entities/CampaignAnalytics.ts";
 import { getCurrentUser } from "@/features/auth/application/session.ts";
+import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
+import { useCouponMetrics } from "@/features/analytics/presentation/hooks/useCouponMetrics.ts";
+import { CouponAnalytics } from "@/features/analytics/domain/entities/CouponAnalytics.ts";
+import { ratePct } from "@/features/campaigns/domain/value-objects/Performance.ts";
 
 interface DashboardEstablishment { id: string; name: string; }
 interface DashboardProps {
     onNew: () => void;
     establishments: DashboardEstablishment[];
+    coupons?: CampaignCoupon[];
 }
 
 const TOP_COLORS = ["var(--brand)", "var(--accent-2)", "oklch(0.72 0.16 35)"];
@@ -24,7 +29,7 @@ const RANGES: { id: HourlyRange; label: string }[] = [
     { id: "30d",   label: "30d" },
 ];
 
-export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
+export function MerchantDashboard({ onNew, establishments, coupons = [] }: DashboardProps) {
     const [exportOpen, setExportOpen] = useState(false);
     const [range, setRange] = useState<HourlyRange>("today");
     const exportRef = useRef<HTMLDivElement>(null);
@@ -68,6 +73,25 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
 
     /* abre una campana puntual en la pestaña "Por campaña" */
     const openCampaign = (id: string) => { setSelectedCampaignId(id); setMode("campaigns"); };
+
+    /* metricas de cupones sin campaña para el establecimiento elegido */
+    const standaloneCoupons = useMemo(
+        () => coupons.filter(c => !c.campaignId && c.establishmentId === establishmentId),
+        [coupons, establishmentId]
+    );
+    const { metrics: couponMetrics, loading: couponMetricsLoading } = useCouponMetrics(establishmentId);
+    const couponMetricsById = useMemo(() => {
+        const map = new Map<string, CouponAnalytics>();
+        couponMetrics.forEach(m => map.set(m.couponId, m));
+        return map;
+    }, [couponMetrics]);
+    const topStandaloneCoupons = useMemo(() => {
+        return standaloneCoupons
+            .map(c => ({ coupon: c, metrics: couponMetricsById.get(c.uuid ?? c.id) }))
+            .filter((item): item is { coupon: typeof item.coupon; metrics: CouponAnalytics } => !!item.metrics)
+            .sort((a, b) => b.metrics.viewsCount - a.metrics.viewsCount)
+            .slice(0, 5);
+    }, [standaloneCoupons, couponMetricsById]);
 
     /* campana elegida en el modo "por campana" */
     const [selectedCampaignId, setSelectedCampaignId] = useState("");
@@ -339,6 +363,34 @@ export function MerchantDashboard({ onNew, establishments }: DashboardProps) {
                                         </div>
                                         <Icon name="chevron" size={14}/>
                                     </button>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <div className="card md-top-card">
+                            <div className="card-header">
+                                <div>
+                                    <div className="eyebrow">Cupones sin campaña</div>
+                                    <div className="section-title">Tus cupones independientes</div>
+                                </div>
+                            </div>
+                            <div className="md-top-list">
+                                {couponMetricsLoading ? (
+                                    <div className="md-state">Cargando métricas…</div>
+                                ) : topStandaloneCoupons.length === 0 ? (
+                                    <div className="md-state">Aún no tienes cupones sin campaña en este establecimiento.</div>
+                                ) : topStandaloneCoupons.map(({ coupon: c, metrics: m }, i) => (
+                                    <div key={c.id} className="md-top-row">
+                                        <div className="md-top-color" style={{ background: TOP_COLORS[i % TOP_COLORS.length] }}/>
+                                        <div className="md-top-main">
+                                            <div className="md-top-name">{c.title}</div>
+                                            <div className="mono md-top-meta">
+                                                {m.viewsCount} vistos · {m.reservationsCount} reservados · {m.redemptionsCount} redimidos · {m.viewsCount > 0 ? ratePct(m.viewsCount, m.redemptionsCount) : "—"} canje
+                                            </div>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         </div>

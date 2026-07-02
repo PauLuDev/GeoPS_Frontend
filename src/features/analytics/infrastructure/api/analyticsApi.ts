@@ -1,6 +1,7 @@
 import { getToken } from "@/shared/api/tokenStore.ts";
 import { DashboardStats } from "../../domain/value-objects/DashboardStats.ts";
 import { CampaignAnalytics, AnalyticsCampaignStatus } from "../../domain/entities/CampaignAnalytics.ts";
+import { CouponAnalytics } from "../../domain/entities/CouponAnalytics.ts";
 
 /*
  consulta las metricas por graphql, con el token, a traves del api-gateway
@@ -73,6 +74,13 @@ export const analyticsApi = {
         graphql<CampaignAnalytics | null>(
             `query { campaignDetails(campaignId: "${campaignId}") { ${CAMPAIGN_FIELDS} } }`,
             "campaignDetails",
+        ),
+
+    /* metricas de los cupones de un establecimiento (incluye sin campaña) */
+    couponMetrics: (establishmentId: string) =>
+        graphql<CouponAnalytics[]>(
+            `query { couponMetrics(establishmentId: "${establishmentId}") { couponId viewsCount reservationsCount redemptionsCount conversionRate } }`,
+            "couponMetrics",
         ),
 
     /* registra que un cliente abrio el detalle de un cupon -> interaccion VIEW */
