@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { DashboardStats } from "../../domain/value-objects/DashboardStats.ts";
 import { IAnalyticsRepository, Timeframe } from "../../domain/repositories/IAnalyticsRepository.ts";
 import { GraphQLAnalyticsRepository } from "../../infrastructure/repositories/GraphQLAnalyticsRepository.ts";
 import { getEstablishmentDashboard } from "../../application/use-cases/GetEstablishmentDashboard.ts";
 import { useAutoRefresh } from "@/shared/hooks/useAutoRefresh.ts";
+import { mapApiError, AppError } from "@/shared/api/errorMapper.ts";
 
 /**
  * hook de presentacion: carga las metricas del dashboard de un establecimiento
@@ -15,10 +17,11 @@ export function useDashboard(
     timeframeDays: Timeframe,
     repository?: IAnalyticsRepository,
 ) {
+    const { t } = useTranslation();
     const repoRef = useRef<IAnalyticsRepository>(repository ?? new GraphQLAnalyticsRepository());
     const [stats, setStats]     = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError]     = useState<string | null>(null);
+    const [error, setError]     = useState<AppError | null>(null);
 
     // resetea el estado en render cuando cambia el establecimiento o la ventana,
     // asi no hay un render intermedio mostrando datos viejos
@@ -35,10 +38,10 @@ export function useDashboard(
         let alive = true;
         getEstablishmentDashboard(repoRef.current, establishmentId, timeframeDays)
             .then(s => { if (alive) setStats(s); })
-            .catch(e => { if (alive) setError(e instanceof Error ? e.message : "Error cargando el dashboard"); })
+            .catch(e => { if (alive) setError(mapApiError(e, t)); })
             .finally(() => { if (alive) setLoading(false); });
         return () => { alive = false; };
-    }, [establishmentId, timeframeDays]);
+    }, [establishmentId, timeframeDays, t]);
 
     /* refresco silencioso (sin spinner) para mantener las metricas al dia sin recargar */
     const refresh = useCallback(() => {

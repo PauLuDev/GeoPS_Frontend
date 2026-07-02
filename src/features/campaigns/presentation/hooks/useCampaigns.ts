@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Campaign } from "../../domain/entities/Campaign.ts";
 import { ICampaignRepository, EditCampaign } from "../../domain/repositories/ICampaignRepository.ts";
 import { HttpCampaignRepository } from "../../infrastructure/repositories/HttpCampaignRepository.ts";
+import { mapApiError, AppError } from "@/shared/api/errorMapper.ts";
 
 /**
  * hook de presentacion: expone el estado de campanas y las acciones
  */
 export function useCampaigns(repository?: ICampaignRepository) {
+    const { t } = useTranslation();
     const repoRef = useRef<ICampaignRepository>(repository ?? new HttpCampaignRepository());
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<AppError | null>(null);
 
     const reload = useCallback(async () => {
         setLoading(true);
@@ -18,11 +21,11 @@ export function useCampaigns(repository?: ICampaignRepository) {
         try {
             setCampaigns(await repoRef.current.getAll());
         } catch (e) {
-            setError(e instanceof Error ? e.message : "no se pudieron cargar las campanas");
+            setError(mapApiError(e, t));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => { void reload(); }, [reload]);
 
@@ -32,7 +35,7 @@ export function useCampaigns(repository?: ICampaignRepository) {
             await reload();
             return true;
         } catch (e) {
-            setError(e instanceof Error ? e.message : "no se pudo crear la campaña");
+            setError(mapApiError(e, t));
             throw e;
         }
     };

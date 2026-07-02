@@ -1,14 +1,17 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Coupon } from "../../domain/entities/Coupon.ts";
 import { ICouponRepository, NewCoupon, EditCoupon } from "../../domain/repositories/ICouponRepository.ts";
 import { HttpCouponRepository } from "../../infrastructure/repositories/HttpCouponRepository.ts";
 import { createCoupon } from "../../application/use-cases/CreateCoupon.ts";
+import { mapApiError, AppError } from "@/shared/api/errorMapper.ts";
 
 /* hook de presentacion: crear, editar y eliminar cupones del dueno */
 export function useCoupons(repository?: ICouponRepository) {
+    const { t } = useTranslation();
     const repoRef = useRef<ICouponRepository>(repository ?? new HttpCouponRepository());
     const [loading, setLoading] = useState(false);
-    const [error, setError]     = useState<string | null>(null);
+    const [error, setError]     = useState<AppError | null>(null);
 
     const run = async <T>(action: () => Promise<T>): Promise<T | null> => {
         setLoading(true);
@@ -16,7 +19,7 @@ export function useCoupons(repository?: ICouponRepository) {
         try {
             return await action();
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Error en cupones");
+            setError(mapApiError(e, t));
             return null;
         } finally {
             setLoading(false);

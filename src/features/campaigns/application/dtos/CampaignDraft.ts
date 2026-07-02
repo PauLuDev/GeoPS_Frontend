@@ -28,7 +28,10 @@ export interface CampaignErrors {
     name: boolean;
     category: boolean;
     start: boolean;
+    startPast: boolean;
     end: boolean;
+    endPast: boolean;
+    endBeforeStart: boolean;
     coupons: boolean;
 }
 

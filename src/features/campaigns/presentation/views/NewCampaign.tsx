@@ -1,4 +1,5 @@
 import { useState, useId, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/ui/components/Icon";
 import { Select } from "@/shared/ui/components/Select.tsx";
 import { DatePicker } from "@/shared/ui/components/DatePicker.tsx";
@@ -11,7 +12,7 @@ import { PromotionType, PROMOTION_TYPES, DEFAULT_PROMOTION_TYPE, promotionLabel 
 import { CAMPAIGN_TYPES } from "@/features/campaigns/domain/value-objects/CampaignType.ts";
 import { PRESET_RESTRICTIONS } from "@/features/campaigns/domain/value-objects/CouponRestrictions.ts";
 import { calcDiscountPct, savings } from "@/features/campaigns/domain/value-objects/Discount.ts";
-import { durationLabel, isRangeValid } from "@/features/campaigns/domain/value-objects/Duration.ts";
+import { durationLabel, isRangeValid, todayISO } from "@/features/campaigns/domain/value-objects/Duration.ts";
 import { validateCampaign, isCampaignValid, buildCampaign } from "@/features/campaigns/application/use-cases/CreateCampaign.ts";
 import { validateCoupon, isCouponValid, buildCoupon } from "@/features/campaigns/application/use-cases/AddCoupon.ts";
 import { CouponDraftInput } from "@/features/campaigns/application/dtos/CampaignDraft.ts";
@@ -53,6 +54,7 @@ interface NewCampaignProps {
 }
 
 export function NewCampaign({ onDone }: NewCampaignProps) {
+    const { t } = useTranslation();
     const uid = useId();
     const fileRef = useRef<HTMLInputElement>(null);
 
@@ -100,6 +102,8 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
 
     /* vigencia derivada de las fechas de campana (value-object) */
     const expiresLabel = durationLabel(startDate, endDate);
+    const today = todayISO();
+    const endMin = startDate && startDate >= today ? startDate : today;
 
     /* subida de imagen */
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,7 +196,7 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                             {errors.name     && <li>Nombre de la campaña</li>}
                             {errors.category && <li>Tipo de campaña</li>}
                             {errors.start    && <li>Fecha de inicio</li>}
-                            {errors.end      && <li>{endInvalid ? "La fecha de fin debe ser posterior al inicio" : "Fecha de fin"}</li>}
+                            {errors.end      && <li>{errors.endBeforeStart ? t("campaign.errors.endBeforeStart") : errors.endPast ? t("campaign.errors.datePast") : "Fecha de fin"}</li>}
                             {errors.coupons  && <li>Agrega al menos un cupón</li>}
                         </ul>
                     </div>
@@ -254,13 +258,16 @@ export function NewCampaign({ onDone }: NewCampaignProps) {
                         <div className="nc-row2">
                             <div className="field">
                                 <label htmlFor={`${uid}-start`}>Fecha de inicio <Req/></label>
-                                <DatePicker id={`${uid}-start`} value={startDate} onChange={setStartDate} error={cerr("start")}/>
-                                {cerr("start") && <ErrMsg>Obligatorio</ErrMsg>}
+                                <DatePicker id={`${uid}-start`} value={startDate} onChange={setStartDate} min={today} error={cerr("start") || errors.startPast}/>
+                                {cerr("start") && !errors.startPast && <ErrMsg>Obligatorio</ErrMsg>}
+                                {errors.startPast && <ErrMsg>{t("campaign.errors.datePast")}</ErrMsg>}
                             </div>
                             <div className="field">
                                 <label htmlFor={`${uid}-end`}>Fecha de fin <Req/></label>
-                                <DatePicker id={`${uid}-end`} value={endDate} onChange={setEndDate} min={startDate || undefined} error={cerr("end")}/>
-                                {cerr("end") && <ErrMsg>{endInvalid ? "Debe ser posterior al inicio" : "Obligatorio"}</ErrMsg>}
+                                <DatePicker id={`${uid}-end`} value={endDate} onChange={setEndDate} min={endMin} error={cerr("end") || errors.endPast}/>
+                                {cerr("end") && !errors.endBeforeStart && !errors.endPast && <ErrMsg>Obligatorio</ErrMsg>}
+                                {errors.endBeforeStart && <ErrMsg>{t("campaign.errors.endBeforeStart")}</ErrMsg>}
+                                {errors.endPast && <ErrMsg>{t("campaign.errors.datePast")}</ErrMsg>}
                             </div>
                         </div>
                         {startDate && endDate && !endInvalid && (
