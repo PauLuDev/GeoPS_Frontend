@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@/shared/ui/components/Icon.tsx";
 
 export interface AddressValue {
@@ -21,6 +21,8 @@ interface NominatimResult {
     display_name: string;
     address: {
         road?: string;
+        neighbourhood?: string;
+        quarter?: string;
         suburb?: string;
         city_district?: string;
         district?: string;
@@ -60,15 +62,42 @@ function extractDistrict(addr: NominatimResult["address"]): string {
     return addr.suburb || addr.city_district || addr.district || addr.city || addr.town || addr.village || "Lima";
 }
 
+/* localidad más específica -> diferencia segmentos de una misma avenida (ej "Mirones") */
+function extractLocality(addr: NominatimResult["address"]): string {
+    return addr.neighbourhood || addr.quarter || addr.suburb || addr.city_district || addr.district || "";
+}
+function extractCity(addr: NominatimResult["address"]): string {
+    return addr.city || addr.town || addr.village || addr.state || "Lima";
+}
+
+/* subtítulo de la sugerencia: "localidad · ciudad" cuando hay detalle, si no la ciudad */
+function suggestionSub(addr: NominatimResult["address"]): string {
+    const loc = extractLocality(addr);
+    const city = extractCity(addr);
+    return loc && loc !== city ? `${loc} · ${city}` : city;
+}
+
 
 function extractRegion(addr: NominatimResult["address"]): string {
     return addr.state || "Lima";
 }
 
-function buildAddress(addr: NominatimResult["address"]): string {
-    const road = addr.road ?? "";
-    const number = addr.house_number ? ` ${addr.house_number}` : "";
-    return road ? `${road}${number}` : "";
+/* arma "calle número" a partir de un resultado de Nominatim. En Lima, Nominatim
+   suele omitir house_number en el objeto address y colapsar la búsqueda al centro
+   de la vía, por eso también miramos el primer segmento del display_name, que a
+   veces trae el número (ej "1145, Avenida Pardo, ...") */
+function buildAddress(r: { address: NominatimResult["address"]; display_name?: string }): string {
+    const road = r.address.road ?? "";
+    if (road && r.address.house_number) return `${road} ${r.address.house_number}`;
+    const first = r.display_name?.split(",")[0]?.trim() ?? "";
+    if (road) return /^\d+[a-z]?$/i.test(first) ? `${road} ${first}` : road;
+    return first;
+}
+
+/* extrae un número de puerta del texto que escribió el usuario (ej "Olaya 250" -> "250") */
+function extractTypedNumber(text: string): string {
+    const m = text.match(/\b\d+[a-z]?\b/i);
+    return m ? m[0] : "";
 }
 
 
@@ -89,6 +118,9 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
     const [open, setOpen] = useState(false);
     const [reverseLoading, setReverseLoading] = useState(false);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    /* evita que el cambio programático de query (tras picar en el mapa) dispare
+       una segunda búsqueda: la búsqueda ya la lanza reverseGeocode directamente */
+    const skipSearchRef = useRef(false);
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
     const markerRef = useRef<any>(null);
@@ -102,45 +134,65 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
         setQuery(value.address);
     }, [value.address]);
 
-    /* búsqueda Nominatim con debounce */
+    /* consulta Nominatim y llena/abre el dropdown de sugerencias */
+    const searchAddresses = useCallback(async (raw: string) => {
+        const q = raw.trim();
+        if (q.length < 3) { setSuggestions([]); setOpen(false); return; }
+        setSearching(true);
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + " Lima Peru")}&format=json&countrycodes=pe&viewbox=-77.25,-12.30,-76.65,-11.75&bounded=1&addressdetails=1&limit=5`,
+                { headers: { "Accept-Language": "es" } }
+            );
+            const data: NominatimResult[] = await res.json();
+            /* Nominatim devuelve varios segmentos idénticos de una misma vía;
+               colapsamos los que muestran la misma calle y localidad */
+            const seen = new Set<string>();
+            const unique = data.filter((r) => {
+                const key = `${buildAddress(r)}|${suggestionSub(r.address)}`.toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            setSuggestions(unique);
+            setOpen(unique.length > 0);
+        } catch {
+            setSuggestions([]);
+        } finally {
+            setSearching(false);
+        }
+    }, []);
+
+    /* búsqueda con debounce al teclear (se omite si el cambio vino de picar el mapa) */
     useEffect(() => {
+        if (skipSearchRef.current) { skipSearchRef.current = false; return; }
         if (debounceRef.current) clearTimeout(debounceRef.current);
         const q = query.trim();
         if (q.length < 3) { setSuggestions([]); setOpen(false); return; }
-        debounceRef.current = setTimeout(async () => {
-            setSearching(true);
-            try {
-                const res = await fetch(
-                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + " Lima Peru")}&format=json&countrycodes=pe&viewbox=-77.25,-12.30,-76.65,-11.75&bounded=1&addressdetails=1&limit=5`,
-                    { headers: { "Accept-Language": "es" } }
-                );
-                const data: NominatimResult[] = await res.json();
-                setSuggestions(data);
-                setOpen(data.length > 0);
-            } catch {
-                setSuggestions([]);
-            } finally {
-                setSearching(false);
-            }
-        }, 350);
+        debounceRef.current = setTimeout(() => searchAddresses(q), 350);
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-    }, [query]);
+    }, [query, searchAddresses]);
 
-    /* reverse geocode de las coordenadas actuales cuando cambia value.lat/lng */
+    /* reverse geocode de las coordenadas actuales cuando cambia value.lat/lng.
+       zoom=18 -> nivel edificio, así Nominatim devuelve el número de puerta si existe */
     const reverseGeocode = async (lat: number, lng: number) => {
         setReverseLoading(true);
         try {
             const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=es`
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=es`
             );
             const data = await res.json();
             if (data?.address) {
-                const addr = buildAddress(data.address);
+                const addr = buildAddress(data);
                 const dist = extractDistrict(data.address);
                 const region = extractRegion(data.address);
                 const newQ = addr || dist;
+                /* el cambio de query es programático -> que no lo re-busque el debounce */
+                skipSearchRef.current = true;
                 setQuery(newQ);
                 onChange({ address: addr || dist, district: dist, lat, lng, region });
+                /* mostramos sugerencias del lugar elegido para poder afinar la dirección */
+                void searchAddresses(newQ);
             }
         } catch { /* ignore */ } finally {
             setReverseLoading(false);
@@ -246,8 +298,19 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
         mapRef.current.setView([value.lat, value.lng], mapRef.current.getZoom(), { animate: true });
     }, [value.lat, value.lng]);
 
+    /* etiqueta de una sugerencia: calle (+número si Nominatim lo trae) y, si la
+       vía no tiene número pero el usuario tecleó uno, lo conserva en el texto */
+    const suggestionLabel = (r: NominatimResult): string => {
+        const base = buildAddress(r) || r.display_name;
+        if (!/\d/.test(base)) {
+            const typed = extractTypedNumber(query);
+            if (typed) return `${base} ${typed}`;
+        }
+        return base;
+    };
+
     const pickSuggestion = (r: NominatimResult) => {
-        const addr = buildAddress(r.address) || r.display_name;
+        const addr = suggestionLabel(r);
         const dist = extractDistrict(r.address);
         const region = extractRegion(r.address);
         const lat = parseFloat(r.lat);
@@ -291,8 +354,8 @@ export function AddressPicker({ value, onChange, error }: AddressPickerProps) {
                                 <button type="button" className="ap-suggestion" onMouseDown={() => pickSuggestion(r)}>
                                     <Icon name="location" size={13}/>
                                     <div className="ap-sug-text">
-                                        <span className="ap-sug-name">{buildAddress(r.address) || r.display_name}</span>
-                                        <span className="ap-sug-sub">{extractDistrict(r.address)} · Lima</span>
+                                        <span className="ap-sug-name">{suggestionLabel(r)}</span>
+                                        <span className="ap-sug-sub">{suggestionSub(r.address)}</span>
                                     </div>
                                 </button>
                             </li>
