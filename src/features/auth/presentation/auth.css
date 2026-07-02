@@ -21,15 +21,18 @@
   border-radius: var(--g-radius-xl); padding: 32px 28px;
   display: flex; flex-direction: column; gap: 22px;
   border: 1px solid color-mix(in oklab, var(--brand) 30%, transparent);
-  /* mantiene su altura natural: no se estira cuando el form de registro crece
-     (switch "soy negocio") -> solo cambia la card blanca */
-  align-self: start;
 }
+/* login: ambas cards se estiran a la misma altura (arriba). registro: la card de
+   color se queda en su altura natural para que el switch solo agrande la blanca */
+.geops-app .auth-signup .auth-promo-panel { align-self: start; }
 .geops-app .auth-tagline {
   position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
   color: var(--ink-3); font-size: 11px; font-family: var(--font-mono);
   letter-spacing: 0.1em; text-transform: uppercase;
 }
+
+/* selector de idioma: esquina superior derecha */
+.geops-app .auth-lang { position: absolute; top: 20px; right: 24px; z-index: 3; }
 
 /* fondo decorativo */
 .geops-app .auth-bg { position: absolute; inset: 0; pointer-events: none; opacity: 0.4; }
@@ -85,7 +88,15 @@
   width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0; display: grid; place-items: center;
   background: color-mix(in oklab, var(--brand-ink) 14%, transparent);
 }
-.geops-app .auth-promo-cta { align-self: flex-start; }
+/* CTA del panel: sigue el tema -> negro en claro, blanco en oscuro (var --ink) */
+.geops-app .auth-promo-cta {
+  align-self: flex-start;
+  background: color-mix(in oklab, var(--ink) 8%, transparent);
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  backdrop-filter: blur(4px);
+}
+.geops-app .auth-promo-cta:hover { background: color-mix(in oklab, var(--ink) 18%, transparent); }
 .geops-app .auth-promo-foot {
   font-size: 10px; color: var(--brand-ink); opacity: 0.45;
   font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase;
