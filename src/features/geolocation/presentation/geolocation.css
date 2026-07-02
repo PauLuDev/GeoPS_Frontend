@@ -1,0 +1,227 @@
+@keyframes loc-spin  { to { transform: rotate(360deg); } }
+@keyframes loc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+/* lienzo del mapa (osm/leaflet) -> ocupa todo el contenedor */
+.geops-app .osm-canvas {
+  width: 100%; height: 100%; background: var(--map-bg);
+  /* fuerza una capa GPU propia para que el compositor no descarte los tiles al añadir/quitar marcadores */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+/* al marcar punto el mapa se arrastra por debajo del pin fijo -> cursor de agarre */
+.geops-app .osm-canvas.picking .leaflet-grab { cursor: grab; }
+.geops-app .osm-canvas.picking .leaflet-dragging .leaflet-grab { cursor: grabbing; }
+
+.geops-app .pick-pin { position: relative; width: 24px; height: 32px; pointer-events: none; }
+.geops-app .pick-pin-head { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 18px; height: 18px; border-radius: 50%; background: var(--brand); border: 2.5px solid var(--bg-elev); box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
+.geops-app .pick-pin-stem { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: 2.5px; height: 16px; background: var(--brand); border-radius: 2px; }
+.geops-app .pick-pin::after { content: ""; position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%); width: 10px; height: 4px; background: rgba(0,0,0,0.35); border-radius: 50%; filter: blur(2px); }
+
+/* marcador fijo (bandera): la colita apunta al centro real del mapa; el mapa se mueve por debajo.
+   la colita (11px) queda justo sobre el centro -> compensamos ese alto en el transform */
+.geops-app .pick-center-pin {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, calc(-100% - 11px));
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  z-index: 810; pointer-events: none; font-family: var(--font-sans);
+}
+.geops-app .pick-center-bubble {
+  width: fit-content; max-width: 240px; padding: 6px 13px; border-radius: 12px;
+  background: var(--bg-elev); border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.16);
+  font-size: 12.5px; font-weight: 600; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* insignia: fondo var(--ink) + bandera var(--bg-elev) -> se invierten con el tema
+   (claro: fondo negro/bandera blanca ; oscuro: fondo blanco/bandera negra) */
+.geops-app .pick-center-flag {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 14px;
+  background: var(--ink); color: var(--bg-elev);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+/* colita: mismo color del fondo, apunta al punto exacto bajo la insignia */
+.geops-app .pick-center-flag::after {
+  content: ""; position: absolute; left: 50%; top: calc(100% - 1px);
+  transform: translateX(-50%);
+  width: 3px; height: 12px; border-radius: 0 0 2px 2px;
+  background: var(--ink);
+}
+
+/* boton atras (cancelar) del modo picking */
+.geops-app .pick-back-btn {
+  position: absolute; top: 14px; left: 14px; z-index: 1600;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-elev); border: 1px solid var(--line); color: var(--ink);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.16); cursor: pointer;
+}
+.geops-app .pick-back-btn:hover { background: var(--bg-sunken); }
+
+/* barra inferior con la accion primaria "Listo" */
+.geops-app .map-pick-confirm {
+  position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
+  z-index: 1600; max-width: calc(100% - 32px);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 12px 16px; border-radius: 16px;
+  background: var(--bg-elev); border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+}
+.geops-app .pick-confirm-hint {
+  text-align: center; font-size: 12.5px; font-weight: 500;
+  color: var(--ink-2); font-family: var(--font-sans);
+}
+
+/* leaflet / OSM overrides */
+.geops-app .leaflet-container { background: var(--map-bg) !important; font-family: var(--font-sans) !important; outline: none; }
+/* El pick pin y el search center son overlays React fuera del DOM de Leaflet,
+   por lo que el tile-pane nunca se invalida al añadir/quitar esos marcadores */
+.geops-app .leaflet-map-pane { will-change: transform; }
+.geops-app .leaflet-tile-pane { will-change: transform; }
+.geops-app .leaflet-control-attribution {
+  background: color-mix(in oklab, var(--bg-elev) 80%, transparent) !important;
+  color: var(--ink-3) !important; font-size: 10px !important;
+  font-family: var(--font-mono) !important; border-radius: 6px 0 0 0 !important; padding: 2px 8px !important;
+}
+.geops-app .leaflet-control-attribution a { color: var(--ink-2) !important; }
+
+/* coupon pins */
+.geops-app .geops-pin-wrap { background: transparent; border: 0; }
+.geops-app .geops-pin {
+  position: relative; width: 26px; height: 38px;
+  filter: drop-shadow(0 3px 6px oklch(0.2 0.02 260 / 0.22));
+  transition: transform 220ms cubic-bezier(.4,1.4,.5,1); cursor: pointer;
+}
+.geops-app .geops-pin.active { transform: scale(1.18); }
+.geops-app .geops-pin-halo {
+  position: absolute; left: 50%; top: 10px;
+  width: 28px; height: 28px; margin-left: -14px; margin-top: -14px;
+  border-radius: 50%; background: var(--brand); opacity: 0.25;
+  animation: geops-pin-halo 1.6s ease-out infinite; pointer-events: none;
+}
+@keyframes geops-pin-halo {
+  0%   { transform: scale(0.6); opacity: 0.4; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* user marker */
+.geops-app .geops-user-icon { background: transparent; border: 0; }
+.geops-app .geops-scm-icon { background: transparent; border: 0; }
+.geops-app .user-dot-wrap   { position: relative; width: 22px; height: 22px; }
+.geops-app .user-dot {
+  position: absolute; left: 4px; top: 4px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--brand); border: 3px solid var(--bg-elev);
+  box-shadow: 0 0 0 1px var(--ink), 0 4px 10px oklch(0.2 0.02 260 / 0.3);
+}
+.geops-app .user-radar {
+  position: absolute; left: 50%; top: 50%; width: 20px; height: 20px;
+  margin-left: -10px; margin-top: -10px; border-radius: 50%;
+  border: 2px solid var(--brand); animation: geops-user-radar 2.4s ease-out infinite;
+}
+@keyframes geops-user-radar {
+  0%   { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+/* search-center overlay (centro de busqueda al explorar) -> mismo punto bonito que el gps */
+.geops-app .scm-wrap {
+  position: relative; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+}
+.geops-app .scm-ring {
+  position: absolute; left: 50%; top: 50%; width: 20px; height: 20px;
+  margin-left: -10px; margin-top: -10px; border-radius: 50%;
+  border: 2px solid var(--brand); background: transparent; pointer-events: none;
+}
+.geops-app .scm-ring-1 { animation: geops-user-radar 2.4s ease-out infinite; }
+.geops-app .scm-ring-2 { animation: geops-user-radar 2.4s ease-out infinite 1.2s; }
+.geops-app .scm-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--brand); border: 3px solid var(--bg-elev);
+  box-shadow: 0 0 0 1px var(--ink), 0 4px 10px oklch(0.2 0.02 260 / 0.3);
+  position: relative; z-index: 1; flex-shrink: 0;
+}
+
+/* locationModal */
+.geops-app .loc-icon {
+  width: 44px; height: 44px; border-radius: 13px;
+  background: color-mix(in oklab, var(--brand) 16%, var(--bg-sunken));
+  display: grid; place-items: center;
+  color: var(--brand-strong); flex-shrink: 0;
+}
+.geops-app .loc-clear-btn {
+  appearance: none; border: 0; background: transparent;
+  cursor: pointer; color: var(--ink-3); padding: 2px;
+  display: flex; flex-shrink: 0;
+}
+/* LocationModal: migrado de inline (width de skeleton queda inline: dinamico) */
+.geops-app .geops-dialog.lm-modal { width: min(440px, calc(100vw - 20px)); padding: 0; overflow: hidden; border-radius: 18px; box-shadow: 0 12px 48px rgba(0,0,0,0.22); margin-block: 6vh auto; }
+.geops-app .lm-header { padding: 20px 20px 16px; background: var(--bg-elev); border-bottom: 1px solid var(--line); }
+.geops-app .lm-header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.geops-app .lm-title-row { display: flex; align-items: center; gap: 12px; }
+.geops-app .lm-title { font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; }
+.geops-app .lm-subtitle { font-size: 12px; color: var(--ink-3); margin-top: 2px; line-height: 1.5; }
+.geops-app .lm-close { flex-shrink: 0; margin-top: 2px; }
+/* encabezado "estas en X" -> ubicacion actual detectada */
+.geops-app .lm-current {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin: 4px 0 10px; padding: 8px 12px;
+  background: color-mix(in oklab, var(--brand) 10%, var(--bg-sunken));
+  border: 1px solid color-mix(in oklab, var(--brand) 25%, var(--line));
+  border-radius: 10px; font-size: 12px; color: var(--ink-2);
+}
+.geops-app .lm-current-icon { display: inline-flex; color: var(--brand); flex-shrink: 0; }
+.geops-app .lm-current-label { color: var(--ink-3); }
+.geops-app .lm-current-value { color: var(--ink); font-weight: 600; }
+
+.geops-app .lm-search { display: flex; align-items: center; gap: 10px; background: var(--bg-sunken); border-radius: 12px; padding: 10px 14px; border: 1.5px solid var(--line); }
+.geops-app .lm-search > svg { color: var(--ink-3); flex-shrink: 0; }
+.geops-app .lm-spinner { width: 17px; height: 17px; border: 2px solid var(--brand); border-top-color: transparent; border-radius: 50%; animation: loc-spin 0.65s linear infinite; flex-shrink: 0; }
+.geops-app .lm-input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; font-family: var(--font-sans); color: var(--ink); }
+
+.geops-app .lm-gps-btn { margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 11px 14px; border-radius: 12px; border: 1.5px solid var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); color: var(--brand); font-family: var(--font-sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: background 120ms, transform 80ms; }
+.geops-app .lm-gps-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--brand) 18%, transparent); }
+.geops-app .lm-gps-btn:active:not(:disabled) { transform: scale(0.99); }
+.geops-app .lm-gps-btn:disabled { opacity: 0.7; cursor: progress; }
+.geops-app .lm-gps-btn > svg { color: var(--brand); flex-shrink: 0; }
+.geops-app .lm-gps-error { margin-top: 8px; font-size: 12px; color: var(--danger, #c0392b); text-align: center; }
+.geops-app .lm-pick-btn { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 12px; border: 1.5px dashed var(--line); background: transparent; color: var(--ink); font-family: var(--font-sans); font-size: 13px; cursor: pointer; transition: background 120ms, border-color 120ms; }
+.geops-app .lm-pick-btn:hover { background: var(--bg-sunken); border-color: var(--brand); color: var(--brand); }
+.geops-app .lm-pick-btn > svg { color: var(--ink-3); }
+.geops-app .lm-pick-btn:hover > svg { color: var(--brand); }
+
+.geops-app .hud-recenter { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 2px 8px; background: var(--brand); color: var(--on-brand); border: 0; border-radius: 999px; font-size: 11px; font-family: var(--font-sans); font-weight: 600; cursor: pointer; }
+.geops-app .hud-recenter:hover { filter: brightness(1.05); }
+.geops-app .map-tools .btn-icon.active { background: var(--brand); color: var(--on-brand); border-color: var(--brand); }
+
+.geops-app .lm-list { background: var(--bg-elev); max-height: 52vh; overflow-y: auto; }
+.geops-app .lm-list-head { padding: 10px 16px 4px; }
+.geops-app .lm-list-label { font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; font-family: var(--font-mono); }
+
+.geops-app .loc-row { display: flex; align-items: center; gap: 14px; padding: 10px 16px; width: 100%; background: transparent; border: 0; cursor: pointer; font-family: inherit; text-align: left; transition: background 80ms; border-bottom: 1px solid var(--line); }
+.geops-app .loc-row:last-child { border-bottom: none; }
+.geops-app .loc-row:hover { background: var(--bg-sunken); }
+.geops-app .loc-row-icon { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: var(--bg-sunken); display: grid; place-items: center; color: var(--ink-3); }
+.geops-app .loc-row-icon.brand { background: color-mix(in oklab, var(--brand) 12%, var(--bg-sunken)); color: var(--brand-strong); }
+.geops-app .loc-row-main { flex: 1; min-width: 0; }
+.geops-app .loc-row-name { font-size: 14px; color: var(--ink); font-weight: 500; }
+.geops-app .loc-row-name.ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.geops-app .loc-row-sub { font-size: 12px; color: var(--ink-3); }
+.geops-app .loc-row-sub.mt1 { margin-top: 1px; }
+
+.geops-app .lm-empty { padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--ink-3); }
+.geops-app .lm-empty-text { font-size: 13px; text-align: center; }
+.geops-app .lm-empty-hint { font-size: 11px; }
+.geops-app .lm-hl { color: var(--ink); font-weight: 700; }
+
+.geops-app .lm-skel-row { display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.geops-app .lm-skel-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-sunken); animation: loc-pulse 1.2s ease-in-out infinite; }
+.geops-app .lm-skel-main { flex: 1; }
+.geops-app .lm-skel-line1 { height: 12px; border-radius: 6px; background: var(--bg-sunken); animation: loc-pulse 1.2s ease-in-out infinite; }
+.geops-app .lm-skel-line2 { height: 10px; border-radius: 6px; background: var(--bg-sunken); width: 40%; margin-top: 6px; animation: loc-pulse 1.2s ease-in-out infinite; }
+
+/* LimaMap (SVG fallback): migrado de inline */
+.geops-app .lima-map-svg { width: 100%; height: 100%; display: block; }
+.geops-app .lima-pin { cursor: pointer; }
+.geops-app .lima-pin-scale { transform-origin: 0 0; transform: scale(1); transition: transform 240ms cubic-bezier(.4,1.4,.5,1); }
+.geops-app .lima-pin-scale.active { transform: scale(1.18); }

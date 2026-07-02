@@ -1,0 +1,222 @@
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Icon } from "@/shared/ui/components/Icon.tsx";
+import { Modal } from "@/shared/ui/components/Modal.tsx";
+import { Select } from "@/shared/ui/components/Select.tsx";
+import { CampaignCoupon } from "@/features/campaigns/domain/entities/CampaignCoupon.ts";
+import { Campaign } from "@/features/campaigns/domain/entities/Campaign.ts";
+import { NewCouponForm } from "@/features/campaigns/presentation/components/NewCouponForm.tsx";
+import { EditCouponModal } from "@/features/campaigns/presentation/components/EditCouponModal.tsx";
+import { useEstablishments } from "@/features/establishments/presentation/hooks/useEstablishments.ts";
+import { useCoupons } from "@/features/coupons/presentation/hooks/useCoupons.ts";
+import { promotionLabel } from "@/features/campaigns/domain/value-objects/PromotionType.ts";
+import { useCouponMetrics } from "@/features/analytics/presentation/hooks/useCouponMetrics.ts";
+import { CouponAnalytics } from "@/features/analytics/domain/entities/CouponAnalytics.ts";
+import { ratePct } from "@/features/campaigns/domain/value-objects/Performance.ts";
+
+interface CouponsManagementProps {
+    /* fuente unica compartida con la vista de campanas (evita estados duplicados) */
+    registeredCoupons: CampaignCoupon[];
+    campaigns: Campaign[];
+    /* recarga campanas + cupones del dueno para mantener ambas vistas al dia */
+    onReload: () => Promise<void> | void;
+}
+
+export function CouponsManagement({ registeredCoupons, campaigns, onReload }: CouponsManagementProps) {
+    const { t } = useTranslation();
+    /* cupones del dueno -> crear y eliminar van al back (editar no existe en el back todavia) */
+    const { establishments } = useEstablishments();
+    const { remove: removeCoupon, loading: removing } = useCoupons();
+    const [coupons, setCoupons] = useState<CampaignCoupon[]>([]);
+    useEffect(() => { setCoupons(registeredCoupons); }, [registeredCoupons]);
+    const [creating, setCreating] = useState(false);
+    const [editing, setEditing] = useState<CampaignCoupon | null>(null);
+    const [toDelete, setToDelete] = useState<CampaignCoupon | null>(null);
+    const [search, setSearch] = useState("");
+    const [success, setSuccess] = useState("");
+    /* filtro por establecimiento (solo util si el dueno tiene mas de uno) */
+    const [selectedEstId, setSelectedEstId] = useState("all");
+    useEffect(() => {
+        if (selectedEstId !== "all" && !establishments.some(e => e.id === selectedEstId)) setSelectedEstId("all");
+    }, [establishments, selectedEstId]);
+
+    /* metricas reales de analytics para los cupones visibles */
+    const metricsIds = selectedEstId === "all" ? establishments.map(e => e.id) : [selectedEstId];
+    const { metrics: couponMetrics, loading: metricsLoading } = useCouponMetrics(metricsIds);
+    const metricsByCoupon = useMemo(() => {
+        const map = new Map<string, CouponAnalytics>();
+        couponMetrics.forEach(m => map.set(m.couponId, m));
+        return map;
+    }, [couponMetrics]);
+    const getMetrics = (c: CampaignCoupon) => metricsByCoupon.get(c.uuid ?? c.id) ?? null;
+    const fmtMetric = (n?: number) => metricsLoading ? "—" : (n ?? 0).toLocaleString("es-PE");
+
+    const handleCreated = () => {
+        setCreating(false);
+        setSuccess(t("couponsManagement.successCreated"));
+        setTimeout(() => setSuccess(""), 3000);
+        void onReload();
+    };
+
+    const handleEdited = () => {
+        setEditing(null);
+        setSuccess(t("couponsManagement.successEdited"));
+        setTimeout(() => setSuccess(""), 3000);
+        void onReload();
+    };
+
+    /* cupones del establecimiento elegido (o todos), luego filtro por busqueda */
+    const byEstablishment = selectedEstId === "all"
+        ? coupons
+        : coupons.filter(c => c.establishmentId === selectedEstId);
+    const filtered = byEstablishment.filter(c =>
+        c.title.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const deleteCoupon = async () => {
+        if (!toDelete) return;
+        const target = toDelete;
+        const res = await removeCoupon(target.id);
+        setToDelete(null);
+        if (res === null) return;   // fallo -> no tocamos la lista
+        setCoupons(prev => prev.filter(c => c.id !== target.id));
+        setSuccess(t("couponsManagement.successDeleted", { title: target.title }));
+        setTimeout(() => setSuccess(""), 3000);
+        void onReload();
+    };
+
+    return (
+        <div className="md cl-page">
+            <header className="md-head">
+                <div>
+                    <div className="eyebrow">{t("couponsManagement.eyebrow")}</div>
+                    <h1 className="page-title">{t("couponsManagement.title")}</h1>
+                    <p className="page-subtitle">
+                        {byEstablishment.length === 1 ? t("couponsManagement.registeredCount", { count: byEstablishment.length }) : t("couponsManagement.registeredCount_plural", { count: byEstablishment.length })}
+                    </p>
+                </div>
+                {!creating && coupons.length > 0 && (
+                    <button type="button" className="btn btn-brand" onClick={() => setCreating(true)}>
+                        <Icon name="plus" size={14}/> {t("couponsManagement.newCoupon")}
+                    </button>
+                )}
+            </header>
+
+            {success && (
+                <div className="plans-success"><Icon name="check" size={15}/> {success}</div>
+            )}
+
+            {creating && (
+                <NewCouponForm
+                    establishments={establishments}
+                    onCreated={handleCreated}
+                    onCancel={() => setCreating(false)}
+                />
+            )}
+
+            {!creating && (
+            <div className="card cl-card">
+                <div className="cl-toolbar">
+                    {establishments.length > 1 && (
+                        <div className="cl-est-filter">
+                            <Select
+                                value={selectedEstId}
+                                options={[
+                                    { value: "all", label: t("couponsManagement.allEstablishments") },
+                                    ...establishments.map(e => ({ value: e.id, label: e.name })),
+                                ]}
+                                onChange={setSelectedEstId}
+                            />
+                        </div>
+                    )}
+                    <div className="cl-spacer"/>
+                    <div className="search-wrap cl-search">
+                        <Icon name="search" size={14}/>
+                        <input className="search-input cl-search-input" aria-label={t("couponsManagement.searchPlaceholder")} placeholder={t("couponsManagement.searchPlaceholder")}
+                               value={search} onChange={e => setSearch(e.target.value)}/>
+                    </div>
+                </div>
+
+                {filtered.length === 0 ? (
+                    <div className="cl-empty">
+                        <div className="cl-empty-icon"><Icon name="ticket" size={32}/></div>
+                        <div className="cl-empty-title">
+                            {search ? t("couponsManagement.emptySearch") : t("couponsManagement.emptyList")}
+                        </div>
+                        {!search && (
+                            <button type="button" className="btn btn-brand cl-empty-cta" onClick={() => setCreating(true)}>
+                                <Icon name="plus" size={14}/> {t("couponsManagement.newCoupon")}
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="cm-list">
+                        {filtered.map(c => {
+                            const m = getMetrics(c);
+                            return (
+                                <div key={c.id} className="cm-row">
+                                    <div className="cm-thumb">
+                                        {c.imageUrl ? (
+                                            <img src={c.imageUrl} alt={c.title}/>
+                                        ) : (
+                                            <span className="cm-thumb-disc">{c.discount}</span>
+                                        )}
+                                    </div>
+                                    <div className="cm-info">
+                                        <div className="cm-title">{c.title}</div>
+                                        <div className="cm-meta">
+                                            <span className="cm-cat-tag">{promotionLabel(c.promotionType, t)}</span>
+                                            <span className="cm-sep">·</span>
+                                            <span className="cm-discount">{c.discount}</span>
+                                            <span className="cm-sep">·</span>
+                                            <span>Stock: {c.stock}</span>
+                                        </div>
+                                        <div className="cm-metrics">
+                                            <span><strong>{fmtMetric(m?.viewsCount)}</strong> {t("couponsManagement.metrics.views")}</span>
+                                            <span><strong>{fmtMetric(m?.reservationsCount)}</strong> {t("couponsManagement.metrics.reserved")}</span>
+                                            <span><strong>{fmtMetric(m?.redemptionsCount)}</strong> {t("couponsManagement.metrics.redeemed")}</span>
+                                            <span><strong>{metricsLoading ? "—" : (m && m.viewsCount > 0 ? ratePct(m.viewsCount, m.redemptionsCount) : "—")}</strong> {t("couponsManagement.metrics.conversion")}</span>
+                                        </div>
+                                    </div>
+                                    <div className="cm-actions">
+                                        <button type="button" className="btn btn-sm" title={t("couponsManagement.actions.edit")} onClick={() => setEditing(c)}>
+                                            <Icon name="edit" size={13}/> <span className="cm-btn-label">{t("couponsManagement.actions.edit")}</span>
+                                        </button>
+                                        <button type="button" className="btn btn-sm est-del-btn" title={t("couponsManagement.actions.delete")} onClick={() => setToDelete(c)}>
+                                            <Icon name="trash" size={13}/> <span className="cm-btn-label">{t("couponsManagement.actions.delete")}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+            )}
+
+            {/* modal de edicion (real, contra el back) */}
+            {editing && (
+                <EditCouponModal coupon={editing} campaigns={campaigns} onSaved={handleEdited} onClose={() => setEditing(null)}/>
+            )}
+
+            {/* modal de eliminacion */}
+            {toDelete && (
+                <Modal onClose={() => setToDelete(null)} labelledBy="cm-del-title" className="est-modal">
+                    <div className="est-modal-body">
+                        <div className="est-modal-icon"><Icon name="trash" size={20}/></div>
+                        <h3 id="cm-del-title" className="est-modal-title">{t("couponsManagement.deleteModal.title")}</h3>
+                        <p className="est-modal-text">
+                            {t("couponsManagement.deleteModal.confirmText1")}<strong>{toDelete.title}</strong>{t("couponsManagement.deleteModal.confirmText2")}
+                        </p>
+                        <div className="est-modal-actions">
+                            <button type="button" className="btn est-modal-btn" onClick={() => setToDelete(null)} disabled={removing}>{t("common.cancel")}</button>
+                            <button type="button" className="btn est-del-confirm est-modal-btn" onClick={deleteCoupon} disabled={removing}>
+                                <Icon name="trash" size={14}/> {removing ? t("couponsManagement.deleteModal.deleting") : t("couponsManagement.deleteModal.deleteBtn")}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+        </div>
+    );
+}

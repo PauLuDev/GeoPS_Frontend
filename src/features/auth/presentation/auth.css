@@ -1,0 +1,141 @@
+/* auth screen */
+.geops-app .auth-col-pair {
+  position: relative; z-index: 1; width: min(900px, 100%);
+  display: flex; justify-content: center; align-items: stretch;   /* ambas cards con la misma altura */
+}
+.geops-app .auth-card { flex: 0 1 calc(50% - 10px); min-width: 0; }
+@media (max-width: 680px) {
+  .geops-app .auth-col-pair { flex-direction: column; }
+  .geops-app .auth-card { flex-basis: auto; }
+}
+
+.geops-app .auth-root {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 40px 24px; background: var(--bg); position: relative; overflow: hidden;
+}
+.geops-app .auth-switch-btn {
+  appearance: none; border: 0; padding: 0; background: transparent;
+  color: var(--ink); font-weight: 500; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+  font-family: inherit; font-size: 13px;
+}
+.geops-app .auth-promo-panel {
+  flex: 0 1 calc(50% - 10px); min-width: 0; margin-left: 20px; max-height: 720px;
+  background: linear-gradient(140deg, color-mix(in oklab, var(--brand) 75%, var(--bg)) 0%, color-mix(in oklab, var(--accent-2) 50%, var(--bg)) 100%);
+  border-radius: var(--g-radius-xl); padding: 32px 28px;
+  display: flex; flex-direction: column; gap: 22px; overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--brand) 30%, transparent);
+  /* transicion suave para el colapso al registrarse como negocio */
+  transition: flex-basis 440ms cubic-bezier(.2,.8,.2,1), max-height 440ms cubic-bezier(.2,.8,.2,1),
+              opacity 320ms ease, margin 440ms cubic-bezier(.2,.8,.2,1),
+              padding 440ms cubic-bezier(.2,.8,.2,1), transform 440ms cubic-bezier(.2,.8,.2,1),
+              border-width 300ms ease;
+}
+/* login: ambas cards se estiran a la misma altura. registro: la card de color se
+   queda en su altura natural para que el switch solo agrande la blanca */
+.geops-app .auth-signup .auth-promo-panel { align-self: flex-start; }
+
+/* registro como negocio: la card promo se colapsa (animada) y la blanca se
+   desliza sola al centro gracias a justify-content: center del contenedor
+   (la blanca conserva su ancho -> solo cambia de posicion, sin salto) */
+.geops-app .auth-solo .auth-promo-panel {
+  flex-basis: 0; max-height: 0; opacity: 0; margin-left: 0;
+  padding: 0;
+  transform: translateX(24px); pointer-events: none; border-width: 0;
+}
+@media (max-width: 680px) {
+  .geops-app .auth-promo-panel { margin-left: 0; margin-top: 20px; flex-basis: auto; }
+}
+.geops-app .auth-tagline {
+  position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
+  color: var(--ink-3); font-size: 11px; font-family: var(--font-mono);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* selector de idioma: esquina superior derecha */
+.geops-app .auth-lang { position: absolute; top: 20px; right: 24px; z-index: 3; }
+
+/* fondo decorativo */
+.geops-app .auth-bg { position: absolute; inset: 0; pointer-events: none; opacity: 0.4; }
+.geops-app .auth-bg-svg { width: 100%; height: 100%; }
+
+/* tarjeta de login */
+.geops-app .auth-card { padding: 36px; box-shadow: var(--shadow-lg); }
+.geops-app .auth-brand-row { display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
+.geops-app .auth-title { margin: 0 0 8px; font-size: 28px; letter-spacing: -0.03em; font-weight: 600; }
+.geops-app .auth-subtitle { margin: 0 0 24px; color: var(--ink-2); font-size: 14px; }
+.geops-app .auth-fullbtn { width: 100%; justify-content: center; padding: 12px; }
+.geops-app .auth-submit { margin-top: 6px; }
+.geops-app .auth-form { display: flex; flex-direction: column; gap: 12px; }
+.geops-app .auth-error { font-size: 12px; color: var(--danger); display: flex; align-items: center; gap: 6px; }
+.geops-app .auth-switch-row { margin-top: 20px; text-align: center; font-size: 13px; color: var(--ink-2); }
+
+/* switch de rol (dueno de negocio) */
+.geops-app .auth-role-toggle {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; margin-top: 4px; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--line); background: var(--bg-elev);
+  appearance: none; font-family: inherit; text-align: left; transition: all 160ms ease;
+}
+.geops-app .auth-role-toggle[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); }
+.geops-app .auth-role-icon {
+  width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: grid; place-items: center;
+  background: var(--bg-sunken); color: var(--ink-3);
+}
+.geops-app .auth-role-toggle[aria-pressed="true"] .auth-role-icon { background: var(--brand); color: var(--brand-ink); }
+.geops-app .auth-role-text { flex: 1; min-width: 0; }
+.geops-app .auth-role-title { font-size: 13px; font-weight: 600; }
+.geops-app .auth-role-sub { font-size: 11px; color: var(--ink-3); }
+.geops-app .auth-role-track {
+  width: 40px; height: 23px; border-radius: 999px; flex-shrink: 0; position: relative;
+  background: var(--line-strong); transition: background 160ms ease;
+}
+.geops-app .auth-role-toggle[aria-pressed="true"] .auth-role-track { background: var(--brand); }
+.geops-app .auth-role-thumb {
+  position: absolute; top: 2px; left: 2px; width: 19px; height: 19px;
+  border-radius: 50%; background: #fff; transition: left 160ms ease; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.geops-app .auth-role-toggle[aria-pressed="true"] .auth-role-thumb { left: 19px; }
+
+/* panel promocional */
+.geops-app .auth-promo-delay { animation-delay: 80ms; }
+.geops-app .auth-promo-eyebrow { color: var(--brand-ink); opacity: 0.65; margin-bottom: 8px; }
+.geops-app .auth-promo-title { margin: 0 0 10px; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--brand-ink); line-height: 1.15; }
+.geops-app .auth-promo-em { font-style: normal; border-bottom: 2px solid color-mix(in oklab, var(--brand-ink) 50%, transparent); }
+.geops-app .auth-promo-text { margin: 0; font-size: 13.5px; color: var(--brand-ink); opacity: 0.82; line-height: 1.6; }
+.geops-app .auth-promo-features { display: flex; flex-direction: column; gap: 9px; }
+.geops-app .auth-feature { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--brand-ink); opacity: 0.88; }
+.geops-app .auth-feature-icon {
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0; display: grid; place-items: center;
+  background: color-mix(in oklab, var(--brand-ink) 14%, transparent);
+}
+/* CTA del panel: sigue el tema -> negro en claro, blanco en oscuro (var --ink) */
+.geops-app .auth-promo-cta {
+  align-self: flex-start;
+  background: color-mix(in oklab, var(--ink) 8%, transparent);
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  backdrop-filter: blur(4px);
+}
+.geops-app .auth-promo-cta:hover { background: color-mix(in oklab, var(--ink) 18%, transparent); }
+.geops-app .auth-promo-foot {
+  font-size: 10px; color: var(--brand-ink); opacity: 0.45;
+  font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* modo oscuro: la card promo se veia apagada -> fondo mas vivo y texto blanco nitido */
+.geops-app[data-theme="dark"] .auth-promo-panel {
+  background: linear-gradient(140deg, color-mix(in oklab, var(--brand) 62%, #000) 0%, color-mix(in oklab, var(--accent-2) 60%, #000) 100%);
+  border-color: color-mix(in oklab, var(--brand) 45%, transparent);
+}
+.geops-app[data-theme="dark"] .auth-promo-eyebrow,
+.geops-app[data-theme="dark"] .auth-promo-title,
+.geops-app[data-theme="dark"] .auth-promo-text,
+.geops-app[data-theme="dark"] .auth-feature,
+.geops-app[data-theme="dark"] .auth-promo-foot { color: #fff; }
+.geops-app[data-theme="dark"] .auth-promo-eyebrow { opacity: 0.85; }
+.geops-app[data-theme="dark"] .auth-promo-text    { opacity: 0.9; }
+.geops-app[data-theme="dark"] .auth-feature       { opacity: 0.95; }
+.geops-app[data-theme="dark"] .auth-promo-foot    { opacity: 0.6; }
+.geops-app[data-theme="dark"] .auth-promo-em { border-bottom-color: rgba(255,255,255,0.5); }
+.geops-app[data-theme="dark"] .auth-feature-icon { background: rgba(255,255,255,0.16); }
