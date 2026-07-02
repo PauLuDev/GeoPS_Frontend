@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BottomNav } from "../components/BottomNav.tsx";
 import { Coupon, UserLocation } from "@/shared/types.ts";
@@ -25,9 +25,22 @@ import { getCurrentUser } from "@/features/auth/application/session.ts";
 import { useProfile } from "@/features/auth/presentation/hooks/useProfile.ts";
 import { analyticsApi } from "@/features/analytics/infrastructure/api/analyticsApi.ts";
 
+/* anclajes de la hoja deslizable movil -> fraccion del alto que baja el panel */
+const SHEET_SNAPS = { peek: 0.82, half: 0.46, full: 0.06 } as const;
+type SheetSnap = keyof typeof SHEET_SNAPS;
+
 /* el back necesita UUIDs reales; evitamos mandar ids stub o vacios */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const asUuid = (v?: string): string | undefined => (v && UUID_RE.test(v) ? v : undefined);
+
+/* arma un nombre legible calle + distrito desde la respuesta de nominatim */
+function placeNameFromAddress(a: Record<string, string> | undefined): string {
+    if (!a) return "";
+    const road = a.road || a.pedestrian || a.footway || a.residential || "";
+    const district = a.suburb || a.city_district || a.district || a.city || a.town || a.village || "";
+    if (road && district) return `${road}, ${district}`;
+    return road || district || "";
+}
 
 /* local de respaldo cuando el cupon no trae su establecimiento resuelto */
 function stubBusiness(c: Coupon): Business {
@@ -115,6 +128,9 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     const [showWelcomePrompt, setShowWelcomePrompt] = useState(false);
     const [pickingOnMap, setPickingOnMap] = useState(false);
     const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number; name: string } | null>(null);
+    /* centro del mapa mientras se marca punto (modo marcador-centrado) + su direccion resuelta */
+    const [pickCenter, setPickCenter] = useState<{ lat: number; lng: number } | null>(null);
+    const [pickCenterName, setPickCenterName] = useState<string | null>(null);
     /* Permiso real de compartir ubicación: alimenta el dot del usuario y el switch del perfil */
     const [shareLocation, setShareLocation] = useState<boolean>(() => {
         try {
@@ -152,10 +168,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                     try {
                         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`);
                         const data = await r.json();
-                        if (data?.address) {
-                            districtName = data.address.suburb || data.address.city_district || data.address.district
-                                || data.address.city || data.address.town || data.address.village || districtName;
-                        }
+                        districtName = placeNameFromAddress(data?.address) || districtName;
                     } catch { /* ignore */ }
                     const newLoc: UserLocation = { lat, lng, name: districtName, source: "gps" };
                     setUserLocation(newLoc);
@@ -345,6 +358,8 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
         /* Limpia el pin manual anterior si el usuario elige por texto/sugerencia */
         setPickedPoint(null);
         setPickingOnMap(false);
+        setPickCenter(null);
+        setPickCenterName(null);
         setViewCenter(loc);
         try { localStorage.setItem("geops_viewcenter", JSON.stringify(loc)); } catch { /* ignore */ }
         setShowLocationModal(false);
@@ -353,45 +368,118 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
     const startPickOnMap = () => {
         setShowLocationModal(false);
         setPickedPoint(null);
+        setPickCenter({ lat: viewCenter.lat, lng: viewCenter.lng });
+        setPickCenterName(viewCenter.name || null);
         setPickingOnMap(true);
     };
 
-    const handleMapPick = async (lat: number, lng: number) => {
-        /* Confirma inmediatamente con placeholder de nombre, igual que seleccionar del buscador */
-        const loc: UserLocation = { lat, lng, name: "Punto en el mapa", source: "manual" };
+    /* el mapa reporta su centro al dejar de moverse -> lo guardamos y marcamos "resolviendo" */
+    const handlePickCenterChange = (lat: number, lng: number) => {
+        setPickCenter({ lat, lng });
+        setPickCenterName(null);
+    };
+
+    /* confirma el punto bajo el pin central (boton "Listo") */
+    const confirmPickOnMap = () => {
+        const c = pickCenter;
+        if (!c) return;
+        const knownName = pickCenterName;
+        const loc: UserLocation = { lat: c.lat, lng: c.lng, name: knownName || "Punto en el mapa", source: "manual" };
         hasManualSelectionRef.current = true;
         setViewCenter(loc);
         try { localStorage.setItem("geops_viewcenter", JSON.stringify(loc)); } catch { /* ignore */ }
-        setPickedPoint(null);
         setPickingOnMap(false);
-        /* Actualiza el nombre del distrito en segundo plano */
-        try {
-            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`);
-            const data = await r.json();
-            if (data?.address) {
-                const name = data.address.suburb || data.address.city_district || data.address.district
-                    || data.address.city || data.address.town || data.address.village || data.address.road || "Punto en el mapa";
-                const namedLoc: UserLocation = { lat, lng, name, source: "manual" };
-                setViewCenter(namedLoc);
-                try { localStorage.setItem("geops_viewcenter", JSON.stringify(namedLoc)); } catch { /* ignore */ }
-            }
-        } catch { /* ignore */ }
+        setPickCenter(null);
+        setPickCenterName(null);
+        setPickedPoint(null);
+        /* si aun no teniamos la direccion resuelta, la buscamos en segundo plano */
+        if (!knownName) {
+            (async () => {
+                try {
+                    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${c.lat}&lon=${c.lng}&accept-language=es`);
+                    const data = await r.json();
+                    const name = placeNameFromAddress(data?.address);
+                    if (name) {
+                        const namedLoc: UserLocation = { lat: c.lat, lng: c.lng, name, source: "manual" };
+                        setViewCenter(namedLoc);
+                        try { localStorage.setItem("geops_viewcenter", JSON.stringify(namedLoc)); } catch { /* ignore */ }
+                    }
+                } catch { /* ignore */ }
+            })();
+        }
     };
 
     const cancelPickOnMap = () => {
         setPickingOnMap(false);
         setPickedPoint(null);
+        setPickCenter(null);
+        setPickCenterName(null);
     };
 
-    const recenterToUser = () => {
-        hasManualSelectionRef.current = false;
-        setViewCenter(userLocation);
-        try { localStorage.setItem("geops_viewcenter", JSON.stringify(userLocation)); } catch { /* ignore */ }
+    /* reverse-geocode con debounce del centro mientras se marca punto -> alimenta la burbuja */
+    const pickGeoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (!pickingOnMap || !pickCenter) return;
+        const { lat, lng } = pickCenter;
+        const controller = new AbortController();
+        if (pickGeoTimerRef.current) clearTimeout(pickGeoTimerRef.current);
+        pickGeoTimerRef.current = setTimeout(async () => {
+            try {
+                const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`, { signal: controller.signal });
+                const data = await r.json();
+                const name = placeNameFromAddress(data?.address);
+                if (name) setPickCenterName(name);
+            } catch { /* ignore */ }
+        }, 450);
+        return () => {
+            if (pickGeoTimerRef.current) clearTimeout(pickGeoTimerRef.current);
+            controller.abort();
+        };
+    }, [pickCenter?.lat, pickCenter?.lng, pickingOnMap]);
+
+    /* volver a mi / quitar marcador -> si hay ubicacion real vuelve a ella; si no, abre el selector para elegir zona */
+    const returnToMe = () => {
+        setPickedPoint(null);
+        setPickingOnMap(false);
+        setPickCenter(null);
+        setPickCenterName(null);
+        if (shareLocation && userLocation.source === "gps") {
+            hasManualSelectionRef.current = false;
+            setViewCenter(userLocation);
+            try { localStorage.setItem("geops_viewcenter", JSON.stringify(userLocation)); } catch { /* ignore */ }
+        } else {
+            setShowLocationModal(true);
+        }
     };
 
     const mapApiRef = useRef<MapApi | null>(null);
     /* Inicializado según la fuente del viewCenter guardado: si el usuario eligió manual antes, protegemos de GPS */
     const hasManualSelectionRef = useRef(viewCenter.source === "manual");
+
+    /* mantiene el nombre del centro (chip de arriba + hud) al dia -> calle/distrito reales de la api */
+    const lastGeocodeRef = useRef("");
+    useEffect(() => {
+        const key = `${viewCenter.lat.toFixed(5)},${viewCenter.lng.toFixed(5)}`;
+        if (lastGeocodeRef.current === key) return;
+        lastGeocodeRef.current = key;
+        let cancelled = false;
+        (async () => {
+            try {
+                const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${viewCenter.lat}&lon=${viewCenter.lng}&accept-language=es`);
+                const data = await r.json();
+                if (cancelled) return;
+                const name = placeNameFromAddress(data?.address);
+                if (!name) return;
+                setViewCenter((prev) => {
+                    if (prev.name === name) return prev;
+                    const next = { ...prev, name };
+                    try { localStorage.setItem("geops_viewcenter", JSON.stringify(next)); } catch { /* ignore */ }
+                    return next;
+                });
+            } catch { /* ignore */ }
+        })();
+        return () => { cancelled = true; };
+    }, [viewCenter.lat, viewCenter.lng]);
 
     /* Cuando se cierra el modal o se cambia de modo, fuerza al mapa a recalcular tamaño + redibujar tiles */
     useEffect(() => {
@@ -399,43 +487,106 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
         const t2 = setTimeout(() => mapApiRef.current?.invalidate(), 250);
         const t3 = setTimeout(() => mapApiRef.current?.invalidate(), 600);
         return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-    }, [showLocationModal, pickingOnMap]);
+    }, [showLocationModal, pickingOnMap, panelCollapsed]);
 
-    /* Botón "centrar": vuela el mapa a tu ubicación si está activa; si no, al punto marcado/viewCenter */
+    /* Botón "centrar": vuelve la camara al punto activo de busqueda (el que elegiste o tu gps) */
     const handleCenter = () => {
-        const target = shareLocation ? userLocation : viewCenter;
-        mapApiRef.current?.flyTo(target.lat, target.lng, radiusToZoom(radius));
+        /* centrar en el punto activo -> siempre acerca a nivel ~100 m (zoom 17), sin importar el radio del filtro */
+        mapApiRef.current?.flyTo(viewCenter.lat, viewCenter.lng, radiusToZoom(100));
     };
     const handleZoomIn = () => mapApiRef.current?.zoomIn();
     const handleZoomOut = () => mapApiRef.current?.zoomOut();
 
-    /* Limpia el punto marcado: vuelve el centro de búsqueda a tu ubicación real (o al default si no hay) */
-    const clearMarker = () => {
-        hasManualSelectionRef.current = false; /* volvemos al GPS → permitir futuros updates de GPS */
-        const target = shareLocation ? userLocation : DEFAULT_LOCATION;
-        setViewCenter(target);
-        try { localStorage.setItem("geops_viewcenter", JSON.stringify(target)); } catch { /* ignore */ }
-        setPickedPoint(null);
-        setPickingOnMap(false);
-    };
-
     const isExploring = viewCenter.lat !== userLocation.lat || viewCenter.lng !== userLocation.lng;
     const hudCoords = `${viewCenter.lat.toFixed(4)}, ${viewCenter.lng.toFixed(4)}`;
+
+    /* ---------- hoja deslizable del panel de cupones (solo movil) ---------- */
+    const shellRef = useRef<HTMLDivElement>(null);
+    const [isMobile, setIsMobile] = useState(
+        () => typeof window !== "undefined" && window.matchMedia("(max-width: 980px)").matches
+    );
+    const [shellH, setShellH] = useState(0);
+    const [sheetSnap, setSheetSnap] = useState<SheetSnap>("half");
+    const [dragY, setDragY] = useState<number | null>(null);
+    const dragRef = useRef<{ startY: number; base: number } | null>(null);
+
+    useEffect(() => {
+        const mq = window.matchMedia("(max-width: 980px)");
+        const sync = () => setIsMobile(mq.matches);
+        sync();
+        mq.addEventListener("change", sync);
+        return () => mq.removeEventListener("change", sync);
+    }, []);
+
+    /* medimos el alto del contenedor -> convertir los anclajes a pixeles */
+    useEffect(() => {
+        const el = shellRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(() => setShellH(el.clientHeight));
+        ro.observe(el);
+        setShellH(el.clientHeight);
+        return () => ro.disconnect();
+    }, []);
+
+    /* al abrir un detalle en movil -> subir el panel para leerlo completo */
+    useEffect(() => {
+        if (isMobile && (detailCoupon || detailBusiness)) setSheetSnap("full");
+    }, [detailCoupon, detailBusiness, isMobile]);
+
+    const snapPx = (s: SheetSnap) => SHEET_SNAPS[s] * shellH;
+    const sheetTranslate = dragY != null ? dragY : snapPx(sheetSnap);
+    const sheetStyle = isMobile && shellH > 0
+        ? { transform: `translateY(${sheetTranslate}px)`, transition: dragY != null ? "none" : undefined }
+        : undefined;
+
+    const onSheetDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+        if (!isMobile) return;
+        dragRef.current = { startY: e.clientY, base: snapPx(sheetSnap) };
+        setDragY(snapPx(sheetSnap));
+        e.currentTarget.setPointerCapture(e.pointerId);
+    };
+    const onSheetMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+        if (!dragRef.current) return;
+        const y = dragRef.current.base + (e.clientY - dragRef.current.startY);
+        setDragY(Math.max(snapPx("full"), Math.min(snapPx("peek"), y)));
+    };
+    const onSheetUp = () => {
+        if (!dragRef.current) return;
+        const base = dragRef.current.base;
+        const y = dragY ?? base;
+        if (Math.abs(y - base) < 8) {
+            /* tap -> alterna entre expandido y medio */
+            setSheetSnap((s) => (s === "full" ? "half" : "full"));
+        } else {
+            const nearest = (Object.keys(SHEET_SNAPS) as SheetSnap[])
+                .reduce((a, b) => (Math.abs(snapPx(b) - y) < Math.abs(snapPx(a) - y) ? b : a));
+            setSheetSnap(nearest);
+        }
+        setDragY(null);
+        dragRef.current = null;
+    };
+    /* se puede arrastrar desde el asa o desde toda la cabecera del panel */
+    const sheetDragHandlers = {
+        onPointerDown: onSheetDown,
+        onPointerMove: onSheetMove,
+        onPointerUp: onSheetUp,
+        onPointerCancel: onSheetUp,
+    };
 
     return (
         <div className="customer-app">
             <CustomerTopbar
                 onProfileClick={() => setTab("profile")}
                 onSignOut={onSignOut}
-                locationName={userLocation.name}
+                locationName={viewCenter.name}
                 onLocationClick={() => setShowLocationModal(true)}
                 profile={profile}
             />
 
-            <div className={"map-shell" + (tab === "map" || tab === "saved" ? "" : " stacked") + (panelCollapsed ? " panel-collapsed" : "")}>
+            <div ref={shellRef} className={"map-shell" + (tab === "map" || tab === "saved" ? "" : " stacked") + (panelCollapsed ? " panel-collapsed" : "")}>
                 {(tab === "map" || tab === "saved") && (
                     <>
-                        <div className="map-area">
+                        <div className={"map-area" + (pickingOnMap ? " picking" : "")}>
                             <GeoMap
                                 engine={mapEngine}
                                 theme={theme}
@@ -450,24 +601,37 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                     }
                                 }}
                                 userPos={{ x: 520, y: 400 }}
-                                userCoord={shareLocation ? userLocation : undefined}
+                                userCoord={shareLocation && !isExploring ? userLocation : undefined}
                                 centerCoord={viewCenter}
                                 searchCenter={isExploring && !pickingOnMap && !pickedPoint ? viewCenter : null}
                                 zoom={radiusToZoom(radius)}
-                                onMapClick={handleMapPick}
                                 pickingOnMap={pickingOnMap}
                                 pickedCoord={pickedPoint}
+                                onPickCenterChange={handlePickCenterChange}
+                                pickCenterLabel={pickingOnMap ? (pickCenterName ?? t("map.pickResolving", { defaultValue: "Buscando dirección…" })) : null}
                                 onMapReady={(api) => { mapApiRef.current = api; }}
                             />
 
                             {pickingOnMap && (
-                                <div className="map-pick-banner">
-                                    <span className="pick-banner-icon"><Icon name="pin" size={14}/></span>
-                                    <span>{t("map.pickHint", { defaultValue: "Toca el mapa para colocar tu punto" })}</span>
-                                    <button type="button" onClick={cancelPickOnMap}>
-                                        {t("common.cancel", { defaultValue: "Cancelar" })}
+                                <>
+                                    <button
+                                        type="button"
+                                        className="pick-back-btn"
+                                        onClick={cancelPickOnMap}
+                                        aria-label={t("common.cancel", { defaultValue: "Cancelar" })}
+                                    >
+                                        <Icon name="arrowLeft" size={20}/>
                                     </button>
-                                </div>
+                                    <div className="map-pick-confirm">
+                                        <span className="pick-confirm-hint">
+                                            {t("map.pickHint", { defaultValue: "Mueve el mapa para ubicar tu punto" })}
+                                        </span>
+                                        <button type="button" className="btn btn-brand btn-sm" onClick={confirmPickOnMap}>
+                                            <Icon name="check" size={14}/>
+                                            {t("common.done", { defaultValue: "Listo" })}
+                                        </button>
+                                    </div>
+                                </>
                             )}
 
                             <div className="map-controls fade-up">
@@ -521,7 +685,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                 <span className="hud-name">{viewCenter.name}</span>
                                 {!isExploring && userLocation.source === "gps" && <span className="hud-gps-badge">GPS</span>}
                                 {isExploring && (
-                                    <button type="button" className="hud-recenter" onClick={recenterToUser}>
+                                    <button type="button" className="hud-recenter" onClick={returnToMe}>
                                         <Icon name="location" size={12}/> {t("map.backToMe", { defaultValue: "Volver a mí" })}
                                     </button>
                                 )}
@@ -531,21 +695,10 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                 <button
                                     type="button"
                                     className="btn btn-icon tip"
-                                    data-tip={t("map.openSearch", { defaultValue: "Buscar / cambiar zona" })}
-                                    onClick={() => setShowLocationModal(true)}
-                                >
-                                    <Icon name="search" size={16} />
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn btn-icon tip"
                                     data-tip={t("map.centerLocation")}
                                     onClick={handleCenter}
                                 >
-                                    <Icon name="target" size={16} />
-                                </button>
-                                <button type="button" className="btn btn-icon tip" data-tip={t("map.layers")}>
-                                    <Icon name="layers" size={16} />
+                                    <Icon name="navigation" size={16} />
                                 </button>
                                 <div className="zoom-stack">
                                     <button
@@ -570,7 +723,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                         type="button"
                                         className="btn btn-icon tip"
                                         data-tip={t("map.clearMarker", { defaultValue: "Quitar marcador" })}
-                                        onClick={clearMarker}
+                                        onClick={returnToMe}
                                     >
                                         <Icon name="close" size={14} />
                                     </button>
@@ -578,7 +731,10 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                             </div>
                         </div>
 
-                        <aside className="results-pane">
+                        <aside className="results-pane" style={sheetStyle}>
+                            <div className="sheet-handle" {...sheetDragHandlers}>
+                                <span className="sheet-grip" />
+                            </div>
                             {detailBusiness ? (
                                 <BusinessDetailView
                                     business={detailBusiness}
@@ -613,7 +769,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                 />
                             ) : (
                                 <>
-                                    <div className="results-head">
+                                    <div className="results-head sheet-grab" {...sheetDragHandlers}>
                                         <div>
                                             <div className="eyebrow">
                                                 {showSaved ? t("map.yourCoupons") : t("map.radiusLabel", { value: radiusText })}
@@ -684,14 +840,14 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                                         {couponsLoading ? (
                                             <div className="rp-empty">
                                                 <div className="rp-empty-icon">
-                                                    <Icon name="location" size={24} />
+                                                    <span className="rp-spinner" />
                                                 </div>
                                                 <div className="rp-empty-title">{t("map.loadingCoupons")}</div>
                                             </div>
                                         ) : filtered.length === 0 ? (
                                             <div className="rp-empty">
                                                 <div className="rp-empty-icon">
-                                                    <Icon name={showSaved ? "ticket" : "location"} size={24} />
+                                                    <Icon name={showSaved ? "ticket" : "frown"} size={24} />
                                                 </div>
                                                 {showSaved ? (
                                                     <>
@@ -871,6 +1027,7 @@ export function CustomerMap({ onSwitchRole, onSignOut, mapEngine = "osm", theme 
                     onClose={() => setShowLocationModal(false)}
                     onPickOnMap={startPickOnMap}
                     isFirst={userLocation.source === "default"}
+                    currentName={viewCenter.name}
                 />
             )}
         </div>

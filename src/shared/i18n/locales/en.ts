@@ -9,6 +9,7 @@ export const en = {
         seeAll: "See all",
         loading: "Loading…",
         search: "Search",
+        done: "Done",
     },
     cat: {
         all: "All",
@@ -109,7 +110,7 @@ export const en = {
     map: {
         searchPlaceholder: "Search coupons, spots...",
         searchAria: "Search coupons or spots",
-        centerLocation: "Center on my location",
+        centerLocation: "Recenter on point",
         layers: "Layers",
         radiusFull: "All Lima",
         radiusAll: "Lima",
@@ -139,6 +140,13 @@ export const en = {
         noResultsText: "Try another category or adjust the search radius.",
         seeAllCoupons: "See all coupons",
         loadingCoupons: "Loading coupons…",
+        pickHint: "Move the map to place your point",
+        pickResolving: "Finding address…",
+        openSearch: "Search / change area",
+        backToMe: "Back to me",
+        zoomIn: "Zoom in",
+        zoomOut: "Zoom out",
+        clearMarker: "Remove marker",
     },
     business: {
         title: "Establishment",
@@ -342,6 +350,7 @@ export const en = {
         popular: "Popular areas",
         noResults: "No results for «{{query}}»",
         noResultsHint: "Try the district or avenue name",
+        youAreHere: "You are in",
     },
     auth: {
         titleSignup: "Create your account",

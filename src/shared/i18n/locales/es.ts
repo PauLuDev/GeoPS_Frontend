@@ -9,6 +9,7 @@ export const es = {
         seeAll: "Ver todo",
         loading: "Cargando…",
         search: "Buscar",
+        done: "Listo",
     },
     cat: {
         all: "Todo",
@@ -109,7 +110,7 @@ export const es = {
     map: {
         searchPlaceholder: "Buscar cupones, locales...",
         searchAria: "Buscar cupones o locales",
-        centerLocation: "Centrar en mi ubicación",
+        centerLocation: "Centrar en el punto",
         layers: "Capas",
         radiusFull: "Lima completa",
         radiusAll: "Lima",
@@ -139,6 +140,13 @@ export const es = {
         noResultsText: "Prueba con otra categoría o ajusta el radio de búsqueda.",
         seeAllCoupons: "Ver todos los cupones",
         loadingCoupons: "Cargando cupones…",
+        pickHint: "Mueve el mapa para ubicar tu punto",
+        pickResolving: "Buscando dirección…",
+        openSearch: "Buscar / cambiar zona",
+        backToMe: "Volver a mí",
+        zoomIn: "Acercar",
+        zoomOut: "Alejar",
+        clearMarker: "Quitar marcador",
     },
     business: {
         title: "Establecimiento",
@@ -342,6 +350,7 @@ export const es = {
         popular: "Zonas populares",
         noResults: "Sin resultados para «{{query}}»",
         noResultsHint: "Intenta con el nombre del distrito o avenida",
+        youAreHere: "Estás en",
     },
     auth: {
         titleSignup: "Crea tu cuenta",

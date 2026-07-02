@@ -80,9 +80,11 @@ interface OSMMapProps {
     theme?: string;
     interactive?: boolean;
     zoom?: number;
-    onMapClick?: (lat: number, lng: number) => void;
     pickingOnMap?: boolean;
     pickedCoord?: { lat: number; lng: number } | null;
+    /* modo marcador-centrado -> reporta el centro del mapa al moverse y muestra su direccion en la burbuja */
+    onPickCenterChange?: (lat: number, lng: number) => void;
+    pickCenterLabel?: string | null;
     onMapReady?: (api: MapApi) => void;
 }
 
@@ -97,9 +99,10 @@ export const OSMMap: FC<OSMMapProps> = ({
     theme = "light",
     interactive = true,
     zoom = 15,
-    onMapClick,
     pickingOnMap = false,
     pickedCoord = null,
+    onPickCenterChange,
+    pickCenterLabel = null,
     onMapReady,
 }) => {
     const effectiveCenter = centerCoord ?? userCoord ?? USER_COORD;
@@ -108,17 +111,15 @@ export const OSMMap: FC<OSMMapProps> = ({
     const mapRef = useRef<LMap | null>(null);
     const markersRef = useRef<Record<string, LMarker>>({});
     const userMarkerRef = useRef<LMarker | null>(null);
+    const searchMarkerRef = useRef<LMarker | null>(null);
     const tileLayerRef = useRef<LTileLayer | null>(null);
-    /* Posición en píxeles del pick pin y el search center — se usan como overlays React
-       fuera del contenedor de Leaflet para no modificar su DOM y evitar el bug de tiles en blanco */
+    /* el pick pin transitorio va como overlay React por pixeles; el search center va como
+       marcador nativo de leaflet (searchMarkerRef) para que el zoom sea suave y no parpadee */
     const [pickPixel, setPickPixel] = useState<{ x: number; y: number } | null>(null);
-    const [searchCenterPixel, setSearchCenterPixel] = useState<{ x: number; y: number } | null>(null);
     const onPinClickRef = useRef(onPinClick);
     onPinClickRef.current = onPinClick;
-    const onMapClickRef = useRef(onMapClick);
-    onMapClickRef.current = onMapClick;
-    const pickingRef = useRef(pickingOnMap);
-    pickingRef.current = pickingOnMap;
+    const onPickCenterChangeRef = useRef(onPickCenterChange);
+    onPickCenterChangeRef.current = onPickCenterChange;
     const [mapReady, setMapReady] = useState(false);
 
     useEffect(() => {
@@ -135,13 +136,6 @@ export const OSMMap: FC<OSMMapProps> = ({
                 touchZoom: interactive,
             }).setView([effectiveCenter.lat, effectiveCenter.lng], zoom);
             mapRef.current = map;
-            map.on("click", (e: any) => {
-                if (!pickingRef.current) return;
-                const { lat, lng } = e.latlng || {};
-                if (typeof lat === "number" && typeof lng === "number") {
-                    onMapClickRef.current?.(lat, lng);
-                }
-            });
             setMapReady(true);
             setTimeout(() => map.invalidateSize(true), 50);
             onMapReady?.({
@@ -160,9 +154,9 @@ export const OSMMap: FC<OSMMapProps> = ({
 
             markersRef.current = {};
             userMarkerRef.current = null;
+            searchMarkerRef.current = null;
             tileLayerRef.current = null;
             setPickPixel(null);
-            setSearchCenterPixel(null);
         };
     }, []);
 
@@ -203,22 +197,22 @@ export const OSMMap: FC<OSMMapProps> = ({
         userMarkerRef.current = L.marker([userCoord.lat, userCoord.lng], { icon, interactive: false }).addTo(mapRef.current);
     }, [userCoord?.lat, userCoord?.lng, showRadar, mapReady]);
 
-    /* Posición píxel del search center — overlay React, sin tocar el DOM de Leaflet */
+    /* search center como marcador nativo de leaflet -> se pega a la coordenada y el zoom no parpadea */
     useEffect(() => {
-        if (!mapReady || !mapRef.current || !searchCenter) {
-            setSearchCenterPixel(null);
-            return;
+        if (!mapReady || !(window as any).L || !mapRef.current) return;
+        const L = (window as any).L;
+        if (searchMarkerRef.current) {
+            mapRef.current.removeLayer(searchMarkerRef.current);
+            searchMarkerRef.current = null;
         }
-        const map = mapRef.current;
-        const lat = searchCenter.lat;
-        const lng = searchCenter.lng;
-        const update = () => {
-            const p = map.latLngToContainerPoint([lat, lng]);
-            setSearchCenterPixel({ x: p.x, y: p.y });
-        };
-        update();
-        map.on("move zoom viewreset", update);
-        return () => { map.off("move zoom viewreset", update); };
+        if (!searchCenter) return;
+        const icon = L.divIcon({
+            className: "geops-scm-icon",
+            html: `<div class="scm-wrap"><span class="scm-ring scm-ring-1"></span><span class="scm-ring scm-ring-2"></span><span class="scm-dot"></span></div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+        searchMarkerRef.current = L.marker([searchCenter.lat, searchCenter.lng], { icon, interactive: false }).addTo(mapRef.current);
     }, [searchCenter?.lat, searchCenter?.lng, mapReady]);
 
     useEffect(() => {
@@ -243,6 +237,22 @@ export const OSMMap: FC<OSMMapProps> = ({
         map.on("move zoom viewreset", update);
         return () => { map.off("move zoom viewreset", update); };
     }, [pickedCoord?.lat, pickedCoord?.lng, mapReady]);
+
+    /* modo marcador-centrado -> el pin queda fijo al centro de la pantalla y reportamos
+       el centro del mapa cada vez que el usuario deja de moverlo (moveend limita las llamadas) */
+    useEffect(() => {
+        if (!mapReady || !mapRef.current || !pickingOnMap) return;
+        const map = mapRef.current;
+        const report = () => {
+            const c = map.getCenter() as { lat: number; lng: number };
+            if (c && typeof c.lat === "number" && typeof c.lng === "number") {
+                onPickCenterChangeRef.current?.(c.lat, c.lng);
+            }
+        };
+        report();
+        map.on("moveend", report);
+        return () => { map.off("moveend", report); };
+    }, [pickingOnMap, mapReady]);
 
     useEffect(() => {
         if (!mapReady || !mapRef.current || !ref.current) return;
@@ -343,21 +353,25 @@ export const OSMMap: FC<OSMMapProps> = ({
         <div ref={outerRef} className={"osm-canvas" + (pickingOnMap ? " picking" : "")} style={{ position: "relative" }}>
             <div ref={ref} style={{ position: "absolute", inset: "0" }} />
 
-            {searchCenterPixel && (
-                <div style={{ position: "absolute", left: searchCenterPixel.x, top: searchCenterPixel.y, transform: "translate(-16px,-16px)", pointerEvents: "none", zIndex: 600 }}>
-                    <div className="scm-wrap">
-                        <span className="scm-ring scm-ring-1" />
-                        <span className="scm-ring scm-ring-2" />
-                        <span className="scm-dot" />
-                    </div>
-                </div>
-            )}
-
             {pickPixel && (
                 <div style={{ position: "absolute", left: pickPixel.x, top: pickPixel.y, transform: "translate(-12px,-30px)", pointerEvents: "none", zIndex: 700 }}>
                     <div className="pick-pin">
                         <span className="pick-pin-stem" />
                         <span className="pick-pin-head" />
+                    </div>
+                </div>
+            )}
+
+            {/* pin fijo al centro (modo marcador-centrado): el mapa se mueve por debajo
+                y la colita de la bandera apunta al punto exacto */}
+            {pickingOnMap && (
+                <div className="pick-center-pin" aria-hidden="true">
+                    {pickCenterLabel && <div className="pick-center-bubble">{pickCenterLabel}</div>}
+                    <div className="pick-center-flag">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"
+                             strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M6 21V3M6 3h12l-2 4 2 4H6" />
+                        </svg>
                     </div>
                 </div>
             )}

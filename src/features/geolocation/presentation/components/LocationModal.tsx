@@ -10,6 +10,7 @@ interface LocationModalProps {
     onClose?: () => void;
     onPickOnMap?: () => void;
     isFirst?: boolean;
+    currentName?: string;
 }
 
 interface NominatimResult {
@@ -38,7 +39,7 @@ function highlight(text: string, q: string) {
     return <>{text.slice(0, idx)}<strong className="lm-hl">{text.slice(idx, idx + q.length)}</strong>{text.slice(idx + q.length)}</>;
 }
 
-export function LocationModal({ onSelect, onClose, onPickOnMap, isFirst = false }: LocationModalProps) {
+export function LocationModal({ onSelect, onClose, onPickOnMap, isFirst = false, currentName }: LocationModalProps) {
     const { t } = useTranslation();
     const [query, setQuery] = useState("");
     const [osm, setOsm] = useState<ReturnType<typeof parseNominatim>[]>([]);
@@ -107,6 +108,14 @@ export function LocationModal({ onSelect, onClose, onPickOnMap, isFirst = false 
                         )}
                     </div>
 
+                    {!isFirst && currentName && (
+                        <div className="lm-current">
+                            <span className="lm-current-icon"><Icon name="location" size={14}/></span>
+                            <span className="lm-current-label">{t("location.youAreHere", { defaultValue: "Estás en" })}</span>
+                            <strong className="lm-current-value">{currentName}</strong>
+                        </div>
+                    )}
+
                     <div className="lm-search">
                         {loading
                             ? <div className="lm-spinner"/>
@@ -125,7 +134,7 @@ export function LocationModal({ onSelect, onClose, onPickOnMap, isFirst = false 
                     </div>
                     {onPickOnMap && (
                         <button type="button" className="lm-pick-btn" onClick={onPickOnMap}>
-                            <Icon name="pin" size={16}/>
+                            <Icon name="flag" size={16}/>
                             <span>{t("location.pickOnMap", { defaultValue: "Marcar punto en el mapa" })}</span>
                         </button>
                     )}

@@ -9,7 +9,7 @@
   transition: grid-template-columns 280ms cubic-bezier(.2,.8,.2,1);
 }
 @media (max-width: 980px) {
-  .geops-app .map-shell { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; transition: none; }
+  .geops-app .map-shell { display: block; grid-template-columns: none; grid-template-rows: none; transition: none; }
 }
 /* panel contraido: el mapa toma todo el ancho (se desliza, no de golpe) */
 .geops-app .map-shell.panel-collapsed { grid-template-columns: 1fr 0; }
@@ -29,7 +29,7 @@
 .geops-app .map-shell:not(.panel-collapsed) .panel-toggle svg { transform: rotate(180deg); }
 @media (max-width: 980px) {
   .geops-app .panel-toggle { display: none; }
-  .geops-app .map-shell.panel-collapsed { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
+  .geops-app .map-shell.panel-collapsed { grid-template-columns: none; }
 }
 .geops-app .map-area {
   position: relative; background: var(--map-bg);
@@ -37,12 +37,24 @@
   height: 100%;
   z-index: 0; /* stacking context sin romper los transforms de Leaflet */
 }
+/* modo elegir punto -> ocultar buscador, botones y hud para dejar libre el pin central */
+.geops-app .map-area.picking .map-controls,
+.geops-app .map-area.picking .map-hud,
+.geops-app .map-area.picking .map-tools { display: none; }
+/* en movil el bottom sheet se oculta para no chocar con la barra "Listo" */
+@media (max-width: 980px) {
+  .geops-app .map-area.picking ~ .results-pane { display: none; }
+}
 .geops-app .map-controls {
   position: absolute; top: 18px; left: 18px; right: 18px;
   display: flex; flex-direction: column; gap: 10px;
   max-width: 720px; pointer-events: none; z-index: 1000;
 }
 .geops-app .map-controls > * { pointer-events: auto; }
+/* en pantallas chicas el buscador no debe pasar por debajo de la columna de botones */
+@media (max-width: 980px) {
+  .geops-app .map-controls { right: 66px; max-width: none; }
+}
 .geops-app .cat-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .geops-app .map-hud {
   position: absolute; bottom: 18px; left: 18px;
@@ -65,10 +77,31 @@
 .geops-app .results-pane {
   background: var(--bg-elev); border-left: 1px solid var(--line);
   display: flex; flex-direction: column;
-  height: 100%; min-height: 0; overflow: hidden;
+  height: 100%; min-height: 0; min-width: 0; overflow: hidden;
 }
+/* asa de arrastre -> solo visible en la hoja deslizable movil */
+.geops-app .sheet-handle { display: none; }
 @media (max-width: 980px) {
-  .geops-app .results-pane { height: 100%; border-left: none; border-top: 1px solid var(--line); }
+  .geops-app .map-area { height: 100%; }
+  /* panel de cupones -> hoja deslizable sobre el mapa */
+  .geops-app .results-pane {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 100%;
+    border-left: none; border-top: none;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.16);
+    transform: translateY(46%);
+    transition: transform 320ms cubic-bezier(.2,.8,.2,1);
+    z-index: 1400; will-change: transform;
+  }
+  .geops-app .sheet-handle {
+    display: flex; align-items: center; justify-content: center;
+    padding: 10px 0 6px; cursor: grab; touch-action: none; user-select: none; flex-shrink: 0;
+  }
+  .geops-app .sheet-handle:active { cursor: grabbing; }
+  .geops-app .sheet-grip { width: 44px; height: 5px; border-radius: 999px; background: var(--line-strong); }
+  /* toda la cabecera arrastra la hoja, no solo el asa */
+  .geops-app .results-head.sheet-grab { cursor: grab; touch-action: none; user-select: none; }
+  .geops-app .results-head.sheet-grab:active { cursor: grabbing; }
 }
 .geops-app .results-head {
   padding: 18px 20px 12px; display: flex;
@@ -284,10 +317,17 @@
 /* customerTopbar extras */
 .geops-app .topbar-loc {
   cursor: pointer; background: none; border: 1px solid var(--line);
-  border-radius: 10px; padding: 5px 10px;
+  border-radius: 10px; padding: 5px 10px; min-width: 0;
   display: flex; align-items: center; gap: 5px;
   font-family: inherit; color: var(--ink-2);
   transition: border-color 160ms ease;
+}
+/* el logo y el avatar (perfil) nunca se encogen; el chip de zona cede espacio */
+.geops-app .topbar .brand { flex-shrink: 0; }
+.geops-app .topbar-menu-wrap { flex-shrink: 0; }
+/* en telefonos chicos ocultamos el badge de rol para que quepa la calle + el avatar */
+@media (max-width: 430px) {
+  .geops-app .topbar .brand-suffix { display: none; }
 }
 .geops-app .topbar-loc:hover { border-color: var(--ink); }
 .geops-app .topbar-avatar-btn {
@@ -323,7 +363,7 @@
 }
 
 /* CustomerTopbar: detalles migrados de inline */
-.geops-app .topbar-loc-text { font-size: 13px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.geops-app .topbar-loc-text { font-size: 13px; max-width: 150px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .geops-app .topbar-menu-wrap { position: relative; }
 .geops-app .topbar-avatar-btn { border-color: transparent; }
 .geops-app .topbar-avatar-btn[aria-expanded="true"] { border-color: var(--brand); }
@@ -684,7 +724,7 @@
 }
 
 /* CustomerMap: migrado de inline */
-.geops-app .map-shell:not(.stacked) { overflow-y: hidden; }
+.geops-app .map-shell:not(.stacked) { overflow: hidden; }
 .geops-app .map-shell.stacked { display: block; overflow-y: auto; }
 .geops-app .map-search-clear { appearance: none; border: 0; background: transparent; padding: 4px; cursor: pointer; }
 .geops-app .chip-count { font-size: 10px; opacity: 0.6; }
@@ -744,6 +784,7 @@
 /* empty */
 .geops-app .rp-empty { padding: 36px 24px; text-align: center; }
 .geops-app .rp-empty-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--bg-sunken); display: grid; place-items: center; margin: 0 auto 14px; color: var(--ink-3); }
+.geops-app .rp-spinner { width: 26px; height: 26px; border: 3px solid var(--line-strong); border-top-color: var(--brand); border-radius: 50%; animation: loc-spin 0.7s linear infinite; }
 .geops-app .rp-empty-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
 .geops-app .rp-empty-text { font-size: 13px; color: var(--ink-3); line-height: 1.5; }
 .geops-app .rp-empty-cta { margin-top: 14px; }
