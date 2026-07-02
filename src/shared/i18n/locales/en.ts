@@ -379,6 +379,8 @@ export const en = {
         subtitleSignin: "Your nearby coupons are waiting for you.",
         name: "Name",
         namePlaceholder: "Your name",
+        lastName: "Last name",
+        lastNamePlaceholder: "Your last name",
         email: "Email",
         emailPlaceholder: "you@email.com",
         password: "Password",

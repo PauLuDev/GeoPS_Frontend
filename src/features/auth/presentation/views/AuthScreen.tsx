@@ -26,6 +26,7 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
     const { t } = useTranslation();
     const { signIn, signUp, loading, error } = useAuth();
     const [name, setName] = useState("");
+    const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isOwner, setIsOwner] = useState(false);
@@ -35,7 +36,7 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
         e?.preventDefault();
         const roles: Role[] = [isOwner ? "ROLE_OWNER" : "ROLE_CUSTOMER"];
         const user = isSignup
-            ? await signUp(name, email, password, roles)
+            ? await signUp(name, lastName, email, password, roles)
             : await signIn(email, password, roles);
         if (user) onSuccess(rolesHaveOwner(user.roles));
     };
@@ -75,6 +76,12 @@ export function AuthScreen({ mode, setMode, onSuccess }: AuthScreenProps) {
                             <div className="field">
                                 <label htmlFor="auth-name">{t("auth.name")}</label>
                                 <input id="auth-name" className="input" placeholder={t("auth.namePlaceholder")} value={name} onChange={e => setName(e.target.value)} />
+                            </div>
+                        )}
+                        {isSignup && (
+                            <div className="field">
+                                <label htmlFor="auth-lastname">{t("auth.lastName")}</label>
+                                <input id="auth-lastname" className="input" placeholder={t("auth.lastNamePlaceholder")} value={lastName} onChange={e => setLastName(e.target.value)} />
                             </div>
                         )}
                         <div className="field">
